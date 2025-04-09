@@ -15,44 +15,35 @@ use League\Flysystem\UnableToWriteFile;
 
 class BunnyAdapter implements FilesystemAdapter
 {
-    protected $client;
-    protected $config;
-    protected $apiKey;
-    protected $zone;
-    protected $region;
-    protected $url;
-    protected $baseUrl;
+    private string $baseUrl;
+    private string $storageUrl;
+    private string $apiKey;
+    private string $zone;
 
     public function __construct(array $config)
     {
         Log::debug('BunnyAdapter initialized with config', $config);
         
-        $this->config = $config;
-        $this->apiKey = $config['key'] ?? $config['api_key'] ?? null; // Support both keys
-        $this->zone = $config['zone'] ?? $config['storage_zone_name'] ?? null; // Support both keys
-        $this->region = $config['region'] ?? null;
-        $this->url = $config['url'] ?? null;
-        
-        if (!$this->apiKey || !$this->zone || !$this->url) {
-            Log::error('BunnyAdapter missing required config', [
-                'key' => $this->apiKey ? 'present' : 'missing',
-                'zone' => $this->zone ? 'present' : 'missing',
-                'url' => $this->url ? 'present' : 'missing'
-            ]);
-            throw new \Exception('BunnyAdapter missing required configuration');
+        // Get the API key (support both 'key' and 'api_key')
+        $this->apiKey = $config['api_key'] ?? $config['key'] ?? null;
+        if (!$this->apiKey) {
+            throw new \RuntimeException('API key is required for Bunny CDN');
         }
-        
-        $this->baseUrl = rtrim($this->url, '/') . '/' . $this->zone . '/';
-        
+
+        // Get the zone name (support both 'zone' and 'storage_zone_name')
+        $this->zone = $config['storage_zone_name'] ?? $config['zone'] ?? null;
+        if (!$this->zone) {
+            throw new \RuntimeException('Storage zone name is required for Bunny CDN');
+        }
+
+        // Set up URLs
+        // CDN URL for reading (b-cdn.net)
+        $this->baseUrl = rtrim($config['url'], '/') . '/' . $this->zone . '/';
+        // Storage URL for writing (storage.bunnycdn.com)
+        $this->storageUrl = "https://storage.bunnycdn.com/" . $this->zone . '/';
+
         Log::debug('BunnyAdapter baseUrl: ' . $this->baseUrl);
-        
-        // Initialize the client with default config
-        $this->client = new Client([
-            'base_uri' => $this->baseUrl,
-            'timeout'  => 30,
-            'verify' => false,
-            'http_errors' => false
-        ]);
+        Log::debug('BunnyAdapter storageUrl: ' . $this->storageUrl);
     }
 
     protected function getHeaders(array $additionalHeaders = [])
@@ -69,7 +60,7 @@ class BunnyAdapter implements FilesystemAdapter
     public function fileExists(string $path): bool
     {
         try {
-            $response = $this->client->head($path, [
+            $response = (new Client())->head($this->baseUrl . $path, [
                 'headers' => $this->getHeaders(),
             ]);
             
@@ -96,29 +87,7 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function write(string $path, string $contents, Config $config): void
     {
-        try {
-            $response = $this->client->put($path, [
-                'headers' => $this->getHeaders([
-                    'Content-Type' => 'application/octet-stream',
-                ]),
-                'body' => $contents,
-            ]);
-            
-            if ($response->getStatusCode() !== 201 && $response->getStatusCode() !== 200) {
-                Log::error('BunnyAdapter write failed', [
-                    'path' => $path,
-                    'status' => $response->getStatusCode(),
-                    'response' => (string) $response->getBody()
-                ]);
-                throw UnableToWriteFile::atLocation($path, 'Failed to write file');
-            }
-        } catch (\Exception $e) {
-            Log::error('BunnyAdapter write error', [
-                'path' => $path,
-                'error' => $e->getMessage()
-            ]);
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
-        }
+        $this->upload($path, $contents);
     }
 
     /**
@@ -126,28 +95,39 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function writeStream(string $path, $contents, Config $config): void
     {
+        $this->upload($path, $contents);
+    }
+
+    /**
+     * Upload a file to Bunny CDN
+     */
+    private function upload(string $path, $contents): void
+    {
+        $client = new Client();
+        
         try {
-            $response = $this->client->put($path, [
-                'headers' => $this->getHeaders([
+            $response = $client->put($this->storageUrl . $path, [
+                'headers' => [
+                    'AccessKey' => $this->apiKey,
                     'Content-Type' => 'application/octet-stream',
-                ]),
+                ],
                 'body' => $contents,
             ]);
-            
-            if ($response->getStatusCode() !== 201 && $response->getStatusCode() !== 200) {
+
+            if ($response->getStatusCode() !== 201) {
                 Log::error('BunnyAdapter writeStream failed', [
                     'path' => $path,
                     'status' => $response->getStatusCode(),
-                    'response' => (string) $response->getBody()
+                    'response' => $response->getBody()->getContents(),
                 ]);
-                throw UnableToWriteFile::atLocation($path, 'Failed to write file stream');
+                throw new UnableToWriteFile("Unable to write file at location: {$path}. Failed to write file stream");
             }
         } catch (\Exception $e) {
             Log::error('BunnyAdapter writeStream error', [
                 'path' => $path,
                 'error' => $e->getMessage()
             ]);
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+            throw new UnableToWriteFile("Unable to write file at location: {$path}. " . $e->getMessage());
         }
     }
 
@@ -168,7 +148,7 @@ class BunnyAdapter implements FilesystemAdapter
                 throw new \RuntimeException('Could not open file for reading');
             }
 
-            $this->writeStream($name, $stream, new Config($options));
+            $this->upload($name, $stream);
             
             if (is_resource($stream)) {
                 fclose($stream);
@@ -189,7 +169,7 @@ class BunnyAdapter implements FilesystemAdapter
     public function read(string $path): string
     {
         try {
-            $response = $this->client->get($path, [
+            $response = (new Client())->get($this->baseUrl . $path, [
                 'headers' => $this->getHeaders(),
             ]);
             
@@ -219,7 +199,7 @@ class BunnyAdapter implements FilesystemAdapter
         try {
             $tempStream = fopen('php://temp', 'w+');
             
-            $response = $this->client->get($path, [
+            $response = (new Client())->get($this->baseUrl . $path, [
                 'headers' => $this->getHeaders(),
                 'stream' => true,
             ]);
@@ -260,7 +240,7 @@ class BunnyAdapter implements FilesystemAdapter
     public function delete(string $path): void
     {
         try {
-            $response = $this->client->delete($path, [
+            $response = (new Client())->delete($this->storageUrl . $path, [
                 'headers' => $this->getHeaders(),
             ]);
             
@@ -361,7 +341,7 @@ class BunnyAdapter implements FilesystemAdapter
     public function mimeType(string $path): FileAttributes
     {
         try {
-            $response = $this->client->head($path, [
+            $response = (new Client())->head($this->baseUrl . $path, [
                 'headers' => $this->getHeaders(),
             ]);
             
@@ -391,7 +371,7 @@ class BunnyAdapter implements FilesystemAdapter
     public function lastModified(string $path): FileAttributes
     {
         try {
-            $response = $this->client->head($path, [
+            $response = (new Client())->head($this->baseUrl . $path, [
                 'headers' => $this->getHeaders(),
             ]);
             
@@ -421,7 +401,7 @@ class BunnyAdapter implements FilesystemAdapter
     public function fileSize(string $path): FileAttributes
     {
         try {
-            $response = $this->client->head($path, [
+            $response = (new Client())->head($this->baseUrl . $path, [
                 'headers' => $this->getHeaders(),
             ]);
             
@@ -445,7 +425,7 @@ class BunnyAdapter implements FilesystemAdapter
 
     public function getUrl(string $path): string
     {
-        return $this->url . '/' . $this->zone . '/' . $path;
+        return $this->baseUrl . $path;
     }
 
     public function upload(UploadedFile $file, string $path): bool
@@ -453,11 +433,12 @@ class BunnyAdapter implements FilesystemAdapter
         try {
             $fileStream = fopen($file->getRealPath(), 'r');
             
-            $response = $this->client->put($path, [
-                'headers' => $this->getHeaders([
+            $response = (new Client())->put($this->storageUrl . $path, [
+                'headers' => [
+                    'AccessKey' => $this->apiKey,
                     'Content-Type' => $file->getMimeType(),
                     'Content-Length' => $file->getSize(),
-                ]),
+                ],
                 'body' => $fileStream,
             ]);
             
