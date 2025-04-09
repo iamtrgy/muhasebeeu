@@ -152,6 +152,49 @@ class BunnyAdapter implements FilesystemAdapter
     }
 
     /**
+     * Write a new file using a stream.
+     *
+     * @param string $path
+     * @param resource $resource
+     * @param array $config Config object
+     *
+     * @throws UnableToWriteFile
+     * @throws FilesystemException
+     */
+    public function writeStream(string $path, $resource, array $config = []): void
+    {
+        $this->upload($path, $resource);
+    }
+
+    /**
+     * Store the uploaded file on the disk.
+     *
+     * @param string $directory The directory to store the file in (often empty if $name includes path)
+     * @param \Illuminate\Http\UploadedFile $file
+     * @param string $name The desired file path/name
+     * @param array $options
+     * @return string|false The path to the stored file or false on failure
+     */
+    public function putFileAs(string $directory, \Illuminate\Http\UploadedFile $file, string $name, array $options = []): string|false
+    {
+        $stream = $file->readStream();
+
+        try {
+            $this->writeStream($name, $stream, $options); // Use $name as the full path
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+            return $name; // Return the path on success
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter putFileAs failed: ' . $e->getMessage());
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+            return false; // Return false on failure
+        }
+    }
+
+    /**
      * @inheritdoc
      */
     public function read(string $path): string
