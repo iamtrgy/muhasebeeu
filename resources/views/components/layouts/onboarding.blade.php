@@ -29,6 +29,19 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="h-full gradient-bg dark:bg-gray-900">
+        <!-- Logout Button -->
+        <div class="absolute top-4 right-4">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    Logout
+                </button>
+            </form>
+        </div>
+        
         <div class="flex min-h-screen flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div class="sm:mx-auto sm:w-full sm:max-w-md">
                 <div class="flex justify-center">
