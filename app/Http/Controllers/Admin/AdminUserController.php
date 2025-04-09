@@ -125,18 +125,21 @@ class AdminUserController extends Controller
     public function update(Request $request, User $user)
     {
         // Log the request data for debugging
-        \Log::info('User update request data:', [
+        \Log::info('User update request received', [
             'user_id' => $user->id,
+            'request_method' => $request->method(),
+            'request_url' => $request->url(),
             'all_data' => $request->all(),
             'has_is_admin' => $request->has('is_admin'),
             'has_is_accountant' => $request->has('is_accountant'),
+            'raw_is_admin' => $request->input('is_admin'),
+            'raw_is_accountant' => $request->input('is_accountant'),
+            'headers' => $request->headers->all(),
         ]);
 
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'is_admin' => 'boolean',
-            'is_accountant' => 'boolean',
         ]);
 
         $userBefore = [
@@ -146,35 +149,51 @@ class AdminUserController extends Controller
             'is_accountant' => $user->is_accountant,
         ];
 
-        // More explicit approach to handle checkboxes
-        $is_admin = $request->has('is_admin') || $request->input('is_admin') === 'on' || $request->input('is_admin') === '1';
-        $is_accountant = $request->has('is_accountant') || $request->input('is_accountant') === 'on' || $request->input('is_accountant') === '1';
+        // Handle checkbox values - they will only be present in the request if checked
+        $is_admin = $request->has('is_admin') && ($request->input('is_admin') === 'on' || $request->input('is_admin') === '1');
+        $is_accountant = $request->has('is_accountant') && ($request->input('is_accountant') === 'on' || $request->input('is_accountant') === '1');
 
         \Log::info('Processed checkbox values:', [
             'is_admin' => $is_admin,
             'is_accountant' => $is_accountant,
+            'request_has_is_admin' => $request->has('is_admin'),
+            'request_has_is_accountant' => $request->has('is_accountant'),
+            'request_input_is_admin' => $request->input('is_admin'),
+            'request_input_is_accountant' => $request->input('is_accountant'),
         ]);
 
         // Direct update to the user
         $user->name = $request->name;
         $user->email = $request->email;
-        $user->is_admin = $is_admin; 
+        $user->is_admin = $is_admin;
         $user->is_accountant = $is_accountant;
-        $user->save();
+        
+        try {
+            $user->save();
+            \Log::info('User updated successfully', [
+                'user_id' => $user->id,
+                'before' => $userBefore,
+                'after' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'is_admin' => $user->is_admin,
+                    'is_accountant' => $user->is_accountant,
+                ]
+            ]);
 
-        // Log after update
-        \Log::info('User after update:', [
-            'user_id' => $user->id,
-            'before' => $userBefore,
-            'after' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_admin' => $user->is_admin,
-                'is_accountant' => $user->is_accountant,
-            ]
-        ]);
-
-        return redirect()->route('admin.users.show', $user)->with('success', 'User updated successfully.');
+            // Clear any user-related caches
+            \Cache::forget('user.' . $user->id . '.roles');
+            \Cache::forget('user.' . $user->id . '.permissions');
+            
+            return redirect()->route('admin.users.show', $user)->with('success', 'User updated successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Error updating user:', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Error updating user: ' . $e->getMessage())->withInput();
+        }
     }
 
     /**
@@ -365,9 +384,10 @@ class AdminUserController extends Controller
         // Get currently assigned users
         $assignedUsers = $accountant->assignedUsers()->pluck('user_id')->toArray();
         
-        // Get all users except admins and the current accountant
+        // Get all regular users (not admins, not accountants)
         $availableUsers = User::where('id', '!=', $accountant->id)
             ->where('is_admin', false)
+            ->where('is_accountant', false)  // Filter out other accountants
             ->orderBy('name')
             ->get();
 

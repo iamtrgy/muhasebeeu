@@ -3,7 +3,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
                 <div class="p-6">
-                    <form method="POST" action="{{ route('admin.users.update', $user) }}">
+                    <form method="POST" action="{{ route('admin.users.update', $user) }}" id="userEditForm">
                         @csrf
                         @method('PUT')
 
@@ -73,4 +73,24 @@
             </div>
         </div>
     </div>
-</x-admin-layout> 
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('userEditForm');
+            form.addEventListener('submit', function(e) {
+                console.log('Form is being submitted');
+                console.log('Form action:', this.action);
+                console.log('Form method:', this.method);
+                
+                // Log form data
+                const formData = new FormData(this);
+                console.log('Form data:');
+                for (let pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
+            });
+        });
+    </script>
+    @endpush
+</x-admin-layout>
