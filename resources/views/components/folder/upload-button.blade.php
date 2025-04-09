@@ -2,7 +2,10 @@
 
 @if($folder->canUpload(auth()->user()))
     <div x-data="{
-        showModal: false
+        showModal: false,
+        closeModal() {
+            this.showModal = false;
+        }
     }">
         <div class="flex items-center space-x-4">
             <!-- Upload Button -->
@@ -22,7 +25,7 @@
         <!-- Upload Modal -->
         <div x-show="showModal" class="fixed inset-0 overflow-y-auto z-50" x-cloak>
             <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 transition-opacity" aria-hidden="true" @click="showModal = false">
+                <div class="fixed inset-0 transition-opacity" aria-hidden="true" @click="closeModal()">
                     <div class="absolute inset-0 bg-gray-500 dark:bg-gray-900 opacity-75"></div>
                 </div>
 
@@ -56,7 +59,7 @@
                         <button id="custom-upload-submit" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
                             Upload
                         </button>
-                        <button @click="showModal = false" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        <button @click="closeModal()" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                             Cancel
                         </button>
                     </div>
@@ -161,7 +164,13 @@
                             
                             // Close modal and reload after delay
                             setTimeout(() => {
-                                document.querySelector('[x-data]').__x.$data.showModal = false;
+                                // Get Alpine component and close modal
+                                const modalEl = document.querySelector('[x-data]');
+                                if (modalEl && modalEl.__x) {
+                                    modalEl.__x.$data.closeModal();
+                                }
+                                
+                                // Reload page
                                 window.location.reload();
                             }, 1500);
                         } else {
