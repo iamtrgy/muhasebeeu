@@ -75,11 +75,11 @@
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
-                paramName: "files",
+                paramName: "file",
                 maxFilesize: 10,
-                maxFiles: 10,
-                parallelUploads: 5,
-                uploadMultiple: true,
+                maxFiles: 1,
+                parallelUploads: 1,
+                uploadMultiple: false,
                 addRemoveLinks: true,
                 dictRemoveFile: "Remove",
                 previewsContainer: "#custom-preview-container",
