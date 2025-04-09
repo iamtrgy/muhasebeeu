@@ -11,9 +11,20 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
         
-        <!-- Toastr -->
+        <!-- jQuery and Toastr -->
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
         <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+        <script>
+            // Configure Toastr
+            toastr.options = {
+                closeButton: true,
+                progressBar: true,
+                positionClass: "toast-top-right",
+                timeOut: 3000,
+                extendedTimeOut: 1000,
+            };
+        </script>
 
         <!-- Alpine.js x-cloak -->
         <style>
