@@ -85,17 +85,31 @@
                 previewsContainer: "#custom-preview-container",
                 autoProcessQueue: false,
                 clickable: "#custom-dropzone",
+                createImageThumbnails: true,
+                thumbnailWidth: 120,
+                thumbnailHeight: 120,
                 previewTemplate: `
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 mb-2 flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-300" data-dz-name></span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400" data-dz-size></span>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-2 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-shrink-0 w-10 h-10">
+                                <img data-dz-thumbnail class="w-full h-full object-cover rounded" />
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white" data-dz-name></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" data-dz-size></p>
+                                <div class="mt-1 w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 hidden">
+                                    <div class="bg-blue-600 h-2.5 rounded-full" data-dz-uploadprogress style="width: 0%"></div>
+                                </div>
+                            </div>
                         </div>
-                        <button data-dz-remove class="text-red-500 hover:text-red-700">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-500 dark:text-gray-400" data-dz-status></span>
+                            <button type="button" data-dz-remove class="text-red-500 hover:text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 `,
                 init: function() {
@@ -113,26 +127,47 @@
                         }
                     });
                     
+                    this.on("addedfile", function(file) {
+                        console.log("File added:", file.name);
+                        // Show progress bar when file is added
+                        file.previewElement.querySelector("[data-dz-uploadprogress]").parentElement.classList.remove("hidden");
+                        file.previewElement.querySelector("[data-dz-status]").textContent = "Queued";
+                    });
+                    
+                    this.on("uploadprogress", function(file, progress) {
+                        console.log("Upload progress:", progress);
+                        file.previewElement.querySelector("[data-dz-uploadprogress]").style.width = progress + "%";
+                        file.previewElement.querySelector("[data-dz-status]").textContent = Math.round(progress) + "%";
+                    });
+                    
                     this.on("success", function(files, response) {
                         if (response.success) {
                             console.log("Upload successful:", response.data);
                             
-                            // Reset the dropzone
-                            myDropzone.removeAllFiles(true);
-                            
-                            // Close the modal
-                            document.querySelector('[x-data]').__x.$data.showModal = false;
+                            // Update status for all files
+                            this.files.forEach(file => {
+                                if (file.previewElement) {
+                                    file.previewElement.querySelector("[data-dz-status]").textContent = "Uploaded";
+                                }
+                            });
                             
                             // Show success notification
                             toastr.success('Files uploaded successfully');
                             
-                            // Reload the page to show new files
+                            // Reload the page after a delay
                             setTimeout(() => {
                                 window.location.reload();
-                            }, 1000);
+                            }, 1500);
                         } else {
                             console.error("Upload failed:", response.message);
                             toastr.error(response.message || 'Error uploading files');
+                            
+                            // Update status for all files
+                            this.files.forEach(file => {
+                                if (file.previewElement) {
+                                    file.previewElement.querySelector("[data-dz-status]").textContent = "Failed";
+                                }
+                            });
                         }
                     });
 
@@ -142,11 +177,13 @@
                             message = errorMessage.message;
                         }
                         console.error("Upload error:", message);
+                        
+                        // Update file status
+                        if (file.previewElement) {
+                            file.previewElement.querySelector("[data-dz-status]").textContent = "Error";
+                        }
+                        
                         toastr.error(message || 'Error uploading files');
-                    });
-                    
-                    this.on("addedfile", function(file) {
-                        console.log("File added:", file.name);
                     });
                     
                     this.on("removedfile", function(file) {
