@@ -28,7 +28,7 @@ class BunnyAdapter implements FilesystemAdapter
         Log::debug('BunnyAdapter initialized with config', $config);
         
         $this->config = $config;
-        $this->apiKey = $config['key'] ?? null;
+        $this->apiKey = $config['key'] ?? $config['api_key'] ?? null; // Support both keys
         $this->zone = $config['zone'] ?? $config['storage_zone_name'] ?? null; // Support both keys
         $this->region = $config['region'] ?? null;
         $this->url = $config['url'] ?? null;

@@ -63,6 +63,7 @@ return [
         'bunny' => [
             'driver' => 'bunny',
             'key' => env('BUNNY_API_KEY'),
+            'api_key' => env('BUNNY_API_KEY'),
             'zone' => env('BUNNY_STORAGE_ZONE'),
             'storage_zone_name' => env('BUNNY_STORAGE_ZONE'), 
             'region' => env('BUNNY_REGION'),
