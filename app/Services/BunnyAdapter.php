@@ -14,19 +14,12 @@ use League\Flysystem\UnableToReadFile;
 class BunnyAdapter implements FilesystemAdapter
 {
     protected $client;
-    protected $storageZone;
-    protected $apiKey;
-    protected $region;
-    protected $hostname;
-    protected $baseUrl;
+    protected $config;
 
-    public function __construct(string $storageZone, string $apiKey, string $region = 'de', ?string $hostname = null)
+    public function __construct(array $config)
     {
-        $this->storageZone = $storageZone;
-        $this->apiKey = $apiKey;
-        $this->region = $region;
-        $this->hostname = $hostname ?? "storage.bunnycdn.com";
-        $this->baseUrl = "https://{$this->hostname}/{$this->storageZone}/";
+        $this->config = $config;
+        $this->baseUrl = $this->getUrl() . $this->getStorageZoneName() . '/';
         
         // Initialize the client without default headers - we'll add them per request
         $this->client = new Client([
@@ -40,7 +33,7 @@ class BunnyAdapter implements FilesystemAdapter
     protected function getHeaders(array $additionalHeaders = [])
     {
         return array_merge([
-            'AccessKey' => $this->apiKey,
+            'AccessKey' => $this->getApiKey(),
             'Accept' => '*/*',
         ], $additionalHeaders);
     }
@@ -433,5 +426,25 @@ class BunnyAdapter implements FilesystemAdapter
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    protected function getStorageZoneName()
+    {
+        return $this->config['zone'];
+    }
+
+    protected function getApiKey()
+    {
+        return $this->config['key'];
+    }
+
+    protected function getRegion()
+    {
+        return $this->config['region'];
+    }
+
+    protected function getUrl()
+    {
+        return $this->config['url'];
     }
 } 

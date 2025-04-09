@@ -62,11 +62,10 @@ return [
 
         'bunny' => [
             'driver' => 'bunny',
-            'storage_zone_name' => env('BUNNY_STORAGE_ZONE_NAME', 'all-files'),
-            'api_key' => env('BUNNY_API_KEY', 'b43315a3-326b-4039-97046616c1fe-aa3e-4316'),
-            'region' => env('BUNNY_REGION', '920428'),
-            'hostname' => env('BUNNY_HOSTNAME', 'storage.bunnycdn.com'),
-            'url' => env('BUNNY_URL', 'all-files-1.b-cdn.net'),
+            'key' => env('BUNNY_API_KEY'),
+            'zone' => env('BUNNY_STORAGE_ZONE_NAME'),
+            'region' => env('BUNNY_REGION'),
+            'url' => 'https://' . env('BUNNY_URL'),
         ],
 
     ],
