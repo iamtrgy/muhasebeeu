@@ -299,6 +299,118 @@ class BunnyAdapter implements FilesystemAdapter
         $this->write($destination, $content, $config);
     }
 
+    /**
+     * Set visibility of file (not supported by Bunny CDN directly)
+     * 
+     * @inheritdoc
+     */
+    public function setVisibility(string $path, string $visibility): void
+    {
+        // Bunny CDN handles visibility through Storage Zone settings
+        // This operation is not applicable for BunnyAdapter
+    }
+
+    /**
+     * Get visibility of file (always returns public for Bunny CDN)
+     * 
+     * @inheritdoc
+     */
+    public function visibility(string $path): FileAttributes
+    {
+        // Return default visibility as public
+        return new FileAttributes($path, null, 'public');
+    }
+
+    /**
+     * Get mime type of file from Bunny CDN headers
+     * 
+     * @inheritdoc
+     */
+    public function mimeType(string $path): FileAttributes
+    {
+        try {
+            $response = $this->client->head($path, [
+                'headers' => $this->getHeaders(),
+            ]);
+            
+            if ($response->getStatusCode() >= 400) {
+                throw new \Exception("Failed to get mime type from Bunny CDN");
+            }
+            
+            $mimeType = $response->getHeaderLine('Content-Type') ?: 'application/octet-stream';
+            
+            return new FileAttributes($path, null, null, null, $mimeType);
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter mimeType error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Default mime type if we can't determine it
+            return new FileAttributes($path, null, null, null, 'application/octet-stream');
+        }
+    }
+
+    /**
+     * Get last modified time of file from Bunny CDN headers
+     * 
+     * @inheritdoc
+     */
+    public function lastModified(string $path): FileAttributes
+    {
+        try {
+            $response = $this->client->head($path, [
+                'headers' => $this->getHeaders(),
+            ]);
+            
+            if ($response->getStatusCode() >= 400) {
+                throw new \Exception("Failed to get last modified from Bunny CDN");
+            }
+            
+            $lastModified = strtotime($response->getHeaderLine('Last-Modified')) ?: time();
+            
+            return new FileAttributes($path, null, null, $lastModified);
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter lastModified error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Default to current time if we can't determine it
+            return new FileAttributes($path, null, null, time());
+        }
+    }
+
+    /**
+     * Get file size from Bunny CDN headers
+     * 
+     * @inheritdoc
+     */
+    public function fileSize(string $path): FileAttributes
+    {
+        try {
+            $response = $this->client->head($path, [
+                'headers' => $this->getHeaders(),
+            ]);
+            
+            if ($response->getStatusCode() >= 400) {
+                throw new \Exception("Failed to get file size from Bunny CDN");
+            }
+            
+            $size = (int) $response->getHeaderLine('Content-Length') ?: 0;
+            
+            return new FileAttributes($path, $size);
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter fileSize error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Default to 0 if we can't determine it
+            return new FileAttributes($path, 0);
+        }
+    }
+
     public function getUrl(string $path): string
     {
         return $this->url . '/' . $this->zone . '/' . $path;
