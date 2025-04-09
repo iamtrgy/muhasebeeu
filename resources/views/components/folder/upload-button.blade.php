@@ -147,15 +147,21 @@
                             // Update status for all files
                             this.files.forEach(file => {
                                 if (file.previewElement) {
+                                    // Hide progress bar
+                                    file.previewElement.querySelector("[data-dz-uploadprogress]").parentElement.classList.add("hidden");
+                                    // Update status
                                     file.previewElement.querySelector("[data-dz-status]").textContent = "Uploaded";
+                                    // Add success indicator
+                                    file.previewElement.classList.add("border-green-500");
                                 }
                             });
                             
                             // Show success notification
                             toastr.success('Files uploaded successfully');
                             
-                            // Reload the page after a delay
+                            // Close modal and reload after delay
                             setTimeout(() => {
+                                document.querySelector('[x-data]').__x.$data.showModal = false;
                                 window.location.reload();
                             }, 1500);
                         } else {
@@ -165,7 +171,12 @@
                             // Update status for all files
                             this.files.forEach(file => {
                                 if (file.previewElement) {
+                                    // Hide progress bar
+                                    file.previewElement.querySelector("[data-dz-uploadprogress]").parentElement.classList.add("hidden");
+                                    // Update status
                                     file.previewElement.querySelector("[data-dz-status]").textContent = "Failed";
+                                    // Add error indicator
+                                    file.previewElement.classList.add("border-red-500");
                                 }
                             });
                         }
@@ -180,7 +191,12 @@
                         
                         // Update file status
                         if (file.previewElement) {
+                            // Hide progress bar
+                            file.previewElement.querySelector("[data-dz-uploadprogress]").parentElement.classList.add("hidden");
+                            // Update status
                             file.previewElement.querySelector("[data-dz-status]").textContent = "Error";
+                            // Add error indicator
+                            file.previewElement.classList.add("border-red-500");
                         }
                         
                         toastr.error(message || 'Error uploading files');
