@@ -161,7 +161,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\BunnyServiceProvider::class,
-        App\Providers\BunnyStorageServiceProvider::class,
+        // App\Providers\BunnyStorageServiceProvider::class, // Remove this duplicate/incorrect provider
         App\Providers\MiddlewareServiceProvider::class,
         App\Providers\ViewComponentServiceProvider::class,
     ],
