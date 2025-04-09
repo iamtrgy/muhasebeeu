@@ -138,8 +138,15 @@ class FileController extends Controller
             $this->authorize('delete', $file);
 
             // Delete the file from storage
-            if (!Storage::disk('bunny')->delete($file->path)) {
-                throw new \Exception('Failed to delete file from storage');
+            // If file doesn't exist in storage, just proceed with database deletion
+            try {
+                Storage::disk('bunny')->delete($file->path);
+            } catch (\Exception $e) {
+                Log::warning('File not found in storage during deletion', [
+                    'file_id' => $file->id,
+                    'path' => $file->path,
+                    'error' => $e->getMessage()
+                ]);
             }
 
             // Delete the file record from database

@@ -55,6 +55,14 @@ class BunnyAdapter implements FilesystemAdapter
         ], $additionalHeaders);
     }
 
+    protected function getHttpClient()
+    {
+        return new Client([
+            'base_uri' => $this->storageUrl,
+            'headers' => $this->getHeaders(),
+        ]);
+    }
+
     /**
      * @inheritdoc
      */
@@ -240,25 +248,21 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function delete(string $path): void
     {
+        $client = $this->getHttpClient();
+        $path = ltrim($path, '/');
+
         try {
-            $response = (new Client())->delete($this->storageUrl . $path, [
-                'headers' => $this->getHeaders(),
-            ]);
-            
-            if ($response->getStatusCode() !== 200 && $response->getStatusCode() !== 204) {
-                Log::error('BunnyAdapter delete failed', [
-                    'path' => $path,
-                    'status' => $response->getStatusCode(),
-                    'response' => (string) $response->getBody()
-                ]);
-                throw UnableToDeleteFile::atLocation($path, 'Failed to delete file');
+            $response = $client->delete($path);
+
+            if ($response->getStatusCode() !== 200) {
+                throw new UnableToDeleteFile("Unable to delete file located at: {$path}");
             }
         } catch (\Exception $e) {
-            Log::error('BunnyAdapter delete error', [
-                'path' => $path,
-                'error' => $e->getMessage()
-            ]);
-            throw UnableToDeleteFile::atLocation($path, $e->getMessage());
+            // If file doesn't exist, consider it as deleted
+            if (str_contains($e->getMessage(), '404 Not Found')) {
+                return;
+            }
+            throw new UnableToDeleteFile("Unable to delete file located at: {$path}", 0, $e);
         }
     }
 
