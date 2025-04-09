@@ -134,72 +134,123 @@ class FileController extends Controller
 
     public function destroy(Folder $folder, File $file)
     {
-        $this->authorize('delete', $file);
+        try {
+            $this->authorize('delete', $file);
 
-        // Delete the file from storage
-        Storage::disk('bunny')->delete($file->path);
+            // Delete the file from storage
+            if (!Storage::disk('bunny')->delete($file->path)) {
+                throw new \Exception('Failed to delete file from storage');
+            }
 
-        // Delete the file record from database
-        $file->delete();
+            // Delete the file record from database
+            $file->delete();
 
-        return redirect()->back()->with('success', 'File deleted successfully.');
+            // Check if it's an AJAX request
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'File deleted successfully'
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'File deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('File deletion failed', [
+                'error' => $e->getMessage(),
+                'file_id' => $file->id,
+                'user_id' => auth()->id()
+            ]);
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete file: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to delete file: ' . $e->getMessage());
+        }
     }
 
     public function download(File $file)
     {
-        $this->authorize('download', $file);
+        try {
+            $this->authorize('download', $file);
 
-        // Check if file exists in Bunny storage
-        if (!Storage::disk('bunny')->fileExists($file->path)) {
-            abort(404, 'File not found.');
+            // Check if file exists in Bunny storage
+            if (!Storage::disk('bunny')->fileExists($file->path)) {
+                throw new \Exception('File not found in storage.');
+            }
+
+            // Instead of downloading through our server, redirect to Bunny CDN with download parameter
+            $downloadUrl = $file->download_url;
+            
+            return redirect()->away($downloadUrl);
+
+        } catch (\Exception $e) {
+            Log::error('File download failed', [
+                'error' => $e->getMessage(),
+                'file_id' => $file->id,
+                'user_id' => auth()->id()
+            ]);
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to download file: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to download file: ' . $e->getMessage());
         }
-
-        // Get the file contents from Bunny storage
-        $contents = Storage::disk('bunny')->read($file->path);
-
-        // Create response with file contents and force download
-        return response($contents)
-            ->header('Content-Type', $file->mime_type)
-            ->header('Content-Disposition', 'attachment; filename="' . $file->original_name . '"')
-            ->header('Content-Length', $file->size)
-            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-            ->header('Pragma', 'no-cache')
-            ->header('Expires', '0');
     }
 
     public function preview(File $file)
     {
-        // Check if user has access to the file through folder permissions
-        if (!$file->folder->canAccess(auth()->user())) {
-            abort(403, 'You do not have permission to access this file.');
-        }
+        try {
+            // Check if user has access to the file through folder permissions
+            if (!$file->folder->canAccess(auth()->user())) {
+                throw new \Exception('You do not have permission to access this file.');
+            }
 
-        // Check if file exists in Bunny storage
-        if (!Storage::disk('bunny')->fileExists($file->path)) {
-            abort(404, 'File not found.');
-        }
+            // Check if file exists in Bunny storage
+            if (!Storage::disk('bunny')->fileExists($file->path)) {
+                throw new \Exception('File not found in storage.');
+            }
 
-        // Get the file contents from Bunny storage
-        $contents = Storage::disk('bunny')->read($file->path);
-        
-        // For PDFs and images, we can display them in the browser
-        $previewableTypes = [
-            'application/pdf',
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-            'image/svg+xml'
-        ];
-        
-        if (in_array($file->mime_type, $previewableTypes)) {
-            // Create response with file contents for inline display
-            return response($contents)
-                ->header('Content-Type', $file->mime_type)
-                ->header('Content-Disposition', 'inline; filename="' . $file->original_name . '"')
-                ->header('Content-Length', $file->size);
-        } else {
-            // For other file types, force download
-            return $this->download($file);
+            // For PDFs and images, we can display them in the browser
+            $previewableTypes = [
+                'application/pdf',
+                'image/jpeg',
+                'image/png',
+                'image/gif',
+                'image/svg+xml',
+                'image/webp'
+            ];
+            
+            // Redirect to CDN URL
+            if (in_array($file->mime_type, $previewableTypes)) {
+                return redirect()->away($file->url);
+            } else {
+                // For other file types, redirect to download URL
+                return redirect()->away($file->download_url);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('File preview failed', [
+                'error' => $e->getMessage(),
+                'file_id' => $file->id,
+                'user_id' => auth()->id()
+            ]);
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to preview file: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to preview file: ' . $e->getMessage());
         }
     }
 
