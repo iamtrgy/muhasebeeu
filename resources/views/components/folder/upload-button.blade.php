@@ -71,7 +71,7 @@
         // Initialize Dropzone for the custom button
         if (typeof Dropzone !== 'undefined') {
             var customDropzone = new Dropzone("#custom-dropzone", {
-                url: "{{ route('user.files.upload', $folder) }}",
+                url: "{{ config('app.url') }}/user/folders/{{ $folder->id }}/upload",
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
