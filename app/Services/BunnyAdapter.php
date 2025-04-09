@@ -152,21 +152,6 @@ class BunnyAdapter implements FilesystemAdapter
     }
 
     /**
-     * Write a new file using a stream.
-     *
-     * @param string $path
-     * @param resource $resource
-     * @param array $config Config object
-     *
-     * @throws UnableToWriteFile
-     * @throws FilesystemException
-     */
-    public function writeStream(string $path, $resource, array $config = []): void
-    {
-        $this->upload($path, $resource);
-    }
-
-    /**
      * Store the uploaded file on the disk.
      *
      * @param string $directory The directory to store the file in (often empty if $name includes path)
@@ -180,7 +165,7 @@ class BunnyAdapter implements FilesystemAdapter
         $stream = $file->readStream();
 
         try {
-            $this->writeStream($name, $stream, $options); // Use $name as the full path
+            $this->writeStream($name, $stream, $options);
             if (is_resource($stream)) {
                 fclose($stream);
             }
