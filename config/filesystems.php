@@ -63,7 +63,7 @@ return [
         'bunny' => [
             'driver' => 'bunny',
             'key' => env('BUNNY_API_KEY'),
-            'zone' => env('BUNNY_STORAGE_ZONE_NAME'),
+            'zone' => env('BUNNY_STORAGE_ZONE'),
             'region' => env('BUNNY_REGION'),
             'url' => 'https://' . env('BUNNY_URL'),
         ],

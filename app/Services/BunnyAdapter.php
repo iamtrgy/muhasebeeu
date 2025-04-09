@@ -18,13 +18,29 @@ class BunnyAdapter implements FilesystemAdapter
 
     public function __construct(array $config)
     {
+        \Log::debug('BunnyAdapter config:', $config);
+        
+        if (!isset($config['zone'])) {
+            throw new \Exception('Missing required config: zone');
+        }
+        if (!isset($config['key'])) {
+            throw new \Exception('Missing required config: key');
+        }
+        if (!isset($config['url'])) {
+            throw new \Exception('Missing required config: url');
+        }
+        
         $this->config = $config;
-        $this->baseUrl = $this->getUrl() . $this->getStorageZoneName() . '/';
+        $this->baseUrl = rtrim($this->getUrl(), '/') . '/' . $this->getStorageZoneName() . '/';
         
         // Initialize the client without default headers - we'll add them per request
         $this->client = new Client([
-            'http_errors' => false, // Don't throw exceptions for HTTP errors
+            'base_uri' => $this->baseUrl,
+            'timeout'  => 30,
+            'verify' => false
         ]);
+        
+        \Log::debug('BunnyAdapter initialized with baseUrl: ' . $this->baseUrl);
     }
 
     /**
