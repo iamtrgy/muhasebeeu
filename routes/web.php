@@ -7,7 +7,6 @@ use App\Http\Controllers\Admin\FileController as AdminFileController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FileController;
-use App\Http\Controllers\FileClassificationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\OnboardingController;
@@ -93,12 +92,6 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
     Route::delete('files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
     Route::post('/folders/{folder}/upload', [FileController::class, 'store'])->name('files.upload');
     Route::post('/folders/{folder}/chunk', [FileController::class, 'storeChunk'])->name('files.chunk');
-    
-    // File Classification routes
-    Route::get('/classifications', [FileClassificationController::class, 'index'])->name('files.classification');
-    Route::post('/classifications/bulk', [FileClassificationController::class, 'bulkClassify'])->name('files.classification.bulk');
-    Route::get('/classifications/{file}', [FileClassificationController::class, 'show'])->name('files.classification.show');
-    Route::post('/classifications/{file}', [FileClassificationController::class, 'handleClassification'])->name('files.classification.handle');
 });
 
 // All folder and company routes now require subscription
