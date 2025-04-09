@@ -2,465 +2,341 @@
 
 namespace App\Services;
 
-use League\Flysystem\FilesystemAdapter;
+use GuzzleHttp\Client;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use League\Flysystem\Config;
 use League\Flysystem\FileAttributes;
-use League\Flysystem\DirectoryAttributes;
-use GuzzleHttp\Client;
-use League\Flysystem\UnableToWriteFile;
+use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\StorageAttributes;
 use League\Flysystem\UnableToDeleteFile;
 use League\Flysystem\UnableToReadFile;
+use League\Flysystem\UnableToWriteFile;
 
 class BunnyAdapter implements FilesystemAdapter
 {
     protected $client;
     protected $config;
+    protected $apiKey;
+    protected $zone;
+    protected $region;
+    protected $url;
+    protected $baseUrl;
 
     public function __construct(array $config)
     {
-        \Log::debug('BunnyAdapter config:', $config);
-        
-        if (!isset($config['zone'])) {
-            throw new \Exception('Missing required config: zone');
-        }
-        if (!isset($config['key'])) {
-            throw new \Exception('Missing required config: key');
-        }
-        if (!isset($config['url'])) {
-            throw new \Exception('Missing required config: url');
-        }
+        Log::debug('BunnyAdapter initialized with config', $config);
         
         $this->config = $config;
-        $this->baseUrl = rtrim($this->getUrl(), '/') . '/' . $this->getStorageZoneName() . '/';
+        $this->apiKey = $config['key'] ?? null;
+        $this->zone = $config['zone'] ?? null;
+        $this->region = $config['region'] ?? null;
+        $this->url = $config['url'] ?? null;
         
-        // Initialize the client without default headers - we'll add them per request
+        if (!$this->apiKey || !$this->zone || !$this->url) {
+            Log::error('BunnyAdapter missing required config', [
+                'key' => $this->apiKey ? 'present' : 'missing',
+                'zone' => $this->zone ? 'present' : 'missing',
+                'url' => $this->url ? 'present' : 'missing'
+            ]);
+            throw new \Exception('BunnyAdapter missing required configuration');
+        }
+        
+        $this->baseUrl = rtrim($this->url, '/') . '/' . $this->zone . '/';
+        
+        Log::debug('BunnyAdapter baseUrl: ' . $this->baseUrl);
+        
+        // Initialize the client with default config
         $this->client = new Client([
             'base_uri' => $this->baseUrl,
             'timeout'  => 30,
-            'verify' => false
+            'verify' => false,
+            'http_errors' => false
         ]);
-        
-        \Log::debug('BunnyAdapter initialized with baseUrl: ' . $this->baseUrl);
     }
 
-    /**
-     * Get the standard headers required for most API calls
-     */
     protected function getHeaders(array $additionalHeaders = [])
     {
         return array_merge([
-            'AccessKey' => $this->getApiKey(),
+            'AccessKey' => $this->apiKey,
             'Accept' => '*/*',
         ], $additionalHeaders);
     }
 
-    public function write(string $path, string $contents, Config $config): void
-    {
-        try {
-            // Add debugging
-            \Log::debug("BunnyAdapter::write - Starting upload", [
-                'path' => $path,
-                'size' => strlen($contents),
-                'base_url' => $this->baseUrl
-            ]);
-            
-            $response = $this->client->put($this->baseUrl . $path, [
-                'headers' => $this->getHeaders([
-                    'Content-Type' => 'application/octet-stream',
-                ]),
-                'body' => $contents,
-            ]);
-            
-            $statusCode = $response->getStatusCode();
-            $reasonPhrase = $response->getReasonPhrase();
-            
-            // Add response logging
-            \Log::debug("BunnyAdapter::write - Got response", [
-                'status_code' => $statusCode,
-                'reason' => $reasonPhrase,
-                'success' => ($statusCode < 400)
-            ]);
-            
-            if ($statusCode >= 400) {
-                $responseBody = (string) $response->getBody();
-                \Log::error("BunnyAdapter::write - Failed upload", [
-                    'status_code' => $statusCode,
-                    'reason' => $reasonPhrase,
-                    'response' => $responseBody
-                ]);
-                throw new \Exception("BunnyStorage upload failed: " . $statusCode . ' ' . $reasonPhrase . ' - ' . $responseBody);
-            }
-            
-            // Successfully wrote the file - no return value needed (void)
-            \Log::debug("BunnyAdapter::write - Upload successful");
-        } catch (\Exception $e) {
-            \Log::error("BunnyAdapter::write - Exception", [
-                'message' => $e->getMessage(),
-                'class' => get_class($e)
-            ]);
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
-        }
-    }
-
-    public function writeStream(string $path, $contents, Config $config): void
-    {
-        try {
-            $response = $this->client->put($this->baseUrl . $path, [
-                'headers' => $this->getHeaders([
-                    'Content-Type' => 'application/octet-stream',
-                ]),
-                'body' => $contents,
-            ]);
-            
-            if ($response->getStatusCode() >= 400) {
-                throw new \Exception("BunnyStorage upload failed: " . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
-            }
-        } catch (\Exception $e) {
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
-        }
-    }
-
-    public function read(string $path): string
-    {
-        try {
-            $response = $this->client->get($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
-            ]);
-            
-            if ($response->getStatusCode() >= 400) {
-                throw new \Exception("BunnyStorage read failed: " . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
-            }
-            
-            return (string) $response->getBody();
-        } catch (\Exception $e) {
-            throw UnableToReadFile::fromLocation($path, $e->getMessage());
-        }
-    }
-
-    public function readStream(string $path)
-    {
-        try {
-            $response = $this->client->get($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
-                'stream' => true,
-            ]);
-            
-            if ($response->getStatusCode() >= 400) {
-                throw new \Exception("BunnyStorage read stream failed: " . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
-            }
-            
-            return $response->getBody()->detach();
-        } catch (\Exception $e) {
-            throw UnableToReadFile::fromLocation($path, $e->getMessage());
-        }
-    }
-
-    public function delete(string $path): void
-    {
-        try {
-            $response = $this->client->delete($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
-            ]);
-            
-            if ($response->getStatusCode() >= 400 && $response->getStatusCode() !== 404) {
-                throw new \Exception("BunnyStorage delete failed: " . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
-            }
-        } catch (\Exception $e) {
-            throw UnableToDeleteFile::atLocation($path, $e->getMessage());
-        }
-    }
-
-    public function deleteDirectory(string $path): void
-    {
-        try {
-            // Ensure path ends with slash for directories
-            $path = rtrim($path, '/') . '/';
-            
-            $response = $this->client->delete($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
-            ]);
-            
-            if ($response->getStatusCode() >= 400 && $response->getStatusCode() !== 404) {
-                throw new \Exception("BunnyStorage delete directory failed: " . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
-            }
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to delete directory: " . $e->getMessage());
-        }
-    }
-
-    public function createDirectory(string $path, Config $config): void
-    {
-        // Bunny.net doesn't require explicit directory creation
-        // Directories are created automatically when files are uploaded
-    }
-
-    public function setVisibility(string $path, string $visibility): void
-    {
-        // Bunny.net handles visibility through Storage Zone settings
-        // This operation is not applicable for BunnyStorage
-    }
-
-    public function visibility(string $path): FileAttributes
-    {
-        // Return default visibility as public
-        return new FileAttributes($path, null, 'public');
-    }
-
-    public function mimeType(string $path): FileAttributes
-    {
-        try {
-            $response = $this->client->head($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
-            ]);
-            
-            if ($response->getStatusCode() >= 400) {
-                throw new \Exception("BunnyStorage mimeType check failed: " . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
-            }
-            
-            return new FileAttributes(
-                $path, 
-                null, 
-                null, 
-                null, 
-                $response->getHeaderLine('Content-Type')
-            );
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to get mime type: " . $e->getMessage());
-        }
-    }
-
-    public function lastModified(string $path): FileAttributes
-    {
-        try {
-            $response = $this->client->head($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
-            ]);
-            
-            if ($response->getStatusCode() >= 400) {
-                throw new \Exception("BunnyStorage lastModified check failed: " . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
-            }
-            
-            return new FileAttributes(
-                $path, 
-                null, 
-                null, 
-                strtotime($response->getHeaderLine('Last-Modified'))
-            );
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to get last modified: " . $e->getMessage());
-        }
-    }
-
-    public function fileSize(string $path): FileAttributes
-    {
-        try {
-            $response = $this->client->head($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
-            ]);
-            
-            if ($response->getStatusCode() >= 400) {
-                throw new \Exception("BunnyStorage fileSize check failed: " . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
-            }
-            
-            return new FileAttributes(
-                $path, 
-                (int) $response->getHeaderLine('Content-Length')
-            );
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to get file size: " . $e->getMessage());
-        }
-    }
-
-    public function listContents(string $path, bool $deep): iterable
-    {
-        try {
-            // Ensure path ends with slash for directories
-            $path = rtrim($path, '/');
-            if (!empty($path)) {
-                $path .= '/';
-            }
-            
-            $response = $this->client->get($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
-            ]);
-            
-            if ($response->getStatusCode() >= 400) {
-                throw new \Exception("BunnyStorage listContents failed: " . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
-            }
-            
-            $contents = json_decode((string) $response->getBody(), true);
-            
-            if (!is_array($contents)) {
-                return [];
-            }
-
-            foreach ($contents as $item) {
-                if ($item['IsDirectory']) {
-                    yield new DirectoryAttributes(
-                        trim($path . $item['ObjectName'], '/'),
-                        null,
-                        strtotime($item['LastChanged'])
-                    );
-                    
-                    // If deep listing is requested and this is a directory
-                    if ($deep) {
-                        $subPath = trim($path . $item['ObjectName'], '/');
-                        $subItems = $this->listContents($subPath, $deep);
-                        foreach ($subItems as $subItem) {
-                            yield $subItem;
-                        }
-                    }
-                } else {
-                    yield new FileAttributes(
-                        trim($path . $item['ObjectName'], '/'),
-                        $item['Length'],
-                        null,
-                        strtotime($item['LastChanged']),
-                        $item['ContentType'] ?? null
-                    );
-                }
-            }
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to list contents: " . $e->getMessage());
-        }
-    }
-
-    public function move(string $source, string $destination, Config $config): void
-    {
-        try {
-            // Bunny doesn't have a move API, so we need to copy and delete
-            $content = $this->read($source);
-            $this->write($destination, $content, $config);
-            $this->delete($source);
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to move file: " . $e->getMessage());
-        }
-    }
-
-    public function copy(string $source, string $destination, Config $config): void
-    {
-        try {
-            $content = $this->read($source);
-            $this->write($destination, $content, $config);
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to copy file: " . $e->getMessage());
-        }
-    }
-
     /**
-     * Check if a file exists at the specified path
+     * @inheritdoc
      */
     public function fileExists(string $path): bool
     {
         try {
-            // Try multiple approaches to check if the file exists
+            $response = $this->client->head($path, [
+                'headers' => $this->getHeaders(),
+            ]);
             
-            // Approach 1: Try a HEAD request first (most efficient)
-            try {
-                $response = $this->client->head($this->baseUrl . $path, [
-                    'headers' => $this->getHeaders(),
-                ]);
-                
-                if ($response->getStatusCode() === 200) {
-                    return true;
-                }
-            } catch (\Exception $e) {
-                // If HEAD fails, continue to the next approach
-            }
-            
-            // Approach 2: Try a GET request with Range header
-            try {
-                $response = $this->client->get($this->baseUrl . $path, [
-                    'headers' => $this->getHeaders([
-                        'Range' => 'bytes=0-0' // Only request the first byte
-                    ]),
-                ]);
-                
-                if ($response->getStatusCode() === 200 || $response->getStatusCode() === 206) {
-                    return true;
-                }
-            } catch (\Exception $e) {
-                // If GET with Range fails, continue to the next approach
-            }
-            
-            // Approach 3: Check if the file appears in the parent directory listing
-            $parentPath = dirname($path);
-            if ($parentPath === '.') {
-                $parentPath = '';
-            }
-            
-            try {
-                $contents = $this->listContents($parentPath, false);
-                
-                if (is_object($contents)) {
-                    // Convert iterator to array
-                    $items = [];
-                    foreach ($contents as $item) {
-                        $items[] = $item;
-                    }
-                    $contents = $items;
-                }
-                
-                foreach ($contents as $item) {
-                    if (isset($item['path']) && $item['path'] === $path) {
-                        return true;
-                    }
-                }
-            } catch (\Exception $e) {
-                // If listing fails, we've tried all approaches
-            }
-            
-            return false;
+            return $response->getStatusCode() === 200;
         } catch (\Exception $e) {
-            // Log the error for debugging purposes
-            \Log::error("Error in fileExists check for {$path}: " . $e->getMessage());
+            Log::error('BunnyAdapter fileExists error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
             return false;
         }
     }
 
     /**
-     * Check if a directory exists at the specified path
+     * @inheritdoc
      */
     public function directoryExists(string $path): bool
     {
+        return true; // Bunny CDN treats directories as virtual
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function write(string $path, string $contents, Config $config): void
+    {
         try {
-            // Ensure path ends with slash for directories
-            $path = rtrim($path, '/') . '/';
-            
-            $response = $this->client->get($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
+            $response = $this->client->put($path, [
+                'headers' => $this->getHeaders([
+                    'Content-Type' => 'application/octet-stream',
+                ]),
+                'body' => $contents,
             ]);
             
-            // If status code is 200, it's a directory and exists
-            if ($response->getStatusCode() === 200) {
-                // Try to parse the response as JSON to confirm it's a directory listing
-                $contents = json_decode((string) $response->getBody(), true);
-                return is_array($contents); // If it's an array, it's a valid directory listing
+            if ($response->getStatusCode() !== 201 && $response->getStatusCode() !== 200) {
+                Log::error('BunnyAdapter write failed', [
+                    'path' => $path,
+                    'status' => $response->getStatusCode(),
+                    'response' => (string) $response->getBody()
+                ]);
+                throw UnableToWriteFile::atLocation($path, 'Failed to write file');
             }
-            
-            return false;
         } catch (\Exception $e) {
-            return false;
+            Log::error('BunnyAdapter write error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            throw UnableToWriteFile::atLocation($path, $e->getMessage());
         }
     }
 
-    protected function getStorageZoneName()
+    /**
+     * @inheritdoc
+     */
+    public function writeStream(string $path, $contents, Config $config): void
     {
-        return $this->config['zone'];
+        try {
+            $response = $this->client->put($path, [
+                'headers' => $this->getHeaders([
+                    'Content-Type' => 'application/octet-stream',
+                ]),
+                'body' => $contents,
+            ]);
+            
+            if ($response->getStatusCode() !== 201 && $response->getStatusCode() !== 200) {
+                Log::error('BunnyAdapter writeStream failed', [
+                    'path' => $path,
+                    'status' => $response->getStatusCode(),
+                    'response' => (string) $response->getBody()
+                ]);
+                throw UnableToWriteFile::atLocation($path, 'Failed to write file stream');
+            }
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter writeStream error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+        }
     }
 
-    protected function getApiKey()
+    /**
+     * @inheritdoc
+     */
+    public function read(string $path): string
     {
-        return $this->config['key'];
+        try {
+            $response = $this->client->get($path, [
+                'headers' => $this->getHeaders(),
+            ]);
+            
+            if ($response->getStatusCode() !== 200) {
+                Log::error('BunnyAdapter read failed', [
+                    'path' => $path,
+                    'status' => $response->getStatusCode()
+                ]);
+                throw UnableToReadFile::fromLocation($path, 'Failed to read file');
+            }
+            
+            return (string) $response->getBody();
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter read error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            throw UnableToReadFile::fromLocation($path, $e->getMessage());
+        }
     }
 
-    protected function getRegion()
+    /**
+     * @inheritdoc
+     */
+    public function readStream(string $path)
     {
-        return $this->config['region'];
+        try {
+            $tempStream = fopen('php://temp', 'w+');
+            
+            $response = $this->client->get($path, [
+                'headers' => $this->getHeaders(),
+                'stream' => true,
+            ]);
+            
+            if ($response->getStatusCode() !== 200) {
+                Log::error('BunnyAdapter readStream failed', [
+                    'path' => $path,
+                    'status' => $response->getStatusCode()
+                ]);
+                fclose($tempStream);
+                throw UnableToReadFile::fromLocation($path, 'Failed to read file stream');
+            }
+            
+            $body = $response->getBody();
+            
+            while (!$body->eof()) {
+                fwrite($tempStream, $body->read(1024));
+            }
+            
+            rewind($tempStream);
+            
+            return $tempStream;
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter readStream error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            if (isset($tempStream) && is_resource($tempStream)) {
+                fclose($tempStream);
+            }
+            throw UnableToReadFile::fromLocation($path, $e->getMessage());
+        }
     }
 
-    protected function getUrl()
+    /**
+     * @inheritdoc
+     */
+    public function delete(string $path): void
     {
-        return $this->config['url'];
+        try {
+            $response = $this->client->delete($path, [
+                'headers' => $this->getHeaders(),
+            ]);
+            
+            if ($response->getStatusCode() !== 200 && $response->getStatusCode() !== 204) {
+                Log::error('BunnyAdapter delete failed', [
+                    'path' => $path,
+                    'status' => $response->getStatusCode(),
+                    'response' => (string) $response->getBody()
+                ]);
+                throw UnableToDeleteFile::atLocation($path, 'Failed to delete file');
+            }
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter delete error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            throw UnableToDeleteFile::atLocation($path, $e->getMessage());
+        }
     }
-} 
+
+    /**
+     * @inheritdoc
+     */
+    public function deleteDirectory(string $path): void
+    {
+        // Bunny doesn't have a direct way to delete directories, so we don't actually need to do anything here
+        return;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function createDirectory(string $path, Config $config): void
+    {
+        // Bunny doesn't have a direct way to create directories, so we don't actually need to do anything here
+        return;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function listContents(string $path, bool $deep): iterable
+    {
+        // This is a more complex operation that would require listing files from Bunny API
+        // For this simple adapter, we'll return an empty array
+        return [];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function move(string $source, string $destination, Config $config): void
+    {
+        // Copy the file first
+        $content = $this->read($source);
+        $this->write($destination, $content, $config);
+        
+        // Then delete the original
+        $this->delete($source);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function copy(string $source, string $destination, Config $config): void
+    {
+        $content = $this->read($source);
+        $this->write($destination, $content, $config);
+    }
+
+    public function getUrl(string $path): string
+    {
+        return $this->url . '/' . $this->zone . '/' . $path;
+    }
+
+    public function upload(UploadedFile $file, string $path): bool
+    {
+        try {
+            $fileStream = fopen($file->getRealPath(), 'r');
+            
+            $response = $this->client->put($path, [
+                'headers' => $this->getHeaders([
+                    'Content-Type' => $file->getMimeType(),
+                    'Content-Length' => $file->getSize(),
+                ]),
+                'body' => $fileStream,
+            ]);
+            
+            fclose($fileStream);
+            
+            if ($response->getStatusCode() === 201 || $response->getStatusCode() === 200) {
+                return true;
+            }
+            
+            Log::error('BunnyAdapter upload failed', [
+                'path' => $path,
+                'status' => $response->getStatusCode(),
+                'response' => (string) $response->getBody()
+            ]);
+            
+            return false;
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter upload error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            
+            return false;
+        }
+    }
+}
