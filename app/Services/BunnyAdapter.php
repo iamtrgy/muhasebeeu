@@ -11,6 +11,7 @@ use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\StorageAttributes;
 use League\Flysystem\UnableToDeleteFile;
 use League\Flysystem\UnableToReadFile;
+use League\Flysystem\UnableToSetVisibility;
 use League\Flysystem\UnableToWriteFile;
 
 class BunnyAdapter implements FilesystemAdapter
@@ -266,8 +267,13 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function deleteDirectory(string $path): void
     {
-        // Bunny doesn't have a direct way to delete directories, so we don't actually need to do anything here
-        return;
+        // Delete all files in directory
+        $files = $this->listContents($path, true);
+        foreach ($files as $file) {
+            if ($file['type'] === 'file') {
+                $this->delete($file['path']);
+            }
+        }
     }
 
     /**
@@ -275,8 +281,7 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function createDirectory(string $path, Config $config): void
     {
-        // Bunny doesn't have a direct way to create directories, so we don't actually need to do anything here
-        return;
+        // Bunny CDN doesn't require directory creation
     }
 
     /**
@@ -284,8 +289,7 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function listContents(string $path, bool $deep): iterable
     {
-        // This is a more complex operation that would require listing files from Bunny API
-        // For this simple adapter, we'll return an empty array
+        // Bunny CDN doesn't support directory listing
         return [];
     }
 
@@ -318,8 +322,8 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function setVisibility(string $path, string $visibility): void
     {
-        // Bunny CDN handles visibility through Storage Zone settings
-        // This operation is not applicable for BunnyAdapter
+        // Bunny CDN doesn't support visibility settings
+        throw new UnableToSetVisibility("Bunny CDN does not support visibility settings");
     }
 
     /**
@@ -329,7 +333,7 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function visibility(string $path): FileAttributes
     {
-        // Return default visibility as public
+        // Bunny CDN doesn't support visibility settings
         return new FileAttributes($path, null, 'public');
     }
 
