@@ -20,15 +20,23 @@ class File extends Model
         'path',
         'folder_id',
         'uploaded_by',
+        'suggested_folder_id',
+        'classification_reviewed',
     ];
 
     protected $casts = [
         'size' => 'integer',
+        'classification_reviewed' => 'boolean',
     ];
 
     public function folder(): BelongsTo
     {
         return $this->belongsTo(Folder::class);
+    }
+
+    public function suggestedFolder(): BelongsTo
+    {
+        return $this->belongsTo(Folder::class, 'suggested_folder_id');
     }
 
     public function uploader(): BelongsTo

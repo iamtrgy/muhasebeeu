@@ -18,32 +18,22 @@ class FolderStructureService
      */
     public function createCompanyFolders(User $user, Company $company)
     {
-        // Create root company folder
+        // Create root company folder (no upload permission)
         $rootFolder = Folder::create([
             'name' => $company->name,
             'created_by' => $user->id,
             'parent_id' => null,
             'company_id' => $company->id,
             'is_public' => false,
-            'allow_uploads' => true,
+            'allow_uploads' => false, // Root folder should not allow uploads
+            'path' => '/' . $company->name,
         ]);
 
         // Associate the folder with the user
         $rootFolder->users()->attach($user->id);
 
-        // Determine the start year (company foundation year or current year if not available)
-        $startYear = date('Y'); // Default to current year
-        
-        // If there's a foundation_date field, use that year
-        if ($company->foundation_date) {
-            $startYear = Carbon::parse($company->foundation_date)->year;
-        }
-        // If no foundation_date but there's a created_at timestamp, use that year
-        elseif ($company->created_at) {
-            $startYear = Carbon::parse($company->created_at)->year;
-        }
-        
-        // Current year
+        // Determine the start year (company foundation year)
+        $startYear = Carbon::parse($company->foundation_date)->year;
         $currentYear = date('Y');
         
         // Create folders for each year from foundation to current year
@@ -54,7 +44,8 @@ class FolderStructureService
                 'parent_id' => $rootFolder->id,
                 'company_id' => $company->id,
                 'is_public' => false,
-                'allow_uploads' => true,
+                'allow_uploads' => false, // Year folders should not allow uploads
+                'path' => $rootFolder->path . '/' . $year,
             ]);
             
             // Associate the folder with the user
@@ -87,7 +78,8 @@ class FolderStructureService
                 'parent_id' => $yearFolder->id,
                 'company_id' => $companyId,
                 'is_public' => false,
-                'allow_uploads' => true,
+                'allow_uploads' => false, // Month folders should not allow uploads
+                'path' => $yearFolder->path . '/' . $month,
             ]);
             
             // Associate the folder with the user
@@ -117,11 +109,28 @@ class FolderStructureService
                 'parent_id' => $monthFolder->id,
                 'company_id' => $companyId,
                 'is_public' => false,
-                'allow_uploads' => true,
+                'allow_uploads' => true, // Category folders should allow uploads
+                'path' => $monthFolder->path . '/' . $category,
             ]);
             
             // Associate the folder with the user
             $categoryFolder->users()->attach($user->id);
         }
+    }
+
+    /**
+     * Remove and recreate all folders for a company
+     * 
+     * @param User $user
+     * @param Company $company
+     * @return void
+     */
+    public function removeAndRecreateCompanyFolders(User $user, Company $company)
+    {
+        // Delete all existing folders for the company
+        Folder::where('company_id', $company->id)->delete();
+
+        // Create new folder structure
+        $this->createCompanyFolders($user, $company);
     }
 } 

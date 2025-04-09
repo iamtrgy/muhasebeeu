@@ -23,7 +23,8 @@ class Folder extends Model
         'company_id',
         'create_for_everyone',
         'template_folder_id',
-        'access_type'
+        'access_type',
+        'path'
     ];
 
     protected $casts = [
@@ -39,26 +40,57 @@ class Folder extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function parent(): BelongsTo
+    /**
+     * Get the parent folder
+     */
+    public function parent()
     {
-        return $this->belongsTo(Folder::class, 'parent_id')->withTrashed();
+        return $this->belongsTo(Folder::class, 'parent_id')
+            ->withTrashed();  // Include soft-deleted parents to maintain hierarchy
     }
 
-    public function children(): HasMany
+    /**
+     * Get the company that owns the folder
+     */
+    public function company()
     {
-        return $this->hasMany(Folder::class, 'parent_id')->whereNull('deleted_at');
+        return $this->belongsTo(Company::class);
     }
 
-    public function allChildren(): HasMany
+    /**
+     * Get the children folders
+     */
+    public function children()
+    {
+        return $this->hasMany(Folder::class, 'parent_id');
+    }
+
+    /**
+     * Get count of active children folders
+     */
+    public function activeChildrenCount(): int
+    {
+        return $this->activeChildren()->count();
+    }
+
+    /**
+     * Get all active children folders
+     */
+    public function activeChildren()
+    {
+        return $this->hasMany(Folder::class, 'parent_id')
+            ->where('active', true)
+            ->whereNull('deleted_at');
+    }
+
+    /**
+     * Get all children folders including soft-deleted ones
+     */
+    public function allChildren()
     {
         return $this->hasMany(Folder::class, 'parent_id')
             ->withTrashed()
-            ->with('children'); // Eager load children for recursive access
-    }
-
-    public function activeChildrenCount(): int
-    {
-        return $this->children()->count();
+            ->with('children');
     }
 
     public function users(): BelongsToMany
@@ -69,14 +101,6 @@ class Folder extends Model
     public function files(): HasMany
     {
         return $this->hasMany(File::class);
-    }
-
-    /**
-     * Get the company that this folder belongs to.
-     */
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class);
     }
 
     /**
@@ -111,6 +135,22 @@ class Folder extends Model
     public function lastModified()
     {
         return $this->files()->latest('updated_at')->first()?->updated_at;
+    }
+
+    /**
+     * Get the full path of the folder
+     */
+    public function getFullPathAttribute()
+    {
+        $path = collect([$this->name]);
+        $parent = $this->parent;
+        
+        while ($parent) {
+            $path->prepend($parent->name);
+            $parent = $parent->parent;
+        }
+        
+        return $path->implode(' > ');
     }
 
     protected static function boot()
@@ -165,6 +205,19 @@ class Folder extends Model
         });
     }
 
+    protected static function booted()
+    {
+        static::saving(function ($folder) {
+            // Generate path when saving
+            if ($folder->parent_id) {
+                $parent = static::find($folder->parent_id);
+                $folder->path = $parent->path . '/' . $folder->id;
+            } else {
+                $folder->path = (string) $folder->id;
+            }
+        });
+    }
+
     public function isAccessibleBy(?User $user): bool
     {
         if ($this->trashed()) {
@@ -213,46 +266,6 @@ class Folder extends Model
         return false;
     }
 
-    public function getFullPathAttribute(): string
-    {
-        static $cache = [];
-
-        // Use model's unique identifier as cache key
-        $cacheKey = $this->id . '_' . $this->updated_at->timestamp;
-
-        // Return cached value if available
-        if (isset($cache[$cacheKey])) {
-            return $cache[$cacheKey];
-        }
-
-        // Handle trashed folders
-        if ($this->trashed()) {
-            return '[Deleted] ' . $this->name;
-        }
-
-        $path = [$this->name];
-        $parent = $this->parent;
-        $visited = [$this->id]; // Prevent infinite loops
-
-        while ($parent) {
-            // Check for circular reference
-            if (in_array($parent->id, $visited)) {
-                report(new \Exception('Circular reference detected in folder hierarchy: ' . implode(' -> ', array_reverse($path))));
-                break;
-            }
-
-            // Add parent to path and visited list
-            array_unshift($path, $parent->trashed() ? '[Deleted] ' . $parent->name : $parent->name);
-            $visited[] = $parent->id;
-            $parent = $parent->parent;
-        }
-
-        // Cache the result
-        $cache[$cacheKey] = implode('/', $path);
-
-        return $cache[$cacheKey];
-    }
-
     public function templateFolder(): BelongsTo
     {
         return $this->belongsTo(Folder::class, 'template_folder_id');
@@ -261,5 +274,23 @@ class Folder extends Model
     public function derivedFolders(): HasMany
     {
         return $this->hasMany(Folder::class, 'template_folder_id');
+    }
+
+    /**
+     * Get all descendants of the folder
+     */
+    public function descendants()
+    {
+        return $this->hasMany(static::class, 'parent_id')
+            ->with('descendants');
+    }
+
+    /**
+     * Get all ancestors of the folder
+     */
+    public function ancestors()
+    {
+        return $this->belongsTo(static::class, 'parent_id')
+            ->with('ancestors');
     }
 } 

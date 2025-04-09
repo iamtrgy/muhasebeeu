@@ -280,78 +280,66 @@
     <!-- Preview Container -->
     <div id="preview-container" class="fixed bottom-0 right-0 p-4 max-w-md z-[65]"></div>
 
-    <!-- Upload Modal -->
-    <div id="uploadModal" class="hidden fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div id="modalBackdrop" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-
-        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-                <!-- Modal content -->
-                <div class="bg-white dark:bg-gray-800 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                    <div class="sm:flex sm:items-start">
-                        <div class="w-full">
-                            <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white mb-4" id="modal-title">
-                                {{ __('Upload Files') }}
-                            </h3>
-                            <form id="dropzone-upload" action="{{ route('user.files.upload', $folder) }}" class="dropzone">
-                                @csrf
-                                <div class="dz-default dz-message">
-                                    <div class="flex flex-col items-center justify-center py-7 gap-4">
-                                        <svg class="w-12 h-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M12 12v9"></path><path d="m16 16-4-4-4 4"></path></svg>
-                                        <div class="text-gray-500 dark:text-gray-400">
-                                            {{ __('Drag and drop files here or click to select files') }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                    <button type="button" onclick="submitForm()" class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
-                        {{ __('Upload') }}
-                    </button>
-                    <button type="button" onclick="closeModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto">
-                        {{ __('Cancel') }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
+        // Handle search functionality
         function searchTable() {
-            var input = document.getElementById("tableSearch");
-            var filter = input.value.toLowerCase();
-            var table = document.querySelector("table");
-            var rows = table.getElementsByTagName("tr");
-
-            for (var i = 0; i < rows.length; i++) {
-                var row = rows[i];
-                if (!row.classList.contains('breadcrumb-row')) { // Skip breadcrumb row
-                    var cells = row.getElementsByTagName("td");
-                    var found = false;
-                    
-                    for (var j = 0; j < cells.length; j++) {
-                        var cell = cells[j];
-                        if (cell) {
-                            var text = cell.textContent || cell.innerText;
-                            if (text.toLowerCase().indexOf(filter) > -1) {
-                                found = true;
-                                break;
-                            }
-                        }
+            const input = document.getElementById('tableSearch');
+            const filter = input.value.toUpperCase();
+            const rows = document.querySelectorAll('.content-row');
+            
+            rows.forEach(row => {
+                const nameCol = row.querySelector('td:first-child');
+                if (nameCol) {
+                    const txtValue = nameCol.textContent || nameCol.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        row.style.display = "";
+                    } else {
+                        row.style.display = "none";
                     }
-                    
-                    row.style.display = found ? "" : "none";
                 }
-            }
+            });
         }
-
-        // Make sure dropzone is properly initialized
+        
+        // File preview function
+        function previewFile(fileName, fileType, fileUrl) {
+            let previewContainer = document.getElementById('file-preview-modal');
+            
+            // Update file title
+            document.getElementById('preview-file-title').textContent = fileName;
+            
+            // Update preview content based on file type
+            let previewContent = document.getElementById('preview-content');
+            
+            if (fileType.startsWith('image/')) {
+                previewContent.innerHTML = `<img src="${fileUrl}" alt="${fileName}" class="max-w-full max-h-[70vh] object-contain mx-auto">`;
+            } else if (fileType === 'application/pdf') {
+                previewContent.innerHTML = `<iframe src="${fileUrl}" class="w-full h-[70vh] border-0"></iframe>`;
+            } else {
+                previewContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-10">
+                        <svg class="h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="text-center text-gray-500 mb-4">Preview not available for this file type</p>
+                        <a href="${fileUrl}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" target="_blank">Download File</a>
+                    </div>
+                `;
+            }
+            
+            // Show the modal
+            previewContainer.classList.remove('hidden');
+        }
+        
+        // Modal controls
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof Dropzone !== 'undefined') {
-                Dropzone.autoDiscover = false;
+            // Close preview modal
+            const closePreviewButton = document.getElementById('close-preview-button');
+            const previewModal = document.getElementById('file-preview-modal');
+            
+            if (closePreviewButton && previewModal) {
+                closePreviewButton.addEventListener('click', function() {
+                    previewModal.classList.add('hidden');
+                });
             }
         });
     </script>
@@ -359,55 +347,56 @@
     @push('scripts')
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Dropzone
-        if (typeof Dropzone !== 'undefined') {
-            var dropzone = new Dropzone("#dropzone-upload", {
-                url: "{{ route('user.files.upload', $folder) }}",
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                paramName: "files",
-                maxFilesize: 10,
-                maxFiles: 10,
-                parallelUploads: 5,
-                uploadMultiple: true,
-                addRemoveLinks: true,
-                dictRemoveFile: "Remove",
-                previewsContainer: "#preview-container",
-                autoProcessQueue: false,
-                previewTemplate: `
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 mb-2 flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-300" data-dz-name></span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400" data-dz-size></span>
-                        </div>
-                        <button data-dz-remove class="text-red-500 hover:text-red-700">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        // Initialize file preview functionality
+        document.querySelectorAll('.file-preview-trigger').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const fileId = this.getAttribute('data-file-id');
+                const fileType = this.getAttribute('data-file-type');
+                const fileName = this.getAttribute('data-file-name');
+                const fileUrl = this.getAttribute('data-file-url');
+                
+                // Set file information
+                document.getElementById('preview-file-name').textContent = fileName;
+                
+                // Clear previous content
+                const previewContainer = document.getElementById('preview-content');
+                previewContainer.innerHTML = '';
+                
+                // Show appropriate preview based on file type
+                if (['pdf', 'jpg', 'jpeg', 'png', 'gif'].includes(fileType.toLowerCase())) {
+                    // For PDFs and images, use iframe or img
+                    if (fileType.toLowerCase() === 'pdf') {
+                        const iframe = document.createElement('iframe');
+                        iframe.src = fileUrl;
+                        iframe.className = 'w-full h-full border-0';
+                        previewContainer.appendChild(iframe);
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = fileUrl;
+                        img.alt = fileName;
+                        img.className = 'max-w-full max-h-full object-contain';
+                        previewContainer.appendChild(img);
+                    }
+                } else {
+                    // For other file types, show download button
+                    previewContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full">
+                            <svg class="h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                        </button>
-                    </div>
-                `,
-                init: function() {
-                    this.on("success", function(file, response) {
-                        console.log("Upload successful");
-                        window.location.reload();
-                    });
-
-                    this.on("error", function(file, errorMessage) {
-                        console.error("Upload error:", errorMessage);
-                        alert("Error uploading file: " + errorMessage);
-                    });
-
-                    this.on("addedfile", function(file) {
-                        console.log("File added:", file.name);
-                    });
+                            <p class="mt-2 text-gray-500 dark:text-gray-400">Preview not available for this file type</p>
+                            <a href="${fileUrl}" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
+                                Download File
+                            </a>
+                        </div>
+                    `;
                 }
+                
+                // Show the modal
+                document.getElementById('file-preview-modal').classList.remove('hidden');
             });
-
-            window.dropzone = dropzone;
-        }
+        });
     });
     </script>
     @endpush
-</x-app-layout> 
+</x-app-layout>

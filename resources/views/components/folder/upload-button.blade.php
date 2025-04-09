@@ -1,336 +1,287 @@
 @props(['folder'])
 
 @if($folder->canUpload(auth()->user()))
-    <form action="{{ route('user.files.upload', $folder) }}" method="POST" enctype="multipart/form-data" class="flex items-center" id="uploadForm">
-        @csrf
-        <input type="file" name="files[]" id="files" multiple class="hidden" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.txt">
-        
-        <!-- AI Auto-Classify Toggle -->
-        <div x-data="{ aiEnabled: false }" class="flex items-center mr-4">
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" name="ai_classify" class="sr-only peer" x-model="aiEnabled">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">AI Auto-Classify</span>
-            </label>
-            <span class="ml-2 text-xs text-gray-500" x-show="aiEnabled">(AI will suggest the best folder)</span>
-        </div>
-
-        <button type="button" onclick="document.getElementById('files').click()" class="inline-flex items-center h-10 px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <span id="uploadButtonText">{{ __('Upload Files') }}</span>
-        </button>
-        <div class="text-xs text-gray-500 ml-2">Max 10MB per file (jpg, png, pdf, doc, xls, txt)</div>
-        <div id="uploadProgress" class="hidden ml-4 w-64">
-            <div class="bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+    <div x-data="{
+        showModal: false,
+        useAI: true
+    }">
+        <div class="flex items-center space-x-4">
+            <!-- Upload Button -->
+            <button @click="showModal = true" class="cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span>Upload Files</span>
+            </button>
+            
+            <!-- Allowed File Types -->
+            <div class="text-sm text-gray-500">
+                Allowed: PDF, Images, Word, Excel, Text (Max 10MB)
             </div>
-            <div class="text-xs text-gray-500 mt-1" id="progressText">0%</div>
         </div>
-    </form>
+
+        <!-- Upload Modal -->
+        <div x-show="showModal" class="fixed inset-0 overflow-y-auto z-50" x-cloak>
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 transition-opacity" aria-hidden="true" @click="showModal = false">
+                    <div class="absolute inset-0 bg-gray-500 dark:bg-gray-900 opacity-75"></div>
+                </div>
+
+                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">
+                                    Upload Files
+                                </h3>
+                                
+                                <!-- AI Classification Toggle in Modal -->
+                                <div class="mb-4">
+                                    <label class="flex items-center cursor-pointer">
+                                        <div class="relative inline-flex items-center">
+                                            <input type="checkbox" 
+                                                x-model="useAI"
+                                                class="sr-only">
+                                            <div class="w-14 h-7 transition-colors duration-200 ease-in-out rounded-full"
+                                                :class="useAI ? 'bg-green-500' : 'bg-gray-300'">
+                                            </div>
+                                            <div class="absolute left-1 top-1 w-5 h-5 transition-transform duration-200 ease-in-out transform bg-white rounded-full shadow-md"
+                                                :class="useAI ? 'translate-x-7' : 'translate-x-0'">
+                                            </div>
+                                            <!-- ON/OFF Labels -->
+                                            <div class="absolute inset-0 flex items-center justify-between text-xs font-bold px-1">
+                                                <span class="text-white ml-1" :class="useAI ? 'opacity-100' : 'opacity-0'">ON</span>
+                                                <span class="text-gray-700 mr-1" :class="useAI ? 'opacity-0' : 'opacity-100'">OFF</span>
+                                            </div>
+                                        </div>
+                                        <div class="ml-3">
+                                            <span class="text-gray-700 dark:text-gray-300 font-medium">AI Auto-Classify</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 block" x-show="useAI">AI will suggest the best folder</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 block" x-show="!useAI">Files will stay in selected folder</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <!-- Dropzone Area -->
+                                <div id="custom-dropzone" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <span class="font-medium text-blue-600 dark:text-blue-400 hover:underline">Click to upload</span> or drag and drop
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        PDF, Images, Word, Excel, Text (Max 10MB)
+                                    </p>
+                                </div>
+                                
+                                <!-- Preview Container -->
+                                <div id="custom-preview-container" class="mt-4 space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button id="custom-upload-submit" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Upload
+                        </button>
+                        <button @click="showModal = false" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
+    @push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const fileInput = document.getElementById('files');
-            const uploadForm = document.getElementById('uploadForm');
-            const uploadButtonText = document.getElementById('uploadButtonText');
-            const uploadProgress = document.getElementById('uploadProgress');
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            
-            // Allowed file types (must match the accept attribute and server validation)
-            const allowedTypes = [
-                'image/jpeg', 'image/jpg', 'image/png', 
-                'application/pdf', 
-                'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'text/plain'
-            ];
-            
-            fileInput.addEventListener('change', async function() {
-            if (this.files.length > 0) {
-                    console.log('File selected, checking size and preparing to upload...');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Dropzone for the custom button
+        if (typeof Dropzone !== 'undefined') {
+            var customDropzone = new Dropzone("#custom-dropzone", {
+                url: "{{ route('user.files.upload', $folder) }}",
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                paramName: "files",
+                maxFilesize: 10,
+                maxFiles: 10,
+                parallelUploads: 5,
+                uploadMultiple: true,
+                addRemoveLinks: true,
+                dictRemoveFile: "Remove",
+                previewsContainer: "#custom-preview-container",
+                autoProcessQueue: false,
+                clickable: "#custom-dropzone",
+                previewTemplate: `
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 mb-2 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-600 dark:text-gray-300" data-dz-name></span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400" data-dz-size></span>
+                        </div>
+                        <button data-dz-remove class="text-red-500 hover:text-red-700">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `,
+                init: function() {
+                    var myDropzone = this;
                     
-                    // Check if any files are larger than the limit or have invalid types
-                    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-                    let invalidFiles = [];
-                    let oversizedFiles = [];
-                    let totalSize = 0;
-                    
-                    for (let i = 0; i < this.files.length; i++) {
-                        const file = this.files[i];
-                        totalSize += file.size;
-                        console.log(`File: ${file.name}, Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB, Type: ${file.type}`);
+                    // Handle the upload button click
+                    document.getElementById('custom-upload-submit').addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
                         
-                        // Check file size
-                        if (file.size > MAX_FILE_SIZE) {
-                            oversizedFiles.push({
-                                name: file.name,
-                                size: (file.size / (1024 * 1024)).toFixed(2) + ' MB'
+                        if (myDropzone.getQueuedFiles().length > 0) {
+                            // Get AI classification option
+                            const useAI = document.querySelector('[x-model="useAI"]').checked;
+                            
+                            // Add AI classify parameter to all files
+                            myDropzone.on("sending", function(file, xhr, formData) {
+                                formData.append("ai_classify", useAI);
                             });
-                        }
-                        
-                        // Check file type
-                        if (!allowedTypes.includes(file.type)) {
-                            invalidFiles.push({
-                                name: file.name,
-                                type: file.type || 'unknown'
-                            });
-                        }
-                    }
-                    
-                    console.log(`Total upload size: ${(totalSize / (1024 * 1024)).toFixed(2)} MB`);
-                    
-                    // Handle oversized files
-                    if (oversizedFiles.length > 0) {
-                        let errorMessage = 'The following files exceed the 10MB size limit:\n';
-                        oversizedFiles.forEach(file => {
-                            errorMessage += `- ${file.name} (${file.size})\n`;
-                        });
-                        errorMessage += '\nPlease select smaller files.';
-                        alert(errorMessage);
-                        // Reset the file input
-                        this.value = '';
-                        return;
-                    }
-                    
-                    // Handle invalid file types
-                    if (invalidFiles.length > 0) {
-                        let errorMessage = 'The following files have invalid types:\n';
-                        invalidFiles.forEach(file => {
-                            errorMessage += `- ${file.name} (${file.type})\n`;
-                        });
-                        errorMessage += '\nAllowed types: jpg, png, pdf, doc, xls, txt';
-                        alert(errorMessage);
-                        // Reset the file input
-                        this.value = '';
-                        return;
-                    }
-                    
-                    try {
-                        // For files larger than 2MB, we need to use chunked uploads
-                        const MAX_CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chunks
-                        
-                        if (this.files.length === 1 && this.files[0].size > 2 * 1024 * 1024) {
-                            const file = this.files[0];
                             
-                            // Show progress bar
-                            uploadProgress.classList.remove('hidden');
-                            uploadButtonText.textContent = 'Uploading...';
-                            progressBar.style.width = '0%';
-                            progressText.textContent = 'Preparing chunked upload...';
-                            
-                            // Get CSRF token directly from the form
-                            const csrfToken = document.querySelector('input[name="_token"]').value;
-                            console.log('Using CSRF token for chunked upload:', csrfToken);
-                            
-                            // Create a temporary filename for reassembly
-                            const tempFilename = 'temp_' + Date.now() + '_' + file.name;
-                            console.log('Temporary filename for chunked upload:', tempFilename);
-                            
-                            // Function to upload a chunk
-                            const uploadChunk = async (start, end, chunkIndex, totalChunks) => {
-                                const chunk = file.slice(start, end);
-                                const chunkForm = new FormData();
-                                
-                                // Add the temp filename, chunk index, and total chunks
-                                chunkForm.append('_token', csrfToken);
-                                chunkForm.append('chunk', chunk);
-                                chunkForm.append('chunk_index', chunkIndex);
-                                chunkForm.append('total_chunks', totalChunks);
-                                chunkForm.append('original_name', file.name);
-                                chunkForm.append('temp_filename', tempFilename);
-                                chunkForm.append('filename', file.name);
-                                chunkForm.append('file_size', file.size);
-                                chunkForm.append('mime_type', file.type);
-                                // Add AI classify parameter
-                                chunkForm.append('ai_classify', document.querySelector('input[name="ai_classify"]').checked ? '1' : '0');
-                                
-                                // If this is the last chunk, add a flag
-                                if (chunkIndex === totalChunks - 1) {
-                                    chunkForm.append('is_last_chunk', 'true');
-                                }
-                                
-                                return new Promise((resolve, reject) => {
-                                    const xhr = new XMLHttpRequest();
-                                    xhr.open('POST', '{{ route('user.files.chunk', $folder) }}', true);
-                                    xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
-                                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                                    xhr.setRequestHeader('Accept', 'application/json');
-                                    
-                                    xhr.onload = function() {
-                                        console.log(`Chunk ${chunkIndex + 1}/${totalChunks} response:`, xhr.status, xhr.responseText);
-                                        
-                                        if (xhr.status >= 200 && xhr.status < 300) {
-                                            let response;
-                                            try {
-                                                response = JSON.parse(xhr.responseText);
-                                                console.log(`Chunk ${chunkIndex + 1}/${totalChunks} parsed response:`, response);
-                                                resolve(response);
-                                            } catch (e) {
-                                                console.error(`Chunk ${chunkIndex + 1}/${totalChunks} JSON parse error:`, e);
-                                                reject(new Error('Invalid JSON response from server'));
-                                            }
-                                        } else {
-                                            console.error(`Chunk ${chunkIndex + 1}/${totalChunks} HTTP error:`, xhr.status, xhr.statusText, xhr.responseText);
-                                            reject(new Error(`HTTP error ${xhr.status}: ${xhr.statusText}`));
-                                        }
-                                    };
-                                    
-                                    xhr.onerror = function() {
-                                        console.error(`Chunk ${chunkIndex + 1}/${totalChunks} network error`);
-                                        reject(new Error('Network error occurred'));
-                                    };
-                                    
-                                    xhr.upload.onprogress = function(e) {
-                                        if (e.lengthComputable) {
-                                            // Calculate overall progress
-                                            const chunkProgress = (e.loaded / e.total) * 100;
-                                            const overallProgress = ((chunkIndex / totalChunks) * 100) + (chunkProgress / totalChunks);
-                                            progressBar.style.width = `${Math.round(overallProgress)}%`;
-                                            progressText.textContent = `${Math.round(overallProgress)}% (Chunk ${chunkIndex + 1}/${totalChunks})`;
-                                        }
-                                    };
-                                    
-                                    xhr.send(chunkForm);
-                                });
-                            };
-                            
-                            // Calculate the number of chunks
-                            const totalChunks = Math.ceil(file.size / MAX_CHUNK_SIZE);
-                            console.log(`File will be uploaded in ${totalChunks} chunks`);
-                            
-                            // Upload each chunk sequentially
-                            try {
-                                for (let i = 0; i < totalChunks; i++) {
-                                    const start = i * MAX_CHUNK_SIZE;
-                                    const end = Math.min(file.size, start + MAX_CHUNK_SIZE);
-                                    
-                                    // Wait for this chunk to complete before moving to the next
-                                    const response = await uploadChunk(start, end, i, totalChunks);
-                                    console.log(`Chunk ${i + 1}/${totalChunks} completed:`, response);
-                                    
-                                    // If this is the last chunk and it completed successfully
-                                    if (i === totalChunks - 1 && response.success) {
-                                        progressText.textContent = 'Upload complete! Refreshing...';
-                                        setTimeout(() => {
-                                            window.location.reload();
-                                        }, 500);
-                                        return;
-                                    }
-                                }
-                            } catch (error) {
-                                console.error('Error in chunked upload:', error);
-                                progressBar.style.backgroundColor = '#ef4444'; // Red
-                                progressText.textContent = 'Upload failed';
-                                uploadButtonText.textContent = 'Upload Failed';
-                                alert('Failed to upload file: ' + error.message);
-                                
-                                // Reset after 3 seconds
-                                setTimeout(() => {
-                                    uploadButtonText.textContent = 'Upload Files';
-                                    uploadProgress.classList.add('hidden');
-                                    // Reset file input
-                                    fileInput.value = '';
-                                }, 3000);
-                            }
+                            myDropzone.processQueue();
                         } else {
-                            // For smaller files or multiple files, use the standard approach
-                            // Use FormData and XMLHttpRequest for better control over the upload
-                            const formData = new FormData(uploadForm);
-                            // Ensure AI classify parameter is included
-                            formData.append('ai_classify', document.querySelector('input[name="ai_classify"]').checked ? '1' : '0');
-                            const xhr = new XMLHttpRequest();
-
-                            // Show progress bar
-                            uploadProgress.classList.remove('hidden');
-                            uploadButtonText.textContent = 'Uploading...';
-                            
-                            xhr.upload.addEventListener('progress', function(e) {
-                                if (e.lengthComputable) {
-                                    const percentComplete = Math.round((e.loaded / e.total) * 100);
-                                    progressBar.style.width = percentComplete + '%';
-                                    progressText.textContent = percentComplete + '%';
-                                    console.log(`Upload progress: ${percentComplete}%`);
-                                }
-                            });
-                            
-                            xhr.addEventListener('load', function() {
-                                console.log('Upload completed with status:', xhr.status);
-                                console.log('Response:', xhr.responseText);
-                                
-                                try {
-                                    const response = JSON.parse(xhr.responseText);
-                                    console.log('Parsed response:', response);
-                                    
-                                    if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-                                        progressBar.style.backgroundColor = '#22c55e'; // Green
-                                        progressText.textContent = 'Upload complete! Refreshing...';
-                                        
-                                        // Redirect or refresh after a short delay
-                                        setTimeout(() => {
-                                            window.location.reload(); // Reload the page
-                                        }, 500); 
-                                    } else {
-                                        // Handle server-side error (e.g., validation failed)
-                                        progressBar.style.backgroundColor = '#ef4444'; // Red
-                                        progressText.textContent = 'Upload failed';
-                                        uploadButtonText.textContent = 'Upload Failed';
-                                        alert(response.message || 'An error occurred during upload.');
-                                        
-                                        // Reset after 3 seconds
-                                        setTimeout(() => {
-                                            uploadButtonText.textContent = 'Upload Files';
-                                            uploadProgress.classList.add('hidden');
-                                            // Reset file input
-                                            fileInput.value = '';
-                                        }, 3000);
-                                    }
-                                } catch (e) {
-                                    console.error("JSON parse error on standard upload:", e, xhr.responseText);
-                                    progressBar.style.backgroundColor = '#ef4444'; // Red
-                                    progressText.textContent = 'Error processing response';
-                                    uploadButtonText.textContent = 'Error';
-                                    alert('An unexpected error occurred after upload.');
-
-                                    // Reset after 3 seconds
-                                    setTimeout(() => {
-                                        uploadButtonText.textContent = 'Upload Files';
-                                        uploadProgress.classList.add('hidden');
-                                        // Reset file input
-                                        fileInput.value = '';
-                                    }, 3000);
-                                }
-                            });
-                            
-                            xhr.addEventListener('error', function() {
-                                console.error('Network error during standard upload.');
-                                progressBar.style.backgroundColor = '#ef4444'; // Red
-                                progressText.textContent = 'Network Error';
-                                uploadButtonText.textContent = 'Upload Failed';
-                                alert('A network error occurred. Please check your connection and try again.');
-
-                                // Reset after 3 seconds
-                                setTimeout(() => {
-                                    uploadButtonText.textContent = 'Upload Files';
-                                    uploadProgress.classList.add('hidden');
-                                    // Reset file input
-                                    fileInput.value = '';
-                                }, 3000);
-                            });
-
-                            // Send the request
-                            xhr.open('POST', uploadForm.action, true); // Use form action directly
-                            xhr.setRequestHeader('Accept', 'application/json'); // Expect JSON response
-                            xhr.send(formData);
+                            alert('Please add files to upload.');
                         }
-                    } catch(e) {
-                        console.error('Error starting upload:', e);
-                        alert('Error uploading file: ' + e.message);
-                    }
+                    });
+                    
+                    this.on("success", function(files, response) {
+                        console.log("Upload successful:", response);
+                        
+                        // Show notification if there are pending classifications
+                        if (response.pending_classification) {
+                            // Create a modal for classification review
+                            const classificationModal = document.createElement('div');
+                            classificationModal.id = 'classification-modal';
+                            classificationModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50';
+                            classificationModal.innerHTML = `
+                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                            <svg class="inline-block h-5 w-5 text-yellow-500 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                            Document Classification
+                                        </h3>
+                                        <button id="close-classification-modal" class="text-gray-400 hover:text-gray-500">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="px-6 py-4">
+                                        <div class="mb-4">
+                                            <p class="text-gray-700 dark:text-gray-300">
+                                                AI has suggested classifications for your uploaded documents. Would you like to review them now?
+                                            </p>
+                                        </div>
+                                        <div class="flex flex-col space-y-2">
+                                            <a href="{{ route('user.files.classification') }}" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm text-center">
+                                                Review Classifications Now
+                                            </a>
+                                            <button id="review-later" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm">
+                                                Review Later
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            document.body.appendChild(classificationModal);
+                            
+                            // Handle close button
+                            document.getElementById('close-classification-modal').addEventListener('click', function() {
+                                classificationModal.remove();
+                            });
+                            
+                            // Handle "Review Later" button
+                            document.getElementById('review-later').addEventListener('click', function() {
+                                classificationModal.remove();
+                                
+                                // Show a small notification instead
+                                const notification = document.createElement('div');
+                                notification.className = 'fixed bottom-20 right-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded shadow-lg z-50 max-w-sm';
+                                notification.innerHTML = `
+                                    <div class="flex">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm">${response.message}</p>
+                                        </div>
+                                    </div>
+                                `;
+                                document.body.appendChild(notification);
+                                
+                                // Remove notification after 10 seconds
+                                setTimeout(() => {
+                                    notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                                    setTimeout(() => {
+                                        notification.remove();
+                                    }, 500);
+                                }, 10000);
+                            });
+                        }
+                        
+                        // Don't automatically reload the page - let user interact with the classification options
+                        // Instead, reset the dropzone and close the modal
+                        myDropzone.removeAllFiles(true);
+                        
+                        // Close the modal safely by checking if the element exists first
+                        const modalElement = document.querySelector('[x-data]');
+                        if (modalElement && modalElement.__x) {
+                            modalElement.__x.$data.showModal = false;
+                        }
+                    });
+
+                    this.on("error", function(file, errorMessage, xhr) {
+                        console.error("Upload error:", errorMessage);
+                        
+                        let errorMsg = "An error occurred during file upload.";
+                        
+                        // If we have an xhr response with error details
+                        if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        } else if (typeof errorMessage === 'string') {
+                            errorMsg = errorMessage;
+                        } else if (typeof errorMessage === 'object' && errorMessage.message) {
+                            errorMsg = errorMessage.message;
+                        }
+                        
+                        // Create an error notification
+                        const errorNotification = document.createElement('div');
+                        errorNotification.className = 'fixed bottom-20 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg z-50 max-w-sm';
+                        errorNotification.innerHTML = `
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm">Upload Error: ${errorMsg}</p>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(errorNotification);
+                        
+                        // Remove notification after 10 seconds
+                        setTimeout(() => {
+                            errorNotification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                            setTimeout(() => {
+                                errorNotification.remove();
+                            }, 500);
+                        }, 10000);
+                    });
                 }
             });
-        });
+        }
+    });
     </script>
-@endif 
+    @endpush
+@endif

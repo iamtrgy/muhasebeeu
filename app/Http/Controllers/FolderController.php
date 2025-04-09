@@ -10,7 +10,7 @@ use League\Flysystem\Config;
 
 class FolderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         // Get only root folders (parent_id is null) that the user has access to
         $folders = Folder::where(function($query) {
@@ -27,11 +27,80 @@ class FolderController extends Controller
         ->whereNull('parent_id') // Only get root folders
         ->withCount(['files', 'children' => function($query) {
             $query->whereNull('deleted_at');
-        }])
-        ->latest()
-        ->paginate(10);
-
+        }]);
+        
+        // If this is an AJAX request for the folder browser
+        if ($request->has('ajax')) {
+            // Get all folders with their children for the folder browser
+            $folderTree = $this->getFolderTreeForUser(auth()->user());
+            return response()->json($folderTree);
+        }
+        
+        // For regular page view, paginate the results
+        $folders = $folders->latest()->paginate(10);
         return view('user.folders.index', compact('folders'));
+    }
+
+    /**
+     * Get the complete folder tree for a user
+     *
+     * @param \App\Models\User $user
+     * @return array
+     */
+    private function getFolderTreeForUser($user)
+    {
+        // Get root folders the user has access to
+        $rootFolders = Folder::whereNull('parent_id')
+            ->where(function($query) use ($user) {
+                $query->whereHas('users', function($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+                
+                if (!$user->is_admin) {
+                    $query->orWhere('created_by', $user->id);
+                }
+            })
+            ->with(['children' => function($query) use ($user) {
+                $query->whereNull('deleted_at')
+                    ->where(function($q) use ($user) {
+                        $q->where('is_public', true)
+                            ->orWhere('created_by', $user->id)
+                            ->orWhereHas('users', function($innerQ) use ($user) {
+                                $innerQ->where('users.id', $user->id);
+                            });
+                    });
+            }])
+            ->get();
+            
+        return $this->formatFoldersForTree($rootFolders);
+    }
+    
+    /**
+     * Format folders for the tree view
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $folders
+     * @return array
+     */
+    private function formatFoldersForTree($folders)
+    {
+        $result = [];
+        
+        foreach ($folders as $folder) {
+            $formattedFolder = [
+                'id' => $folder->id,
+                'name' => $folder->name,
+                'path' => $folder->path,
+                'children' => []
+            ];
+            
+            if ($folder->children && $folder->children->count() > 0) {
+                $formattedFolder['children'] = $this->formatFoldersForTree($folder->children);
+            }
+            
+            $result[] = $formattedFolder;
+        }
+        
+        return $result;
     }
 
     public function show(Folder $folder)

@@ -29,7 +29,8 @@ class ChunkUploadRequest extends FormRequest
             'temp_filename' => 'required|string',
             'filename' => 'required|string',
             'file_size' => 'required|integer|min:1|max:20971520', // Max 20MB (increased from 10MB)
-            'mime_type' => 'required|string'
+            'mime_type' => 'required|string',
+            'ai_classify' => 'boolean'
         ];
     }
 
@@ -55,7 +56,8 @@ class ChunkUploadRequest extends FormRequest
             'file_size.integer' => 'The file size must be an integer.',
             'file_size.min' => 'The file size must be at least 1 byte.',
             'file_size.max' => 'The file size cannot exceed 20MB.',
-            'mime_type.required' => 'The MIME type is required.'
+            'mime_type.required' => 'The MIME type is required.',
+            'ai_classify.boolean' => 'The AI classify flag must be a boolean value.'
         ];
     }
 }

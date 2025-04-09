@@ -1,0 +1,1709 @@
+<?php
+
+namespace App\Services;
+
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
+use Spatie\PdfToText\Pdf;
+
+class AIDocumentClassifierService
+{
+    protected Client $client;
+    protected string $apiKey;
+    protected string $apiUrl;
+
+    public function __construct()
+    {
+        $this->apiKey = config('services.claude.key');
+        $this->apiUrl = config('services.claude.api_url', 'https://api.anthropic.com/v1/messages');
+
+        Log::info('Initializing AIDocumentClassifierService', [
+            'api_key_exists' => !empty($this->apiKey),
+            'api_url' => $this->apiUrl
+        ]);
+
+        if (empty($this->apiKey)) {
+            throw new \Exception('Claude API key is not configured in config/services.php or .env');
+        }
+
+        $this->client = new Client([
+            'base_uri' => $this->apiUrl,
+            'headers' => [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+                'anthropic-version' => '2023-06-01',
+                'x-api-key' => $this->apiKey
+            ]
+        ]);
+    }
+
+    /**
+     * Extracts text content from an uploaded file.
+     * Supports plain text and PDF files.
+     *
+     * @param UploadedFile $file
+     * @return string|null
+     */
+    public function extractTextFromFile(UploadedFile $file): ?string
+    {
+        $mimeType = $file->getMimeType();
+        $path = $file->getRealPath();
+
+        Log::info('Attempting to extract text from file', [
+            'mime_type' => $mimeType,
+            'file_name' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize()
+        ]);
+
+        try {
+            if ($mimeType === 'application/pdf') {
+                Log::info('Extracting text from PDF file');
+                
+                $text = (new Pdf())
+                    ->setPdf($path)
+                    ->text();
+
+                // Log the first 500 characters of extracted text
+                Log::info('Successfully extracted text from PDF', [
+                    'text_preview' => substr($text, 0, 500),
+                    'total_length' => strlen($text)
+                ]);
+
+                return $text;
+            } elseif (str_starts_with($mimeType, 'text/')) {
+                Log::info('Reading text from plain text file');
+                return file_get_contents($path);
+            } else {
+                Log::warning('Unsupported file type for text extraction', [
+                    'mime_type' => $mimeType
+                ]);
+                return null;
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to extract text from file', [
+                'error' => $e->getMessage(),
+                'mime_type' => $mimeType,
+                'file_name' => $file->getClientOriginalName()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Clean and normalize text for API request
+     */
+    private function cleanText(string $text): string
+    {
+        // Remove any BOM and invalid UTF-8 characters
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        
+        // Replace common problematic characters
+        $text = str_replace([
+            'Ã¼', 'Ã¶', 'Ã§', 'Ä±', 'ÅŸ', 'ÄŸ', 'Ã‡', 'Ã–', 'Ãœ', 'Ä°', 'ÅŸ', 'ÄŸ',
+            'â€™', 'â€"', 'â€"', 'â€˜', 'â€™', 'â€œ', 'â€', '�'
+        ], [
+            'ü', 'ö', 'ç', 'ı', 'ş', 'ğ', 'Ç', 'Ö', 'Ü', 'İ', 'Ş', 'Ğ',
+            "'", '-', '-', "'", "'", '"', '"', ''
+        ], $text);
+        
+        // Normalize whitespace
+        $text = preg_replace('/\s+/', ' ', trim($text));
+        
+        return $text;
+    }
+
+    /**
+     * Asks Claude AI to classify the document into one of the provided folders.
+     * 
+     * @param string $textContent The extracted text content of the document.
+     * @param array $folders An array of folder objects/arrays, each having at least 'id' and 'name'.
+     * @param string $companyName
+     * @return int|null The ID of the suggested folder, or null on failure/error.
+     */
+    public function classifyDocument(string $textContent, array $folders, string $companyName = null): ?int
+    {
+        if (empty($textContent) || empty($folders)) {
+            Log::warning("Cannot classify document", [
+                'text_empty' => empty($textContent),
+                'folders_empty' => empty($folders)
+            ]);
+            return null;
+        }
+        
+        Log::info('Starting document classification', [
+            'text_length' => strlen($textContent),
+            'num_folders' => count($folders)
+        ]);
+        
+        // Clean and normalize the text
+        $textContent = $this->cleanText($textContent);
+
+        // Extract date from text
+        $date = $this->extractDate($textContent);
+        $dateInfo = null;
+        
+        if ($date) {
+            try {
+                $dateObj = new \DateTime($date);
+                $year = $dateObj->format('Y');
+                $month = $dateObj->format('F');
+                $dateInfo = "Date: {$date} (Year: {$year}, Month: {$month})";
+            } catch (\Exception $e) {
+                $dateInfo = "Date: {$date} (unable to parse)";
+            }
+        } else {
+            $dateInfo = "Date: Unknown";
+        }
+        
+        // Analyze document type
+        $documentAnalysis = $this->analyzeDocumentType($textContent, $companyName);
+        $isInvoice = $documentAnalysis['is_invoice'];
+        $isExpense = $documentAnalysis['is_expense'];
+        $isIncome = $documentAnalysis['is_income'];
+        $isBankStatement = $documentAnalysis['is_bank_statement'];
+        $confidence = $documentAnalysis['confidence'];
+        $reason = $documentAnalysis['reason'];
+        
+        // Determine document type and category
+        $docType = $isInvoice ? 'Invoice' : ($isBankStatement ? 'Bank Statement' : 'Unknown');
+        
+        // Set document category
+        if ($isBankStatement) {
+            $docCategory = 'BANK_STATEMENT';
+        } else if ($isExpense) {
+            $docCategory = 'EXPENSE';
+        } else if ($isIncome) {
+            $docCategory = 'INCOME';
+        } else {
+            $docCategory = 'Unknown';
+        }
+        
+        Log::info('Document classification', [
+            'doc_type' => $docType,
+            'doc_category' => $docCategory,
+            'confidence' => $confidence,
+            'date' => $date
+        ]);
+        
+        // First, try to find a direct match for document type folder based on our analysis
+        $directMatch = $this->findDirectDocumentTypeMatch($folders, $docCategory, $date);
+        if ($directMatch) {
+            Log::info('Found direct document type folder match based on analysis', [
+                'document_type' => $docCategory,
+                'folder_id' => $directMatch['id'],
+                'folder_name' => $directMatch['name'],
+                'folder_path' => $directMatch['path']
+            ]);
+            return $directMatch['id'];
+        }
+        
+        // If no direct match, use AI to classify
+        $prompt = $this->buildPrompt($textContent, $folders, $companyName, $dateInfo, $docType, $docCategory, $confidence, $reason);
+        
+        Log::info('Sending request to Claude API', [
+            'prompt_length' => strlen($prompt),
+            'folder_count' => count($folders)
+        ]);
+        
+        try {
+            $response = $this->client->post($this->apiUrl, [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'anthropic-version' => '2023-06-01',
+                    'x-api-key' => $this->apiKey
+                ],
+                'json' => [
+                    'model' => 'claude-3-7-sonnet-20250219',
+                    'max_tokens' => 1024,
+                    'temperature' => 0.2,
+                    'messages' => [
+                        [
+                            'role' => 'user',
+                            'content' => $prompt
+                        ]
+                    ]
+                ],
+            ]);
+            
+            $responseBody = json_decode($response->getBody(), true);
+            $aiResponse = $responseBody['content'][0]['text'] ?? '';
+            
+            Log::debug('Claude API raw response', [
+                'status_code' => $response->getStatusCode(),
+                'response' => $responseBody
+            ]);
+            
+            return $this->processAIResponse($aiResponse, $folders, $docCategory);
+            
+        } catch (\Exception $e) {
+            Log::error('Error calling Claude API', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return null;
+        }
+    }
+
+    /**
+     * Process the AI response and ensure it's a valid folder ID
+     * 
+     * @param string $response The raw response from the AI
+     * @param array $folders List of all available folders
+     * @param string $docCategory The document category (EXPENSE, INCOME, or BANK_STATEMENT)
+     * @return int|null The folder ID to use, or null if invalid
+     */
+    private function processAIResponse(string $response, array $folders, string $docCategory): ?int
+    {
+        // Log the document category and extracted folder ID
+        Log::info('Processing AI response', [
+            'doc_category' => $docCategory,
+            'extracted_folder_id' => $this->extractFolderId($response),
+            'response_length' => strlen($response)
+        ]);
+        
+        $folderId = $this->extractFolderId($response);
+        
+        if (!$folderId) {
+            Log::warning('Failed to extract folder ID from AI response');
+            return null;
+        }
+        
+        // Find the suggested folder in the list
+        $suggestedFolder = null;
+        foreach ($folders as $folder) {
+            if ($folder['id'] == $folderId) {
+                $suggestedFolder = $folder;
+                break;
+            }
+        }
+        
+        if (!$suggestedFolder) {
+            Log::warning('Suggested folder not found in folder list', [
+                'folder_id' => $folderId
+            ]);
+            return null;
+        }
+        
+        Log::info('Found suggested folder', [
+            'folder_id' => $folderId,
+            'folder_name' => $suggestedFolder['name'],
+            'folder_path' => $suggestedFolder['path'] ?? 'unknown',
+            'is_document_type_folder' => $suggestedFolder['is_document_type_folder'] ?? 'not set',
+            'is_month_folder' => $suggestedFolder['is_month_folder'] ?? 'not set',
+            'is_year_folder' => $suggestedFolder['is_year_folder'] ?? 'not set'
+        ]);
+        
+        // First, check if there's a direct match for a document type folder
+        $directCategoryMatch = $this->findDirectDocumentTypeMatch($folders, $docCategory);
+        if ($directCategoryMatch) {
+            Log::info('Using direct document type folder match', [
+                'category' => $docCategory,
+                'folder_id' => $directCategoryMatch['id'],
+                'folder_name' => $directCategoryMatch['name'],
+                'folder_path' => $directCategoryMatch['path']
+            ]);
+            return $directCategoryMatch['id'];
+        }
+        
+        // Check folder type of the suggested folder - handle missing fields
+        $isDocTypeFolder = !empty($suggestedFolder['is_document_type_folder']);
+        $isMonthFolder = !empty($suggestedFolder['is_month_folder']);
+        $isYearFolder = !empty($suggestedFolder['is_year_folder']);
+        
+        Log::debug('Folder type flags', [
+            'folder_id' => $folderId,
+            'folder_name' => $suggestedFolder['name'],
+            'is_document_type_folder' => $isDocTypeFolder,
+            'is_month_folder' => $isMonthFolder,
+            'is_year_folder' => $isYearFolder,
+            'is_document_type_folder_raw' => $suggestedFolder['is_document_type_folder'] ?? 'not set',
+            'is_month_folder_raw' => $suggestedFolder['is_month_folder'] ?? 'not set',
+            'is_year_folder_raw' => $suggestedFolder['is_year_folder'] ?? 'not set'
+        ]);
+        
+        // IMPORTANT: First check if there are document type folders under the suggested folder
+        // This is a high priority check to find the right document type folder
+        $childDocTypeFolder = $this->findDocumentTypeFolderByCategory($suggestedFolder['id'], $folders, $docCategory);
+        
+        Log::debug('Looking for document type folder under suggested folder', [
+            'suggested_folder_id' => $suggestedFolder['id'],
+            'suggested_folder_name' => $suggestedFolder['name'],
+            'doc_category' => $docCategory,
+            'found_child_folder' => $childDocTypeFolder ? 'yes' : 'no',
+            'child_folder_name' => $childDocTypeFolder ? $childDocTypeFolder['name'] : null,
+            'child_folder_id' => $childDocTypeFolder ? $childDocTypeFolder['id'] : null
+        ]);
+        
+        if ($childDocTypeFolder) {
+            Log::info('Found document type folder under suggested folder', [
+                'original_folder' => $suggestedFolder['name'],
+                'document_type_folder' => $childDocTypeFolder['name'],
+                'document_type_folder_id' => $childDocTypeFolder['id'],
+                'doc_category' => $docCategory
+            ]);
+            return $childDocTypeFolder['id'];
+        }
+        
+        // If the suggested folder is already a document type folder matching our category, use it
+        $folderMatchesCategory = false;
+        
+        if ($docCategory === 'EXPENSE' && strtolower($suggestedFolder['name']) === 'expense') {
+            $folderMatchesCategory = true;
+        } else if ($docCategory === 'INCOME' && strtolower($suggestedFolder['name']) === 'income') {
+            $folderMatchesCategory = true;
+        } else if ($docCategory === 'BANK_STATEMENT') {
+            $bankStatementVariations = ['bank', 'statement', 'bank statement', 'bank statements', 'statements', 'banking'];
+            foreach ($bankStatementVariations as $variation) {
+                if (stripos($suggestedFolder['name'], $variation) !== false) {
+                    $folderMatchesCategory = true;
+                    break;
+                }
+            }
+        }
+        
+        Log::debug('Checking if suggested folder matches category', [
+            'folder_name' => $suggestedFolder['name'],
+            'doc_category' => $docCategory,
+            'folder_matches_category' => $folderMatchesCategory
+        ]);
+        
+        if ($isDocTypeFolder || $folderMatchesCategory) {
+            Log::info('Using suggested document type folder', [
+                'folder_id' => $folderId,
+                'folder_name' => $suggestedFolder['name'],
+                'folder_path' => $suggestedFolder['path'],
+                'is_doc_type_folder' => $isDocTypeFolder,
+                'doc_category' => $docCategory,
+                'folder_matches_category' => $folderMatchesCategory
+            ]);
+            
+            return $folderId;
+        }
+        
+        // If it's a month folder, try to find an appropriate document type folder under it
+        if ($isMonthFolder) {
+            $documentTypeFolder = $this->findDocumentTypeFolderByCategory($suggestedFolder['id'], $folders, $docCategory);
+            if ($documentTypeFolder) {
+                Log::info('Found document type folder under suggested month', [
+                    'original_folder' => $suggestedFolder['name'],
+                    'document_type_folder' => $documentTypeFolder['name'],
+                    'document_type_folder_id' => $documentTypeFolder['id'],
+                    'doc_category' => $docCategory
+                ]);
+                return $documentTypeFolder['id'];
+            }
+        }
+        
+        // If it's a year folder, try to find the most recent month folder
+        if ($isYearFolder) {
+            // Find the most recent month folder under this year
+            $monthOrder = [
+                'december' => 12, 'november' => 11, 'october' => 10, 'september' => 9,
+                'august' => 8, 'july' => 7, 'june' => 6, 'may' => 5,
+                'april' => 4, 'march' => 3, 'february' => 2, 'january' => 1
+            ];
+            
+            $bestMonthFolder = null;
+            $highestMonthValue = 0;
+            
+            foreach ($folders as $folder) {
+                if (!empty($folder['is_month_folder']) && 
+                    isset($folder['parent_id']) && $folder['parent_id'] == $suggestedFolder['id']) {
+                    
+                    $monthName = strtolower($folder['name']);
+                    $monthValue = $monthOrder[$monthName] ?? 0;
+                    
+                    if ($monthValue > $highestMonthValue) {
+                        $highestMonthValue = $monthValue;
+                        $bestMonthFolder = $folder;
+                    }
+                }
+            }
+            
+            if ($bestMonthFolder) {
+                // Now find a document type folder under this month that matches our category
+                $documentTypeFolder = $this->findDocumentTypeFolderByCategory($bestMonthFolder['id'], $folders, $docCategory);
+                if ($documentTypeFolder) {
+                    Log::info('Found document type folder under most recent month in year folder', [
+                        'year_folder' => $suggestedFolder['name'],
+                        'month_folder' => $bestMonthFolder['name'],
+                        'document_type_folder' => $documentTypeFolder['name'],
+                        'document_type_folder_id' => $documentTypeFolder['id'],
+                        'doc_category' => $docCategory
+                    ]);
+                    return $documentTypeFolder['id'];
+                }
+            }
+            
+            // If we couldn't find a month folder with a document type folder,
+            // look for a document type folder directly under the year that matches our category
+            $directDocTypeFolder = $this->findDocumentTypeFolderByCategory($suggestedFolder['id'], $folders, $docCategory);
+            if ($directDocTypeFolder) {
+                Log::info('Found document type folder directly under year folder', [
+                    'year_folder' => $suggestedFolder['name'],
+                    'document_type_folder' => $directDocTypeFolder['name'],
+                    'document_type_folder_id' => $directDocTypeFolder['id'],
+                    'doc_category' => $docCategory
+                ]);
+                return $directDocTypeFolder['id'];
+            }
+        }
+        
+        // If we still don't have a document type folder, use the original suggestion
+        Log::info('Using original folder suggestion as no better alternative was found', [
+            'folder_id' => $folderId,
+            'folder_name' => $suggestedFolder['name'],
+            'folder_path' => $suggestedFolder['path'],
+            'doc_category' => $docCategory
+        ]);
+        
+        return $folderId;
+    }
+
+    /**
+     * Find an appropriate document type folder (Expense/Income) under a month folder
+     *
+     * @param array $monthFolder The month folder to look under
+     * @param array $allFolders All available folders
+     * @return array|null The document type folder or null if not found
+     */
+    private function findDocumentTypeFolder(array $monthFolder, array $allFolders): ?array
+    {
+        $expenseFolder = null;
+        $incomeFolder = null;
+        
+        foreach ($allFolders as $folder) {
+            if (!empty($folder['is_document_type_folder']) && 
+                isset($folder['parent_id']) && $folder['parent_id'] == $monthFolder['id']) {
+                
+                if (strtolower($folder['name']) == 'expense') {
+                    $expenseFolder = $folder;
+                } else if (strtolower($folder['name']) == 'income') {
+                    $incomeFolder = $folder;
+                }
+            }
+        }
+        
+        // Default to expense folder as most documents are likely expenses
+        return $expenseFolder ?: $incomeFolder;
+    }
+
+    private function buildPrompt(string $text, array $folders, string $companyName = null, string $dateInfo = null, string $docType = null, string $docCategory = null, string $confidence = null, string $reason = null): string
+    {
+        $prompt = "You are an AI document classifier for a financial document management system. Your task is to analyze the provided document and determine the most appropriate folder for storing it based on the document's content and metadata.\n\n";
+        
+        // Add more context about the document classification task
+        $prompt .= "IMPORTANT: Financial documents should be organized by:\n";
+        $prompt .= "1. Year (based on document date)\n";
+        $prompt .= "2. Month (based on document date)\n";
+        $prompt .= "3. Document Type (Expense or Income)\n\n";
+        
+        // Add information about the document
+        $prompt .= "Document Text:\n---\n" . substr($text, 0, 2000) . (strlen($text) > 2000 ? "...(truncated)" : "") . "\n---\n\n";
+        
+        $prompt .= "Document Analysis:\n";
+        if ($docType) {
+            $prompt .= "- Type: {$docType}\n";
+        }
+        if ($docCategory) {
+            $prompt .= "- Category: {$docCategory}\n";
+        }
+        if ($dateInfo) {
+            $prompt .= "- {$dateInfo}\n";
+        }
+        if ($companyName) {
+            $prompt .= "- Company Name: {$companyName}\n";
+        }
+        if ($confidence) {
+            $prompt .= "- Confidence: {$confidence}\n";
+        }
+        if ($reason) {
+            $prompt .= "- Reason: {$reason}\n";
+        }
+        $prompt .= "\n";
+        
+        // Extract year and month from date info if available
+        $targetYear = null;
+        $targetMonth = null;
+        
+        if ($dateInfo) {
+            // Extract year (last 4 digits in dateInfo)
+            if (preg_match('/\b(20\d{2})\b/', $dateInfo, $yearMatches)) {
+                $targetYear = $yearMatches[1];
+            }
+            
+            // Extract month
+            $months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+            foreach ($months as $month) {
+                if (stripos($dateInfo, $month) !== false) {
+                    $targetMonth = ucfirst($month);
+                    break;
+                }
+            }
+        }
+        
+        // Group folders by type and hierarchy
+        $yearFolders = [];
+        $monthFolders = [];
+        $documentTypeFolders = [];
+        $otherFolders = [];
+        
+        // Find best matching folders based on document metadata
+        $bestYearFolder = null;
+        $bestMonthFolder = null;
+        $bestDocTypeFolder = null;
+        
+        foreach ($folders as $folder) {
+            // Add folder to appropriate category
+            if (!empty($folder['is_year_folder'])) {
+                $yearFolders[] = $folder;
+                
+                // Check if this is the target year
+                if ($targetYear && $folder['name'] === $targetYear) {
+                    $bestYearFolder = $folder;
+                }
+            }
+            else if (!empty($folder['is_month_folder'])) {
+                $monthFolders[] = $folder;
+                
+                // Check if this is the target month and under the target year
+                if ($targetMonth && strcasecmp($folder['name'], $targetMonth) === 0 && 
+                    $bestYearFolder && isset($folder['parent_id']) && $folder['parent_id'] == $bestYearFolder['id']) {
+                    $bestMonthFolder = $folder;
+                }
+            }
+            else if (!empty($folder['is_document_type_folder']) || 
+                    strtolower($folder['name']) === 'expense' || 
+                    strtolower($folder['name']) === 'income') {
+                $documentTypeFolders[] = $folder;
+                
+                // Check if this is the right document type folder under the target month
+                if ($bestMonthFolder && isset($folder['parent_id']) && $folder['parent_id'] == $bestMonthFolder['id']) {
+                    if (($docCategory === 'EXPENSE' && strtolower($folder['name']) === 'expense') ||
+                        ($docCategory === 'INCOME' && strtolower($folder['name']) === 'income')) {
+                        $bestDocTypeFolder = $folder;
+                    }
+                }
+            }
+            else {
+                $otherFolders[] = $folder;
+            }
+        }
+        
+        // List all available folders with their details
+        $prompt .= "Available Folders:\n";
+        
+        // Format folder lists with highlighting for best matches
+        if ($yearFolders) {
+            $prompt .= "\nYear Folders:\n";
+            foreach ($yearFolders as $folder) {
+                $highlight = ($bestYearFolder && $folder['id'] == $bestYearFolder['id']) ? " [BEST MATCH FOR DOCUMENT YEAR]" : "";
+                $prompt .= "- ID: {$folder['id']}, Name: {$folder['name']}, Path: {$folder['path']}{$highlight}\n";
+            }
+        }
+        
+        if ($monthFolders) {
+            $prompt .= "\nMonth Folders:\n";
+            foreach ($monthFolders as $folder) {
+                $highlight = ($bestMonthFolder && $folder['id'] == $bestMonthFolder['id']) ? " [BEST MATCH FOR DOCUMENT MONTH]" : "";
+                $parentInfo = isset($folder['parent_id']) ? ", Parent ID: {$folder['parent_id']}" : "";
+                $prompt .= "- ID: {$folder['id']}, Name: {$folder['name']}, Path: {$folder['path']}{$parentInfo}{$highlight}\n";
+            }
+        }
+        
+        if ($documentTypeFolders) {
+            $prompt .= "\nDocument Type Folders:\n";
+            foreach ($documentTypeFolders as $folder) {
+                $highlight = ($bestDocTypeFolder && $folder['id'] == $bestDocTypeFolder['id']) ? " [BEST MATCH FOR DOCUMENT TYPE]" : "";
+                $parentInfo = isset($folder['parent_id']) ? ", Parent ID: {$folder['parent_id']}" : "";
+                $prompt .= "- ID: {$folder['id']}, Name: {$folder['name']}, Path: {$folder['path']}{$parentInfo}{$highlight}\n";
+            }
+        }
+        
+        if ($otherFolders) {
+            $prompt .= "\nOther Folders:\n";
+            foreach ($otherFolders as $folder) {
+                $parentInfo = isset($folder['parent_id']) ? ", Parent ID: {$folder['parent_id']}" : "";
+                $prompt .= "- ID: {$folder['id']}, Name: {$folder['name']}, Path: {$folder['path']}{$parentInfo}\n";
+            }
+        }
+        
+        // If we have a perfect match through the hierarchy, suggest it directly
+        if ($bestDocTypeFolder) {
+            $prompt .= "\nBased on the document analysis, the best folder match appears to be:\n";
+            $prompt .= "ID: {$bestDocTypeFolder['id']}, Name: {$bestDocTypeFolder['name']}, Path: {$bestDocTypeFolder['path']}\n\n";
+        }
+        
+        // Instructions for the AI
+        $prompt .= "\nInstructions:\n";
+        $prompt .= "1. Analyze the document content and metadata.\n";
+        $prompt .= "2. Follow the Year > Month > Document Type hierarchy when selecting a folder.\n";
+        $prompt .= "3. The document date is " . ($dateInfo ?: "unknown") . ".\n";
+        
+        if ($targetYear) {
+            $prompt .= "4. The document year appears to be {$targetYear}.\n";
+        }
+        
+        if ($targetMonth) {
+            $prompt .= "5. The document month appears to be {$targetMonth}.\n";
+        }
+        
+        $prompt .= "6. The document category is " . ($docCategory ?: "unknown") . ".\n";
+        $prompt .= "7. Select the most appropriate folder based on this information.\n";
+        $prompt .= "8. Return ONLY the folder ID number of your selection, nothing else.\n\n";
+        
+        // If we have a perfect match, suggest it directly
+        if ($bestDocTypeFolder) {
+            $prompt .= "The most appropriate folder appears to be ID: {$bestDocTypeFolder['id']} ({$bestDocTypeFolder['path']}).\n\n";
+        }
+        
+        $prompt .= "Respond with just the folder ID number, nothing else.";
+        
+        return $prompt;
+    }
+
+    /**
+     * Extract a folder ID from the AI response
+     * 
+     * @param string $response The raw response from the AI
+     * @return int|null The extracted folder ID, or null if not found
+     */
+    private function extractFolderId(string $response): ?int
+    {
+        // Clean up the response
+        $response = trim($response);
+        
+        // Try to match a standalone number
+        if (preg_match('/^\d+$/', $response)) {
+            return (int) $response;
+        }
+        
+        // Try to match a number with "ID:" or similar prefix
+        if (preg_match('/(?:id|folder|folder id|folder_id)[:\s]+(\d+)/i', $response, $matches)) {
+            return (int) $matches[1];
+        }
+        
+        // Try to match any number in the response
+        if (preg_match('/(\d+)/', $response, $matches)) {
+            return (int) $matches[1];
+        }
+        
+        return null;
+    }
+
+    private function extractDate(string $text): ?string
+    {
+        // Look for common date formats in the text
+        $patterns = [
+            // Standard formats: 2023-10-15, 15/10/2023, 15.10.2023, etc.
+            '/\b(20\d{2})[\/\.\-](0?[1-9]|1[0-2])[\/\.\-](0?[1-9]|[12][0-9]|3[01])\b/',
+            '/\b(0?[1-9]|[12][0-9]|3[01])[\/\.\-](0?[1-9]|1[0-2])[\/\.\-](20\d{2})\b/',
+            
+            // Month name formats: 15 October 2023, Oct 15, 2023
+            '/\b(0?[1-9]|[12][0-9]|3[01])[\s\-]?(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)[\s\-]?(20\d{2})\b/i',
+            '/\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)[\s\-]?(0?[1-9]|[12][0-9]|3[01])[\s\,\-]?(20\d{2})\b/i',
+            
+            // Look for "Date: " or "Invoice Date: " followed by a date
+            '/\b(?:Date|Invoice Date|Bill Date|Due Date|Issue Date)[\s\:]+([A-Za-z0-9\s\,\.\/\-]+20\d{2})\b/i',
+            
+            // Look for dates near "Invoice" or "Bill"
+            '/\bInvoice\s+(?:No|Number|#)?[\s\:\.]*[A-Za-z0-9\-]+\s+(?:Date)?[\s\:\.]*([A-Za-z0-9\s\,\.\/\-]+20\d{2})\b/i',
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text, $matches)) {
+                Log::info('Date extracted from document', [
+                    'pattern' => $pattern,
+                    'match' => $matches[0]
+                ]);
+                
+                // Return the full match for date patterns with labels, otherwise return the date components
+                if (strpos($pattern, 'Date|Invoice') !== false) {
+                    return trim($matches[1]);
+                } else {
+                    return trim($matches[0]);
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Analyze document to determine if it's an expense, income, or bank statement
+     * 
+     * @param string $text
+     * @param string|null $companyName
+     * @return array
+     */
+    private function analyzeDocumentType(string $text, ?string $companyName): array
+    {
+        $isInvoice = stripos($text, 'invoice') !== false || 
+                    stripos($text, 'bill') !== false || 
+                    stripos($text, 'receipt') !== false ||
+                    stripos($text, 'fatura') !== false;
+                    
+        $isExpense = false;
+        $isIncome = false;
+        $isBankStatement = false;
+        $confidence = 'low';
+        $reason = '';
+        
+        // Keywords that suggest expense
+        $expenseKeywords = [
+            'purchase', 'bought', 'expense', 'payment', 'paid', 'bill to', 
+            'amount due', 'total due', 'please pay', 'payable', 'supplier',
+            'vendor', 'cost', 'buy', 'service provider', 'expense report',
+            'reimbursement', 'procurement', 'purchase order', 'po number',
+            'shipping cost', 'tax', 'vat', 'fee', 'charge', 'debit',
+            'withdrawal', 'paid out', 'outgoing payment', 'expenditure',
+            'spent', 'purchase price', 'cost price', 'payment made',
+            'payment sent', 'payment to', 'invoice payment', 'bill payment',
+            'paid for', 'paid to', 'paid by check', 'paid by card',
+            'paid by bank transfer', 'paid by direct debit', 'paid by standing order'
+        ];
+        
+        // Keywords that suggest income
+        $incomeKeywords = [
+            'sold', 'income', 'revenue', 'payment received', 'paid to', 'remittance',
+            'thank you for your business', 'customer', 'client', 'sales', 'invoice to',
+            'billed to', 'bill to client', 'service provided', 'product sold',
+            'payment terms', 'net 30', 'due on receipt', 'invoice number',
+            'credit', 'deposit', 'incoming payment', 'received payment',
+            'payment received', 'payment from', 'invoice paid', 'bill paid',
+            'received for', 'received from', 'received by check', 'received by card',
+            'received by bank transfer', 'received by direct credit', 'received by standing order',
+            'sales invoice', 'sales receipt', 'payment confirmation', 'receipt of payment'
+        ];
+        
+        // Keywords that suggest bank statement
+        $bankStatementKeywords = [
+            'bank statement', 'account statement', 'statement of account', 'transaction history',
+            'account activity', 'account summary', 'opening balance', 'closing balance',
+            'statement period', 'statement date', 'account number', 'sort code',
+            'routing number', 'iban', 'swift', 'bic', 'transactions', 'deposits',
+            'withdrawals', 'balance', 'available balance', 'current balance',
+            'beginning balance', 'ending balance', 'statement', 'bank', 'banking',
+            'account', 'checking account', 'savings account', 'current account',
+            'debit card transactions', 'credit card transactions', 'atm withdrawals',
+            'direct deposits', 'direct debits', 'standing orders', 'transfers',
+            'interest paid', 'interest earned', 'fees charged', 'overdraft',
+            'credit limit', 'available credit', 'minimum payment', 'payment due date'
+        ];
+        
+        // Count keyword matches
+        $expenseMatches = 0;
+        $incomeMatches = 0;
+        $bankStatementMatches = 0;
+        
+        // Check for expense keywords
+        foreach ($expenseKeywords as $keyword) {
+            if (stripos($text, $keyword) !== false) {
+                $expenseMatches++;
+                Log::debug('Found expense keyword', ['keyword' => $keyword]);
+            }
+        }
+        
+        // Check for income keywords
+        foreach ($incomeKeywords as $keyword) {
+            if (stripos($text, $keyword) !== false) {
+                $incomeMatches++;
+                Log::debug('Found income keyword', ['keyword' => $keyword]);
+            }
+        }
+        
+        // Check for bank statement keywords
+        foreach ($bankStatementKeywords as $keyword) {
+            if (stripos($text, $keyword) !== false) {
+                $bankStatementMatches++;
+                Log::debug('Found bank statement keyword', ['keyword' => $keyword]);
+            }
+        }
+        
+        // Check if the company name appears in the document
+        $companyInDocument = false;
+        if ($companyName && stripos($text, $companyName) !== false) {
+            $companyInDocument = true;
+            
+            // Check if company appears near "bill to" or "invoice to"
+            if (stripos($text, "bill to " . $companyName) !== false || 
+                stripos($text, "invoice to " . $companyName) !== false ||
+                stripos($text, $companyName . " is billed") !== false) {
+                $incomeMatches += 3; // Strong indicator of income
+                Log::debug('Company name found near billing terms indicating income', [
+                    'company' => $companyName
+                ]);
+            }
+            
+            // Check if company appears as recipient of money
+            if (stripos($text, "pay to " . $companyName) !== false || 
+                stripos($text, "payable to " . $companyName) !== false) {
+                $incomeMatches += 3; // Strong indicator of income
+                Log::debug('Company name found as payment recipient indicating income', [
+                    'company' => $companyName
+                ]);
+            }
+            
+            // Check if company appears as sender of money
+            if (stripos($text, $companyName . " to pay") !== false || 
+                stripos($text, "payable by " . $companyName) !== false) {
+                $expenseMatches += 3; // Strong indicator of expense
+                Log::debug('Company name found as payer indicating expense', [
+                    'company' => $companyName
+                ]);
+            }
+        }
+        
+        // Look for "From" and "To" sections that might indicate direction of invoice
+        if (preg_match('/from\s*:\s*(.*?)\s*to\s*:\s*(.*?)(\n|$)/si', $text, $matches)) {
+            $from = strtolower(trim($matches[1]));
+            $to = strtolower(trim($matches[2]));
+            
+            if ($companyName && stripos($from, strtolower($companyName)) !== false) {
+                // If company is sending the invoice, it's likely income
+                $incomeMatches += 2;
+                Log::debug('Company found in FROM section indicating income', [
+                    'from' => $from,
+                    'to' => $to
+                ]);
+            } elseif ($companyName && stripos($to, strtolower($companyName)) !== false) {
+                // If company is receiving the invoice, it's likely expense
+                $expenseMatches += 2;
+                Log::debug('Company found in TO section indicating expense', [
+                    'from' => $from,
+                    'to' => $to
+                ]);
+            }
+        }
+        
+        // Determine document type based on keyword matches
+        if ($bankStatementMatches >= 5) {
+            $isBankStatement = true;
+            $confidence = $bankStatementMatches > 10 ? 'high' : ($bankStatementMatches > 5 ? 'medium' : 'low');
+            $reason = "Found {$bankStatementMatches} bank statement indicators";
+        } else if ($expenseMatches > $incomeMatches) {
+            $isExpense = true;
+            $confidence = $expenseMatches > 5 ? 'high' : ($expenseMatches > 2 ? 'medium' : 'low');
+            $reason = "Found {$expenseMatches} expense indicators vs {$incomeMatches} income indicators";
+        } else if ($incomeMatches > $expenseMatches) {
+            $isIncome = true;
+            $confidence = $incomeMatches > 5 ? 'high' : ($incomeMatches > 2 ? 'medium' : 'low');
+            $reason = "Found {$incomeMatches} income indicators vs {$expenseMatches} expense indicators";
+        } else {
+            // If tied, default to expense as it's more common
+            $isExpense = true;
+            $confidence = 'low';
+            $reason = "Equal indicators ({$expenseMatches}) for both expense and income, defaulting to expense";
+        }
+        
+        Log::info('Document type analysis', [
+            'is_invoice' => $isInvoice,
+            'is_expense' => $isExpense,
+            'is_income' => $isIncome,
+            'is_bank_statement' => $isBankStatement,
+            'confidence' => $confidence,
+            'expense_matches' => $expenseMatches,
+            'income_matches' => $incomeMatches,
+            'bank_statement_matches' => $bankStatementMatches,
+            'company_in_document' => $companyInDocument,
+            'reason' => $reason
+        ]);
+        
+        return [
+            'is_invoice' => $isInvoice,
+            'is_expense' => $isExpense,
+            'is_income' => $isIncome,
+            'is_bank_statement' => $isBankStatement,
+            'confidence' => $confidence,
+            'expense_matches' => $expenseMatches,
+            'income_matches' => $incomeMatches,
+            'bank_statement_matches' => $bankStatementMatches,
+            'reason' => $reason
+        ];
+    }
+
+    private function findFallbackFolder(array $folders): ?array
+    {
+        // Try to find a document type folder
+        foreach ($folders as $folder) {
+            if (isset($folder['is_document_type_folder']) && $folder['is_document_type_folder']) {
+                return $folder;
+            }
+        }
+        
+        // If no document type folder found, look for leaf folders (folders without children)
+        $parentIds = array_column($folders, 'parent_id');
+        foreach ($folders as $folder) {
+            // If this folder ID is not a parent of any other folder, it might be a leaf folder
+            if (!in_array($folder['id'], $parentIds)) {
+                return $folder;
+            }
+        }
+        
+        return null;
+    }
+
+    private function findDocumentTypeFolderUnderParent(int $parentId, array $folders): ?array
+    {
+        foreach ($folders as $folder) {
+            if (isset($folder['is_document_type_folder']) && $folder['is_document_type_folder'] && 
+                isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                return $folder;
+            }
+        }
+        
+        // If no document type folder found, look for leaf folders under this parent
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                // Check if this is a leaf folder (not a parent of any other folder)
+                $isLeaf = true;
+                foreach ($folders as $potentialChild) {
+                    if (isset($potentialChild['parent_id']) && $potentialChild['parent_id'] == $folder['id']) {
+                        $isLeaf = false;
+                        break;
+                    }
+                }
+                
+                if ($isLeaf) {
+                    return $folder;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Find a direct match for a document type folder based on the document category
+     * 
+     * @param array $folders List of all available folders
+     * @param string $docCategory Document category (EXPENSE or INCOME or BANK_STATEMENT)
+     * @param string|null $date Document date
+     * @return array|null The matching folder or null if not found
+     */
+    private function findDirectDocumentTypeMatch(array $folders, string $docCategory, ?string $date = null): ?array
+    {
+        // First, try to find an exact match for the document category
+        $categoryName = null;
+        $variations = [];
+        
+        if ($docCategory === 'EXPENSE') {
+            $categoryName = 'expense';
+            $variations = ['expense', 'expenses', 'cost', 'costs', 'bill', 'bills', 'invoice', 'invoices'];
+        } else if ($docCategory === 'INCOME') {
+            $categoryName = 'income';
+            $variations = ['income', 'incomes', 'revenue', 'revenues', 'sale', 'sales', 'invoice', 'invoices'];
+        } else if ($docCategory === 'BANK_STATEMENT') {
+            $categoryName = 'bank statement';
+            $variations = ['bank', 'statement', 'bank statements', 'statements', 'banking', 'banks'];
+        }
+        
+        if (!$categoryName) {
+            return null;
+        }
+        
+        // Look for folders with exact name match
+        foreach ($folders as $folder) {
+            if (strtolower($folder['name']) === $categoryName) {
+                Log::info('Found exact category match by name', [
+                    'category' => $docCategory,
+                    'folder_name' => $folder['name'],
+                    'folder_id' => $folder['id']
+                ]);
+                return $folder;
+            }
+            
+            // For bank statements, check variations
+            if ($docCategory === 'BANK_STATEMENT') {
+                foreach ($variations as $variation) {
+                    if (strtolower($folder['name']) === $variation) {
+                        Log::info('Found bank statement variation match', [
+                            'category' => $docCategory,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id'],
+                            'variation' => $variation
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Then look for document type folders that contain the category name
+        foreach ($folders as $folder) {
+            if (!empty($folder['is_document_type_folder'])) {
+                if ($docCategory === 'BANK_STATEMENT') {
+                    // For bank statements, check if folder name contains any of the variations
+                    foreach ($variations as $variation) {
+                        if (stripos($folder['name'], $variation) !== false) {
+                            Log::info('Found document type folder containing bank statement term', [
+                                'category' => $docCategory,
+                                'folder_name' => $folder['name'],
+                                'folder_id' => $folder['id'],
+                                'variation' => $variation
+                            ]);
+                            return $folder;
+                        }
+                    }
+                } else if (stripos($folder['name'], $categoryName) !== false) {
+                    Log::info('Found document type folder containing category name', [
+                        'category' => $docCategory,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+            }
+        }
+        
+        // If we have a date, try to find a folder structure that matches Year > Month > Category
+        if ($date) {
+            try {
+                $dateObj = new \DateTime($date);
+                $year = $dateObj->format('Y');
+                $month = $dateObj->format('F');
+                
+                // Find year folder
+                $yearFolder = null;
+                foreach ($folders as $folder) {
+                    if ($folder['name'] === $year || 
+                        (!empty($folder['is_year_folder']) && $folder['name'] === $year)) {
+                        $yearFolder = $folder;
+                        break;
+                    }
+                }
+                
+                if ($yearFolder) {
+                    // Find month folder under year
+                    $monthFolder = null;
+                    foreach ($folders as $folder) {
+                        if (isset($folder['parent_id']) && 
+                            $folder['parent_id'] == $yearFolder['id'] && 
+                            (strcasecmp($folder['name'], $month) === 0 || 
+                             (!empty($folder['is_month_folder']) && strcasecmp($folder['name'], $month) === 0))) {
+                            $monthFolder = $folder;
+                            break;
+                        }
+                    }
+                    
+                    if ($monthFolder) {
+                        // Find category folder under month
+                        foreach ($folders as $folder) {
+                            if (isset($folder['parent_id']) && 
+                                $folder['parent_id'] == $monthFolder['id']) {
+                                
+                                // Check if folder matches our category
+                                if ($docCategory === 'BANK_STATEMENT') {
+                                    // For bank statements, check if folder name contains any of the variations
+                                    foreach ($variations as $variation) {
+                                        if (stripos($folder['name'], $variation) !== false) {
+                                            Log::info('Found bank statement folder in Year > Month > Category structure', [
+                                                'year' => $year,
+                                                'month' => $month,
+                                                'category' => $docCategory,
+                                                'folder_name' => $folder['name'],
+                                                'folder_id' => $folder['id'],
+                                                'variation' => $variation
+                                            ]);
+                                            return $folder;
+                                        }
+                                    }
+                                } else if (strtolower($folder['name']) === $categoryName) {
+                                    Log::info('Found category folder in Year > Month > Category structure', [
+                                        'year' => $year,
+                                        'month' => $month,
+                                        'category' => $docCategory,
+                                        'folder_name' => $folder['name'],
+                                        'folder_id' => $folder['id']
+                                    ]);
+                                    return $folder;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Error parsing date for folder matching', [
+                    'date' => $date,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        // If we still haven't found a match, look for any document type folder
+        foreach ($folders as $folder) {
+            if (!empty($folder['is_document_type_folder'])) {
+                Log::info('Found document type folder as fallback', [
+                    'folder_name' => $folder['name'],
+                    'folder_id' => $folder['id']
+                ]);
+                return $folder;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Find a document type folder under a parent that matches the document category
+     * 
+     * @param int $parentId Parent folder ID
+     * @param array $folders List of all available folders
+     * @param string $docCategory Document category (EXPENSE, INCOME, or BANK_STATEMENT)
+     * @return array|null The matching folder or null if not found
+     */
+    private function findDocumentTypeFolderByCategory(int $parentId, array $folders, string $docCategory): ?array
+    {
+        $categoryName = null;
+        $variations = [];
+        
+        if ($docCategory === 'EXPENSE') {
+            $categoryName = 'expense';
+            $variations = ['expense', 'expenses', 'cost', 'costs', 'bill', 'bills', 'invoice', 'invoices'];
+        } else if ($docCategory === 'INCOME') {
+            $categoryName = 'income';
+            $variations = ['income', 'incomes', 'revenue', 'revenues', 'sale', 'sales', 'invoice', 'invoices'];
+        } else if ($docCategory === 'BANK_STATEMENT') {
+            $categoryName = 'bank statement';
+            $variations = ['bank', 'statement', 'bank statements', 'statements', 'banking', 'banks'];
+        }
+        
+        if (!$categoryName) {
+            return null;
+        }
+        
+        // Log all child folders under the parent for debugging
+        $childFolders = [];
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                $childFolders[] = [
+                    'id' => $folder['id'],
+                    'name' => $folder['name'],
+                    'is_document_type_folder' => $folder['is_document_type_folder'] ?? null
+                ];
+            }
+        }
+        
+        Log::debug('Looking for document type folder', [
+            'parent_id' => $parentId,
+            'category' => $docCategory,
+            'category_name' => $categoryName,
+            'variations' => $variations,
+            'child_folders' => $childFolders
+        ]);
+        
+        // First, look for exact name matches under the parent
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                // Check if the folder name exactly matches the category name (case-insensitive)
+                if (strtolower($folder['name']) === strtolower($categoryName)) {
+                    Log::info('Found exact category folder match under parent', [
+                        'parent_id' => $parentId,
+                        'category' => $docCategory,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+                
+                // Check variations for all document types
+                foreach ($variations as $variation) {
+                    if (strtolower($folder['name']) === strtolower($variation)) {
+                        Log::info('Found variation match under parent', [
+                            'parent_id' => $parentId,
+                            'category' => $docCategory,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id'],
+                            'variation' => $variation
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Then look for folders that contain the category name or variations
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                // Check if folder name contains the category name
+                if (stripos($folder['name'], $categoryName) !== false) {
+                    Log::info('Found folder containing category name under parent', [
+                        'parent_id' => $parentId,
+                        'category' => $docCategory,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+                
+                // Check if folder name contains any variation
+                foreach ($variations as $variation) {
+                    if (stripos($folder['name'], $variation) !== false) {
+                        Log::info('Found folder containing variation under parent', [
+                            'parent_id' => $parentId,
+                            'category' => $docCategory,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id'],
+                            'variation' => $variation
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Special case for "Expense" folder - direct name match
+        if ($docCategory === 'EXPENSE') {
+            foreach ($folders as $folder) {
+                if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                    if ($folder['name'] === 'Expense') {
+                        Log::info('Found Expense folder by exact name match', [
+                            'parent_id' => $parentId,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id']
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Special case for "Income" folder - direct name match
+        if ($docCategory === 'INCOME') {
+            foreach ($folders as $folder) {
+                if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                    if ($folder['name'] === 'Income') {
+                        Log::info('Found Income folder by exact name match', [
+                            'parent_id' => $parentId,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id']
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Special case for "Banks" folder - direct name match for bank statements
+        if ($docCategory === 'BANK_STATEMENT') {
+            foreach ($folders as $folder) {
+                if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                    if ($folder['name'] === 'Banks') {
+                        Log::info('Found Banks folder by exact name match', [
+                            'parent_id' => $parentId,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id']
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // If still not found, look for any document type folder under the parent
+        // Note: is_document_type_folder might be stored as a string in the database
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                // Check if is_document_type_folder is set (could be boolean or string)
+                $isDocTypeFolder = false;
+                if (isset($folder['is_document_type_folder'])) {
+                    $isDocTypeFolder = $folder['is_document_type_folder'] === true || 
+                                      $folder['is_document_type_folder'] === 1 || 
+                                      $folder['is_document_type_folder'] === '1' ||
+                                      $folder['is_document_type_folder'] === 'true' ||
+                                      $folder['is_document_type_folder'] === '"is_document_type_folder"' ||
+                                      $folder['is_document_type_folder'] === 'is_document_type_folder';
+                    
+                    Log::debug('Checking is_document_type_folder flag', [
+                        'folder_id' => $folder['id'],
+                        'folder_name' => $folder['name'],
+                        'is_document_type_folder_raw' => $folder['is_document_type_folder'],
+                        'is_document_type_folder_evaluated' => $isDocTypeFolder
+                    ]);
+                }
+                
+                if ($isDocTypeFolder) {
+                    Log::info('Using document type folder under parent as fallback', [
+                        'parent_id' => $parentId,
+                        'category' => $docCategory,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id'],
+                        'is_document_type_folder' => $folder['is_document_type_folder']
+                    ]);
+                    return $folder;
+                }
+            }
+        }
+        
+        // If we still haven't found a match, look for any folder under the parent that might be relevant
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                // For EXPENSE, look for folders that might be expense-related
+                if ($docCategory === 'EXPENSE' && 
+                    !stripos($folder['name'], 'income') && 
+                    !stripos($folder['name'], 'bank') && 
+                    !stripos($folder['name'], 'statement')) {
+                    Log::info('Using potential expense folder as last resort', [
+                        'parent_id' => $parentId,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+                
+                // For INCOME, look for folders that might be income-related
+                if ($docCategory === 'INCOME' && 
+                    !stripos($folder['name'], 'expense') && 
+                    !stripos($folder['name'], 'bank') && 
+                    !stripos($folder['name'], 'statement')) {
+                    Log::info('Using potential income folder as last resort', [
+                        'parent_id' => $parentId,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+                
+                // For BANK_STATEMENT, look for folders that might be bank-related
+                if ($docCategory === 'BANK_STATEMENT' && 
+                    (stripos($folder['name'], 'bank') !== false || 
+                     stripos($folder['name'], 'statement') !== false || 
+                     stripos($folder['name'], 'banking') !== false)) {
+                    Log::info('Using potential bank folder as last resort', [
+                        'parent_id' => $parentId,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Find a folder that matches the document category
+     * 
+     * @param array $folders List of all available folders
+     * @param string $docCategory Document category (EXPENSE, INCOME, or BANK_STATEMENT)
+     * @return array|null The matching folder or null if not found
+     */
+    private function findDocumentCategoryFolder(array $folders, string $docCategory): ?array
+    {
+        $categoryName = null;
+        $variations = [];
+        
+        if ($docCategory === 'EXPENSE') {
+            $categoryName = 'expense';
+            $variations = ['expense', 'expenses', 'cost', 'costs', 'bill', 'bills', 'invoice', 'invoices'];
+        } else if ($docCategory === 'INCOME') {
+            $categoryName = 'income';
+            $variations = ['income', 'incomes', 'revenue', 'revenues', 'sale', 'sales', 'invoice', 'invoices'];
+        } else if ($docCategory === 'BANK_STATEMENT') {
+            $categoryName = 'bank statement';
+            $variations = ['bank', 'statement', 'bank statements', 'statements', 'banking', 'banks'];
+        }
+        
+        if (!$categoryName) {
+            return null;
+        }
+        
+        // First, look for exact name matches
+        foreach ($folders as $folder) {
+            if (strtolower($folder['name']) === $categoryName) {
+                Log::info('Found exact category folder match', [
+                    'category' => $docCategory,
+                    'folder_name' => $folder['name'],
+                    'folder_id' => $folder['id']
+                ]);
+                return $folder;
+            }
+            
+            // For bank statements, check variations
+            if ($docCategory === 'BANK_STATEMENT') {
+                foreach ($variations as $variation) {
+                    if (strtolower($folder['name']) === $variation) {
+                        Log::info('Found bank statement variation match', [
+                            'category' => $docCategory,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id'],
+                            'variation' => $variation
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Then look for document type folders that contain the category name
+        foreach ($folders as $folder) {
+            if (!empty($folder['is_document_type_folder'])) {
+                if ($docCategory === 'BANK_STATEMENT') {
+                    // For bank statements, check if folder name contains any of the variations
+                    foreach ($variations as $variation) {
+                        if (stripos($folder['name'], $variation) !== false) {
+                            Log::info('Found document type folder containing bank statement term', [
+                                'category' => $docCategory,
+                                'folder_name' => $folder['name'],
+                                'folder_id' => $folder['id'],
+                                'variation' => $variation
+                            ]);
+                            return $folder;
+                        }
+                    }
+                } else if (stripos($folder['name'], $categoryName) !== false) {
+                    Log::info('Found document type folder containing category name', [
+                        'category' => $docCategory,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Find a document type folder under a parent that matches the document category
+     * 
+     * @param int $parentId Parent folder ID
+     * @param array $folders List of all available folders
+     * @param string $docCategory Document category (EXPENSE, INCOME, or BANK_STATEMENT)
+     * @return array|null The matching folder or null if not found
+     */
+    private function findDocumentTypeFolderByCategory(int $parentId, array $folders, string $docCategory): ?array
+    {
+        $categoryName = null;
+        $variations = [];
+        
+        if ($docCategory === 'EXPENSE') {
+            $categoryName = 'expense';
+            $variations = ['expense', 'expenses', 'cost', 'costs', 'bill', 'bills', 'invoice', 'invoices'];
+        } else if ($docCategory === 'INCOME') {
+            $categoryName = 'income';
+            $variations = ['income', 'incomes', 'revenue', 'revenues', 'sale', 'sales', 'invoice', 'invoices'];
+        } else if ($docCategory === 'BANK_STATEMENT') {
+            $categoryName = 'bank statement';
+            $variations = ['bank', 'statement', 'bank statements', 'statements', 'banking', 'banks'];
+        }
+        
+        if (!$categoryName) {
+            return null;
+        }
+        
+        // Log all child folders under the parent for debugging
+        $childFolders = [];
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                $childFolders[] = [
+                    'id' => $folder['id'],
+                    'name' => $folder['name'],
+                    'is_document_type_folder' => $folder['is_document_type_folder'] ?? null
+                ];
+            }
+        }
+        
+        Log::debug('Looking for document type folder', [
+            'parent_id' => $parentId,
+            'category' => $docCategory,
+            'category_name' => $categoryName,
+            'variations' => $variations,
+            'child_folders' => $childFolders
+        ]);
+        
+        // First, look for exact name matches under the parent
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                // Check if the folder name exactly matches the category name (case-insensitive)
+                if (strtolower($folder['name']) === strtolower($categoryName)) {
+                    Log::info('Found exact category folder match under parent', [
+                        'parent_id' => $parentId,
+                        'category' => $docCategory,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+                
+                // Check variations for all document types
+                foreach ($variations as $variation) {
+                    if (strtolower($folder['name']) === strtolower($variation)) {
+                        Log::info('Found variation match under parent', [
+                            'parent_id' => $parentId,
+                            'category' => $docCategory,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id'],
+                            'variation' => $variation
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Then look for folders that contain the category name or variations
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                // Check if folder name contains the category name
+                if (stripos($folder['name'], $categoryName) !== false) {
+                    Log::info('Found folder containing category name under parent', [
+                        'parent_id' => $parentId,
+                        'category' => $docCategory,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+                
+                // Check if folder name contains any variation
+                foreach ($variations as $variation) {
+                    if (stripos($folder['name'], $variation) !== false) {
+                        Log::info('Found folder containing variation under parent', [
+                            'parent_id' => $parentId,
+                            'category' => $docCategory,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id'],
+                            'variation' => $variation
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Special case for "Expense" folder - direct name match
+        if ($docCategory === 'EXPENSE') {
+            foreach ($folders as $folder) {
+                if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                    if ($folder['name'] === 'Expense') {
+                        Log::info('Found Expense folder by exact name match', [
+                            'parent_id' => $parentId,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id']
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Special case for "Income" folder - direct name match
+        if ($docCategory === 'INCOME') {
+            foreach ($folders as $folder) {
+                if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                    if ($folder['name'] === 'Income') {
+                        Log::info('Found Income folder by exact name match', [
+                            'parent_id' => $parentId,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id']
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // Special case for "Banks" folder - direct name match for bank statements
+        if ($docCategory === 'BANK_STATEMENT') {
+            foreach ($folders as $folder) {
+                if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                    if ($folder['name'] === 'Banks') {
+                        Log::info('Found Banks folder by exact name match', [
+                            'parent_id' => $parentId,
+                            'folder_name' => $folder['name'],
+                            'folder_id' => $folder['id']
+                        ]);
+                        return $folder;
+                    }
+                }
+            }
+        }
+        
+        // If still not found, look for any document type folder under the parent
+        // Note: is_document_type_folder might be stored as a string in the database
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                // Check if is_document_type_folder is set (could be boolean or string)
+                $isDocTypeFolder = false;
+                if (isset($folder['is_document_type_folder'])) {
+                    $isDocTypeFolder = $folder['is_document_type_folder'] === true || 
+                                      $folder['is_document_type_folder'] === 1 || 
+                                      $folder['is_document_type_folder'] === '1' ||
+                                      $folder['is_document_type_folder'] === 'true' ||
+                                      $folder['is_document_type_folder'] === '"is_document_type_folder"' ||
+                                      $folder['is_document_type_folder'] === 'is_document_type_folder';
+                    
+                    Log::debug('Checking is_document_type_folder flag', [
+                        'folder_id' => $folder['id'],
+                        'folder_name' => $folder['name'],
+                        'is_document_type_folder_raw' => $folder['is_document_type_folder'],
+                        'is_document_type_folder_evaluated' => $isDocTypeFolder
+                    ]);
+                }
+                
+                if ($isDocTypeFolder) {
+                    Log::info('Using document type folder under parent as fallback', [
+                        'parent_id' => $parentId,
+                        'category' => $docCategory,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id'],
+                        'is_document_type_folder' => $folder['is_document_type_folder']
+                    ]);
+                    return $folder;
+                }
+            }
+        }
+        
+        // If we still haven't found a match, look for any folder under the parent that might be relevant
+        foreach ($folders as $folder) {
+            if (isset($folder['parent_id']) && $folder['parent_id'] == $parentId) {
+                // For EXPENSE, look for folders that might be expense-related
+                if ($docCategory === 'EXPENSE' && 
+                    !stripos($folder['name'], 'income') && 
+                    !stripos($folder['name'], 'bank') && 
+                    !stripos($folder['name'], 'statement')) {
+                    Log::info('Using potential expense folder as last resort', [
+                        'parent_id' => $parentId,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+                
+                // For INCOME, look for folders that might be income-related
+                if ($docCategory === 'INCOME' && 
+                    !stripos($folder['name'], 'expense') && 
+                    !stripos($folder['name'], 'bank') && 
+                    !stripos($folder['name'], 'statement')) {
+                    Log::info('Using potential income folder as last resort', [
+                        'parent_id' => $parentId,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+                
+                // For BANK_STATEMENT, look for folders that might be bank-related
+                if ($docCategory === 'BANK_STATEMENT' && 
+                    (stripos($folder['name'], 'bank') !== false || 
+                     stripos($folder['name'], 'statement') !== false || 
+                     stripos($folder['name'], 'banking') !== false)) {
+                    Log::info('Using potential bank folder as last resort', [
+                        'parent_id' => $parentId,
+                        'folder_name' => $folder['name'],
+                        'folder_id' => $folder['id']
+                    ]);
+                    return $folder;
+                }
+            }
+        }
+        
+        return null;
+    }
+}

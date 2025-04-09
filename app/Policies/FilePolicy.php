@@ -22,6 +22,27 @@ class FilePolicy
         return $user->id === $file->uploaded_by;
     }
 
+    public function update(User $user, File $file): bool
+    {
+        // Allow admins to update any file
+        if ($user->is_admin) {
+            return true;
+        }
+        
+        // Allow file uploader to update their own files
+        if ($user->id === $file->uploaded_by) {
+            return true;
+        }
+        
+        // Allow access if user has access to the folder containing the file
+        if ($file->folder && $file->folder->users->contains($user->id)) {
+            return true;
+        }
+        
+        // Check if user is accountant with access to this file
+        return $this->accountantAccess($user, $file);
+    }
+
     public function accountantAccess(User $user, File $file): bool
     {
         // Check if the user is an accountant

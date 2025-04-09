@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\FileController as AdminFileController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\FileClassificationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\OnboardingController;
@@ -41,13 +42,13 @@ Route::get('/', function () {
 })->name('home');
 
 // Subscription Routes
-Route::middleware(['auth'])->group(function () {
-    Route::get('/plans', [SubscriptionController::class, 'showPlans'])->name('user.subscription.plans');
-    Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('user.subscription.payment.form');
-    Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('user.subscription.create');
-    Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('user.subscription.cancel');
-    Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('user.subscription.resume');
-    Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('user.subscription.billing.portal');
+Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+    Route::get('/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
+    Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
+    Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('subscription.create');
+    Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
+    Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('subscription.billing.portal');
 });
 
 // Onboarding Routes
@@ -72,11 +73,6 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
     ->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Profile routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
     // Company Management
     Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
     Route::get('/companies/create', [CompanyController::class, 'create'])->name('companies.create');
@@ -86,13 +82,6 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
     Route::put('/companies/{company}', [CompanyController::class, 'update'])->name('companies.update');
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->name('companies.destroy');
     
-    // Subscription Management
-    Route::get('/subscription', [SubscriptionController::class, 'show'])->name('subscription.show');
-    Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
-    Route::get('/subscription/success', [SubscriptionController::class, 'success'])->name('subscription.success');
-    Route::get('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
-    Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('billing.portal');
-
     // Folder routes (accessible to users)
     Route::get('/folders', [FolderController::class, 'index'])->name('folders.index');
     Route::get('/folders/{folder}', [FolderController::class, 'show'])->name('folders.show');
@@ -104,25 +93,22 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
     Route::delete('files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
     Route::post('/folders/{folder}/upload', [FileController::class, 'store'])->name('files.upload');
     Route::post('/folders/{folder}/chunk', [FileController::class, 'storeChunk'])->name('files.chunk');
+    
+    // File Classification routes
+    Route::get('/classifications', [FileClassificationController::class, 'index'])->name('files.classification');
+    Route::post('/classifications/bulk', [FileClassificationController::class, 'bulkClassify'])->name('files.classification.bulk');
+    Route::get('/classifications/{file}', [FileClassificationController::class, 'show'])->name('files.classification.show');
+    Route::post('/classifications/{file}', [FileClassificationController::class, 'handleClassification'])->name('files.classification.handle');
 });
 
 // All folder and company routes now require subscription
 
-// Profile routes - Available to all authenticated users, even without subscription
-Route::middleware('auth')->group(function () {
+// Profile routes - Available to all authenticated users
+Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
-// Profile routes - Available to all authenticated users, even without onboarding
-Route::middleware(['auth'])->group(function () {
-    Route::get('/settings', [ProfileController::class, 'edit'])->name('user.profile.edit');
-    Route::patch('/settings', [ProfileController::class, 'update'])->name('user.profile.update');
-    Route::delete('/settings', [ProfileController::class, 'destroy'])->name('user.profile.destroy');
-});
-
-// All company routes moved to protected section requiring subscription
 
 // Admin Routes
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
