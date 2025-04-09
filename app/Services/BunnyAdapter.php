@@ -87,7 +87,7 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function write(string $path, string $contents, Config $config): void
     {
-        $this->upload($path, $contents);
+        $this->uploadContent($path, $contents);
     }
 
     /**
@@ -95,13 +95,13 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function writeStream(string $path, $contents, Config $config): void
     {
-        $this->upload($path, $contents);
+        $this->uploadContent($path, $contents);
     }
 
     /**
-     * Upload a file to Bunny CDN
+     * Upload content to Bunny CDN
      */
-    private function upload(string $path, $contents): void
+    private function uploadContent(string $path, $contents): void
     {
         $client = new Client();
         
@@ -148,7 +148,7 @@ class BunnyAdapter implements FilesystemAdapter
                 throw new \RuntimeException('Could not open file for reading');
             }
 
-            $this->upload($name, $stream);
+            $this->uploadContent($name, $stream);
             
             if (is_resource($stream)) {
                 fclose($stream);
