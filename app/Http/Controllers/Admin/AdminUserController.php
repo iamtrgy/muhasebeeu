@@ -384,10 +384,13 @@ class AdminUserController extends Controller
         // Get currently assigned users
         $assignedUsers = $accountant->assignedUsers()->pluck('user_id')->toArray();
         
-        // Get all regular users (not admins, not accountants)
+        // Get all regular users (not admins, not accountants, not assigned to other accountants)
         $availableUsers = User::where('id', '!=', $accountant->id)
             ->where('is_admin', false)
             ->where('is_accountant', false)  // Filter out other accountants
+            ->whereDoesntHave('assignedAccountants', function($query) use ($accountant) {
+                $query->where('accountant_id', '!=', $accountant->id); // Exclude users assigned to other accountants
+            })
             ->orderBy('name')
             ->get();
 
