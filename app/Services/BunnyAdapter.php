@@ -162,17 +162,21 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function putFileAs(string $directory, \Illuminate\Http\UploadedFile $file, string $name, array $options = []): string|false
     {
-        $stream = $file->stream();
-
         try {
+            $stream = fopen($file->path(), 'r');
+            if ($stream === false) {
+                throw new \RuntimeException('Could not open file for reading');
+            }
+
             $this->writeStream($name, $stream, $options);
+            
             if (is_resource($stream)) {
                 fclose($stream);
             }
             return $name; // Return the path on success
         } catch (\Exception $e) {
             Log::error('BunnyAdapter putFileAs failed: ' . $e->getMessage());
-            if (is_resource($stream)) {
+            if (isset($stream) && is_resource($stream)) {
                 fclose($stream);
             }
             return false; // Return false on failure
