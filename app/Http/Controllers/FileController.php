@@ -76,119 +76,44 @@ class FileController extends Controller
     public function store(FileUploadRequest $request, Folder $folder)
     {
         try {
-            // Log the incoming request headers for debugging
-            Log::info('File upload request received', [
-                'headers' => $request->headers->all(),
-                'has_files' => $request->hasFile('files'),
-                'content_type' => $request->header('Content-Type'),
-                'method' => $request->method(),
-                'ajax' => $request->ajax(),
-                'ip' => $request->ip()
-            ]);
-            
             $this->authorize('upload', $folder);
-
-            // Log the request data for debugging
-            Log::info('File upload attempt', [
-                'folder_id' => $folder->id,
-                'user_id' => auth()->id(),
-                'files_count' => $request->hasFile('files') ? count($request->file('files')) : 0
-            ]);
-
-            // Check if the request is too large (exceeding post_max_size)
-            if (empty($_FILES) && empty($_POST) && isset($_SERVER['REQUEST_METHOD']) && strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
-                Log::error('File upload failed: Request too large, likely exceeding post_max_size');
-                $maxSize = $this->fileService->formatBytes($this->fileService->returnBytes(ini_get('post_max_size')));
-                return redirect()->back()->with('error', 'The upload failed because the total file size exceeds the server limit (' . $maxSize . '). Try uploading smaller files or fewer files at once.');
+            
+            if (!$request->hasFile('files')) {
+                return response()->json(['error' => 'No files uploaded'], 400);
             }
 
             $uploadedFiles = [];
-            $errors = [];
-            
-            if (!$request->hasFile('files')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No files were uploaded.'
-                ], 422);
-            }
+            foreach ($request->file('files') as $file) {
+                $fileDetails = $this->fileService->processFileName($file, $folder);
+                $filePath = $fileDetails['file_path'];
 
-            foreach ($request->file('files') as $index => $file) {
-                try {
-                    // Use the FileService to handle the upload
-                    $uploadedFile = $this->fileService->upload($file, $folder, auth()->id());
-                    
-                    if (!$uploadedFile) {
-                        throw new \Exception('Failed to upload file: ' . $file->getClientOriginalName());
-                    }
-                    
-                    $uploadedFiles[] = $uploadedFile;
-                } catch (\Exception $e) {
-                    Log::error('Error uploading file', [
-                        'file_name' => $file->getClientOriginalName(),
-                        'folder_id' => $folder->id,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                    $errors[] = $file->getClientOriginalName() . ': ' . $e->getMessage();
+                // Store in Bunny storage
+                if (!Storage::disk('bunny')->putFileAs('', $file, $filePath)) {
+                    throw new \Exception("Failed to upload file: " . $file->getClientOriginalName());
                 }
+
+                // Create database record
+                $fileRecord = $folder->files()->create([
+                    'name' => $fileDetails['final_name'],
+                    'original_name' => $file->getClientOriginalName(),
+                    'path' => $filePath,
+                    'size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'uploaded_by' => auth()->id(),
+                ]);
+
+                $uploadedFiles[] = $fileRecord;
             }
 
-            if (!empty($errors)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Some files failed to upload:<br>' . implode("<br>", $errors)
-                ], 422);
-            }
-
-            if (empty($uploadedFiles)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No files were uploaded successfully. Please try again.'
-                ], 422);
-            }
-
-            $results = [];
-            foreach ($uploadedFiles as $file) {
-                $results[] = [
-                    'file_id' => $file->id,
-                    'name' => $file->name,
-                    'original_folder' => [
-                        'id' => $folder->id,
-                        'name' => $folder->name,
-                        'path' => $folder->parent ? $folder->parent->name . ' > ' . $folder->name : $folder->name
-                    ],
-                    'final_folder' => [
-                        'id' => $file->folder_id,
-                        'name' => $file->folder->name,
-                        'path' => $file->folder->parent ? $file->folder->parent->name . ' > ' . $file->folder->name : $file->folder->name
-                    ]
-                ];
-            }
-
-            $message = count($uploadedFiles) . ' file(s) uploaded successfully.';
-
-            return response()->json([
-                'success' => true,
-                'message' => $message,
-                'results' => $results,
-                'redirect' => null
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation error: ' . json_encode($e->errors()));
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $e->errors()
-            ], 422);
+            return response()->json(['files' => $uploadedFiles]);
         } catch (\Exception $e) {
-            Log::error('Uncaught error in file upload: ' . $e->getMessage(), [
-                'exception_class' => get_class($e),
-                'trace' => $e->getTraceAsString()
+            Log::error('File upload failed', [
+                'error' => $e->getMessage(),
+                'folder_id' => $folder->id,
+                'user_id' => auth()->id()
             ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred during file upload: ' . $e->getMessage()
-            ], 500);
+
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
