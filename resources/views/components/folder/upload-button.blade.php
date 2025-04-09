@@ -114,23 +114,30 @@
                     });
                     
                     this.on("success", function(files, response) {
-                        console.log("Upload successful:", response);
-                        
-                        // Reset the dropzone
-                        myDropzone.removeAllFiles(true);
-                        
-                        // Close the modal
-                        document.querySelector('[x-data]').__x.$data.showModal = false;
-                        
-                        // Reload the page to show new files
-                        window.location.reload();
+                        if (response.success) {
+                            console.log("Upload successful:", response.data);
+                            
+                            // Reset the dropzone
+                            myDropzone.removeAllFiles(true);
+                            
+                            // Close the modal
+                            document.querySelector('[x-data]').__x.$data.showModal = false;
+                            
+                            // Reload the page to show new files
+                            window.location.reload();
+                        } else {
+                            console.error("Upload failed:", response.message);
+                            alert('Error uploading files: ' + response.message);
+                        }
                     });
 
                     this.on("error", function(file, errorMessage, xhr) {
-                        console.error("Upload error:", errorMessage);
-                        
-                        // Show error message
-                        alert('Error uploading files: ' + (typeof errorMessage === 'string' ? errorMessage : 'Unknown error'));
+                        let message = errorMessage;
+                        if (typeof errorMessage === 'object' && errorMessage.message) {
+                            message = errorMessage.message;
+                        }
+                        console.error("Upload error:", message);
+                        alert('Error uploading files: ' + message);
                     });
                     
                     this.on("addedfile", function(file) {

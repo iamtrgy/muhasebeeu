@@ -76,8 +76,6 @@ class FileController extends Controller
     public function store(FileUploadRequest $request, Folder $folder)
     {
         try {
-            $this->authorize('upload', $folder);
-            
             if (!$request->hasFile('files')) {
                 return response()->json(['error' => 'No files uploaded'], 400);
             }
@@ -99,13 +97,25 @@ class FileController extends Controller
                     'path' => $filePath,
                     'size' => $file->getSize(),
                     'mime_type' => $file->getMimeType(),
-                    'uploaded_by' => auth()->id(),
                 ]);
 
-                $uploadedFiles[] = $fileRecord;
+                $uploadedFiles[] = [
+                    'id' => $fileRecord->id,
+                    'name' => $fileRecord->name,
+                    'original_name' => $fileRecord->original_name,
+                    'path' => $fileRecord->path,
+                    'size' => $fileRecord->size,
+                    'mime_type' => $fileRecord->mime_type,
+                    'created_at' => $fileRecord->created_at
+                ];
             }
 
-            return response()->json(['files' => $uploadedFiles]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Files uploaded successfully',
+                'data' => $uploadedFiles
+            ]);
+
         } catch (\Exception $e) {
             Log::error('File upload failed', [
                 'error' => $e->getMessage(),
@@ -113,7 +123,11 @@ class FileController extends Controller
                 'user_id' => auth()->id()
             ]);
 
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => []
+            ], 500);
         }
     }
 
