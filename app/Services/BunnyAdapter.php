@@ -29,7 +29,7 @@ class BunnyAdapter implements FilesystemAdapter
         
         $this->config = $config;
         $this->apiKey = $config['key'] ?? null;
-        $this->zone = $config['zone'] ?? null;
+        $this->zone = $config['zone'] ?? $config['storage_zone_name'] ?? null; // Support both keys
         $this->region = $config['region'] ?? null;
         $this->url = $config['url'] ?? null;
         
