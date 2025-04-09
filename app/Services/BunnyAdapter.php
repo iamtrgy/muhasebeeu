@@ -168,7 +168,7 @@ class BunnyAdapter implements FilesystemAdapter
                 throw new \RuntimeException('Could not open file for reading');
             }
 
-            $this->writeStream($name, $stream, $options);
+            $this->writeStream($name, $stream, new Config($options));
             
             if (is_resource($stream)) {
                 fclose($stream);
