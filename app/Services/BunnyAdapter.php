@@ -162,7 +162,7 @@ class BunnyAdapter implements FilesystemAdapter
      */
     public function putFileAs(string $directory, \Illuminate\Http\UploadedFile $file, string $name, array $options = []): string|false
     {
-        $stream = $file->getStream();
+        $stream = $file->stream();
 
         try {
             $this->writeStream($name, $stream, $options);
