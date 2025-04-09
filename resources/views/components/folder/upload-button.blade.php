@@ -109,7 +109,7 @@
                         if (myDropzone.getQueuedFiles().length > 0) {
                             myDropzone.processQueue();
                         } else {
-                            alert('Please add files to upload.');
+                            toastr.error('Please add files to upload.');
                         }
                     });
                     
@@ -123,11 +123,16 @@
                             // Close the modal
                             document.querySelector('[x-data]').__x.$data.showModal = false;
                             
+                            // Show success notification
+                            toastr.success('Files uploaded successfully');
+                            
                             // Reload the page to show new files
-                            window.location.reload();
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
                         } else {
                             console.error("Upload failed:", response.message);
-                            alert('Error uploading files: ' + response.message);
+                            toastr.error(response.message || 'Error uploading files');
                         }
                     });
 
@@ -137,7 +142,7 @@
                             message = errorMessage.message;
                         }
                         console.error("Upload error:", message);
-                        alert('Error uploading files: ' + message);
+                        toastr.error(message || 'Error uploading files');
                     });
                     
                     this.on("addedfile", function(file) {

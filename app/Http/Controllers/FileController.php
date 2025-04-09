@@ -97,6 +97,7 @@ class FileController extends Controller
                     'path' => $filePath,
                     'size' => $file->getSize(),
                     'mime_type' => $file->getMimeType(),
+                    'uploaded_by' => auth()->id(),
                 ]);
 
                 $uploadedFiles[] = [
