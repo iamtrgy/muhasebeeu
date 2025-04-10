@@ -130,8 +130,8 @@
                         if (!file.type.match(/image.*/)) {
                             // Use inline SVG for non-image files
                             const defaultIcon = `
-                                <svg class="w-full h-full text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M7 21C6.45 21 5.979 20.804 5.587 20.412C5.195 20.02 4.99933 19.5493 5 19V5C5 4.45 5.196 3.979 5.588 3.587C5.98 3.195 6.45067 2.99933 7 3H17C17.55 3 18.021 3.196 18.413 3.588C18.805 3.98 19.0007 4.45067 19 5V19C19 19.55 18.804 20.021 18.412 20.413C18.02 20.805 17.5493 21.0007 17 21H7ZM7 19H17V5H7V19ZM9 17H15V15H9V17ZM9 13H15V11H9V13ZM9 9H15V7H9V9Z" fill="currentColor"/>
+                                <svg class="h-full w-full text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>`;
                             
                             const img = file.previewElement.querySelector("[data-dz-thumbnail]");
