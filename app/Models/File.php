@@ -40,8 +40,8 @@ class File extends Model
     {
         // Generate URL from Bunny storage
         $config = config('filesystems.disks.bunny');
-        $cdnUrl = rtrim($config['cdn_url'] ?? 'https://all-files-1.b-cdn.net', '/');
-        return "{$cdnUrl}/{$this->path}";
+        $cdnUrl = $config['cdn_url'] ?? 'https://all-files-1.b-cdn.net/all-files';
+        return rtrim($cdnUrl, '/') . '/' . ltrim($this->path, '/');
     }
 
     public function getDownloadUrlAttribute(): string
