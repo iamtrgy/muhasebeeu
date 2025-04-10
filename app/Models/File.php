@@ -46,7 +46,7 @@ class File extends Model
 
     public function getDownloadUrlAttribute(): string
     {
-        return $this->url . '?download=' . urlencode($this->original_name);
+        return $this->url . '?download=1&filename=' . urlencode($this->original_name) . '&force=true';
     }
 
     /**
