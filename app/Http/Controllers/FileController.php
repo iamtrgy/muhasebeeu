@@ -184,14 +184,8 @@ class FileController extends Controller
         try {
             $this->authorize('download', $file);
 
-            // Check if file exists in Bunny storage
-            if (!Storage::disk('bunny')->fileExists($file->path)) {
-                throw new \Exception('File not found in storage.');
-            }
-
-            // Instead of downloading through our server, redirect to Bunny CDN with download parameter
+            // Instead of checking storage, directly redirect to CDN URL
             $downloadUrl = $file->download_url;
-            
             return redirect()->away($downloadUrl);
 
         } catch (\Exception $e) {
@@ -218,11 +212,6 @@ class FileController extends Controller
             // Check if user has access to the file through folder permissions
             if (!$file->folder->canAccess(auth()->user())) {
                 throw new \Exception('You do not have permission to access this file.');
-            }
-
-            // Check if file exists in Bunny storage
-            if (!Storage::disk('bunny')->fileExists($file->path)) {
-                throw new \Exception('File not found in storage.');
             }
 
             // For PDFs and images, we can display them in the browser

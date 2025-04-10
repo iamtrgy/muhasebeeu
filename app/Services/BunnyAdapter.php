@@ -69,16 +69,12 @@ class BunnyAdapter implements FilesystemAdapter
     public function fileExists(string $path): bool
     {
         try {
-            $response = (new Client())->head($this->baseUrl . $path, [
-                'headers' => $this->getHeaders(),
-            ]);
+            $client = $this->getHttpClient();
+            $path = ltrim($path, '/');
             
+            $response = $client->head($path);
             return $response->getStatusCode() === 200;
         } catch (\Exception $e) {
-            Log::error('BunnyAdapter fileExists error', [
-                'path' => $path,
-                'error' => $e->getMessage()
-            ]);
             return false;
         }
     }
