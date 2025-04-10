@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use GuzzleHttp\Client;
 
 class FileController extends Controller
 {
@@ -184,9 +185,22 @@ class FileController extends Controller
         try {
             $this->authorize('download', $file);
 
-            // Instead of checking storage, directly redirect to CDN URL
-            $downloadUrl = $file->download_url;
-            return redirect()->away($downloadUrl);
+            // Get the file URL
+            $url = $file->url;
+            
+            // Get file contents from CDN
+            $client = new Client();
+            $response = $client->get($url);
+            $contents = $response->getBody()->getContents();
+
+            // Force download with headers
+            return response($contents)
+                ->header('Content-Type', $file->mime_type)
+                ->header('Content-Disposition', 'attachment; filename="' . $file->original_name . '"')
+                ->header('Content-Length', strlen($contents))
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
 
         } catch (\Exception $e) {
             Log::error('File download failed', [
