@@ -66,7 +66,7 @@ return [
             'api_key' => env('BUNNY_API_KEY'),
             'region' => env('BUNNY_REGION', 'de'),
             'url' => env('BUNNY_URL', 'storage.bunnycdn.com/all-files'),
-            'cdn_url' => env('BUNNY_CDN_URL', 'https://all-files-1.b-cdn.net/all-files'),
+            'cdn_url' => env('BUNNY_CDN_URL', 'https://all-files-1.b-cdn.net'),
         ],
 
     ],
