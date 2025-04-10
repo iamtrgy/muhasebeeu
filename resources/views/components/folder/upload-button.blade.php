@@ -73,6 +73,8 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize Dropzone for the custom button
         if (typeof Dropzone !== 'undefined') {
+            Dropzone.autoDiscover = false;
+            
             var customDropzone = new Dropzone("#custom-dropzone", {
                 url: "/user/folders/{{ $folder->id }}/upload",
                 headers: {
@@ -81,7 +83,7 @@
                 paramName: "files",
                 maxFilesize: 10,
                 maxFiles: 10,
-                parallelUploads: 5,
+                parallelUploads: 3, // Reduced for better stability
                 uploadMultiple: true,
                 addRemoveLinks: true,
                 dictRemoveFile: "Remove",
@@ -89,26 +91,30 @@
                 autoProcessQueue: false,
                 clickable: "#custom-dropzone",
                 createImageThumbnails: true,
-                thumbnailWidth: 120,
-                thumbnailHeight: 120,
+                thumbnailWidth: 80, // Reduced thumbnail size
+                thumbnailHeight: 80, // Reduced thumbnail size
+                acceptedFiles: ".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif", // Explicitly define accepted files
+                timeout: 180000, // 3 minutes timeout
+                chunking: false, // Disable chunking for small files
                 previewTemplate: `
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-2 flex items-center justify-between">
-                        <div class="flex items-center space-x-4">
-                            <div class="flex-shrink-0 w-10 h-10">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 mb-2 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-shrink-0 w-8 h-8">
                                 <img data-dz-thumbnail class="w-full h-full object-cover rounded" />
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-white" data-dz-name></p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white truncate max-w-xs" data-dz-name></p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400" data-dz-size></p>
-                                <div class="mt-1 w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 hidden">
-                                    <div class="bg-blue-600 h-2.5 rounded-full" data-dz-uploadprogress style="width: 0%"></div>
-                                </div>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <span class="text-sm text-gray-500 dark:text-gray-400" data-dz-status></span>
-                            <button type="button" data-dz-remove class="text-red-500 hover:text-red-700">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-20">
+                                <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                    <div data-dz-uploadprogress class="h-1 bg-blue-600 rounded-full transition-all duration-300"></div>
+                                </div>
+                            </div>
+                            <button data-dz-remove class="text-red-500 hover:text-red-700">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </button>
@@ -117,104 +123,65 @@
                 `,
                 init: function() {
                     var myDropzone = this;
+                    var uploadButton = document.getElementById('custom-upload-submit');
                     
-                    // Handle the upload button click
-                    document.getElementById('custom-upload-submit').addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        if (myDropzone.getQueuedFiles().length > 0) {
-                            myDropzone.processQueue();
-                        } else {
-                            toastr.error('Please add files to upload.');
+                    // Optimize thumbnail generation
+                    this.on("addedfile", function(file) {
+                        if (!file.type.match(/image.*/)) {
+                            this.emit("thumbnail", file, "/path/to/default-file-icon.png");
                         }
                     });
                     
-                    this.on("addedfile", function(file) {
-                        console.log("File added:", file.name);
-                        // Show progress bar when file is added
-                        file.previewElement.querySelector("[data-dz-uploadprogress]").parentElement.classList.remove("hidden");
-                        file.previewElement.querySelector("[data-dz-status]").textContent = "Queued";
-                    });
-                    
-                    this.on("uploadprogress", function(file, progress) {
-                        console.log("Upload progress:", progress);
-                        file.previewElement.querySelector("[data-dz-uploadprogress]").style.width = progress + "%";
-                        file.previewElement.querySelector("[data-dz-status]").textContent = Math.round(progress) + "%";
-                    });
-                    
-                    this.on("success", function(files, response) {
-                        if (response.success) {
-                            console.log("Upload successful:", response.data);
-                            
-                            // Update status for all files
-                            this.files.forEach(file => {
-                                if (file.previewElement) {
-                                    // Hide progress bar
-                                    file.previewElement.querySelector("[data-dz-uploadprogress]").parentElement.classList.add("hidden");
-                                    // Update status
-                                    file.previewElement.querySelector("[data-dz-status]").textContent = "Uploaded";
-                                    // Add success indicator
-                                    file.previewElement.classList.add("border-green-500");
-                                }
-                            });
-                            
-                            // Show success notification
-                            toastr.success('Files uploaded successfully');
-                            
-                            // Close modal and reload after delay
-                            setTimeout(() => {
-                                // Get Alpine component and close modal
-                                const modalEl = document.querySelector('[x-data]');
-                                if (modalEl && modalEl.__x) {
-                                    modalEl.__x.$data.closeModal();
-                                }
-                                
-                                // Reload page
-                                window.location.reload();
-                            }, 1500);
+                    // Handle the upload button click
+                    uploadButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (myDropzone.getQueuedFiles().length > 0) {
+                            uploadButton.disabled = true;
+                            uploadButton.classList.add('opacity-50', 'cursor-not-allowed');
+                            myDropzone.processQueue();
                         } else {
-                            console.error("Upload failed:", response.message);
-                            toastr.error(response.message || 'Error uploading files');
-                            
-                            // Update status for all files
-                            this.files.forEach(file => {
-                                if (file.previewElement) {
-                                    // Hide progress bar
-                                    file.previewElement.querySelector("[data-dz-uploadprogress]").parentElement.classList.add("hidden");
-                                    // Update status
-                                    file.previewElement.querySelector("[data-dz-status]").textContent = "Failed";
-                                    // Add error indicator
-                                    file.previewElement.classList.add("border-red-500");
-                                }
-                            });
+                            toastr.warning('Please add files to upload');
                         }
                     });
 
+                    this.on("sending", function(file) {
+                        // Show loading state
+                        file.previewElement.classList.add('opacity-50');
+                    });
+
+                    this.on("success", function(file, response) {
+                        file.previewElement.classList.remove('opacity-50');
+                        toastr.success('File uploaded successfully');
+                    });
+
                     this.on("error", function(file, errorMessage, xhr) {
+                        file.previewElement.classList.remove('opacity-50');
                         let message = errorMessage;
                         if (typeof errorMessage === 'object' && errorMessage.message) {
                             message = errorMessage.message;
                         }
-                        console.error("Upload error:", message);
-                        
-                        // Update file status
-                        if (file.previewElement) {
-                            // Hide progress bar
-                            file.previewElement.querySelector("[data-dz-uploadprogress]").parentElement.classList.add("hidden");
-                            // Update status
-                            file.previewElement.querySelector("[data-dz-status]").textContent = "Error";
-                            // Add error indicator
-                            file.previewElement.classList.add("border-red-500");
-                        }
-                        
-                        toastr.error(message || 'Error uploading files');
+                        toastr.error(message);
                     });
-                    
-                    this.on("removedfile", function(file) {
-                        console.log("File removed:", file.name);
+
+                    this.on("queuecomplete", function() {
+                        uploadButton.disabled = false;
+                        uploadButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        // Reload the file list after all uploads are complete
+                        window.location.reload();
                     });
                 }
+            });
+
+            // Pre-initialize the dropzone click area
+            const dropzoneElement = document.getElementById('custom-dropzone');
+            dropzoneElement.addEventListener('click', function() {
+                // Add active state
+                this.classList.add('bg-gray-50', 'dark:bg-gray-700');
+                
+                // Remove active state after animation
+                setTimeout(() => {
+                    this.classList.remove('bg-gray-50', 'dark:bg-gray-700');
+                }, 200);
             });
         }
     });
