@@ -89,11 +89,16 @@ class BunnyAdapter implements FilesystemAdapter
         $path = ltrim($path, '/');
 
         try {
+            $headers = [
+                'Content-Type' => $config->get('mimetype', 'application/octet-stream'),
+            ];
+
             $response = $client->put($path, [
-                'body' => $contents
+                'body' => $contents,
+                'headers' => $headers
             ]);
 
-            if ($response->getStatusCode() !== 201) {
+            if ($response->getStatusCode() !== 201 && $response->getStatusCode() !== 200) {
                 throw new UnableToWriteFile("Unable to write file at location: {$path}");
             }
         } catch (\Exception $e) {
@@ -110,11 +115,16 @@ class BunnyAdapter implements FilesystemAdapter
         $path = ltrim($path, '/');
 
         try {
+            $headers = [
+                'Content-Type' => $config->get('mimetype', 'application/octet-stream'),
+            ];
+
             $response = $client->put($path, [
-                'body' => $contents
+                'body' => $contents,
+                'headers' => $headers
             ]);
 
-            if ($response->getStatusCode() !== 201) {
+            if ($response->getStatusCode() !== 201 && $response->getStatusCode() !== 200) {
                 throw new UnableToWriteFile("Unable to write file at location: {$path}");
             }
         } catch (\Exception $e) {
@@ -423,34 +433,24 @@ class BunnyAdapter implements FilesystemAdapter
         try {
             $fileStream = fopen($file->getRealPath(), 'r');
             
-            $response = (new Client())->put($this->storageUrl . ltrim($path, '/'), [
-                'headers' => [
-                    'AccessKey' => $this->apiKey,
-                    'Content-Type' => $file->getMimeType(),
-                    'Content-Length' => $file->getSize(),
-                ],
-                'body' => $fileStream,
+            // Create a Config object
+            $config = new Config([
+                'visibility' => $this->visibility,
+                'mimetype' => $file->getMimeType()
             ]);
+
+            $this->writeStream($path, $fileStream, $config);
             
-            fclose($fileStream);
-            
-            if ($response->getStatusCode() === 201 || $response->getStatusCode() === 200) {
-                return true;
+            if (is_resource($fileStream)) {
+                fclose($fileStream);
             }
-            
-            Log::error('BunnyAdapter upload failed', [
-                'path' => $path,
-                'status' => $response->getStatusCode(),
-                'response' => (string) $response->getBody()
-            ]);
-            
-            return false;
+
+            return true;
         } catch (\Exception $e) {
             Log::error('BunnyAdapter upload error', [
                 'path' => $path,
                 'error' => $e->getMessage()
             ]);
-            
             return false;
         }
     }
