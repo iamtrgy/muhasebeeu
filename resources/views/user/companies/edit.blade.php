@@ -1,16 +1,15 @@
 <x-app-layout>
-    <x-page-header
-        title="{{ __('Edit Company') }}"
-        description="{{ $company->name }}"
-        :breadcrumbs="[
-            ['title' => 'Dashboard', 'url' => route('user.dashboard')],
-            ['title' => 'Companies', 'url' => route('user.companies.index')],
-            ['title' => 'Edit Company', 'current' => true]
-        ]"
-    />
-
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Add Accountant Style Breadcrumb Navigation -->
+            <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mb-6">
+                <div class="px-4 py-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center text-sm">
+                         <x-company.breadcrumb :company="$company" />
+                    </div>
+                </div>
+            </div>
+
             <!-- Navigation -->
             <div class="mb-4">
                 <a href="{{ route('user.companies.show', $company->id) }}" class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
@@ -128,4 +127,4 @@
             </div>
         </div>
     </div>
-</x-app-layout> 
+</x-app-layout>

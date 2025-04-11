@@ -1,11 +1,16 @@
 <x-app-layout>
-    <x-page-header>
-        <x-slot name="title">{{ __('Choose Your Plan') }}</x-slot>
-        <x-slot name="description">{{ __('Select the perfect plan for your business needs') }}</x-slot>
-    </x-page-header>
-
-    <div class="py-12 bg-gray-50 dark:bg-gray-900">
+    <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Add Accountant Style Breadcrumb Navigation -->
+            <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mb-6">
+                <div class="px-4 py-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center text-sm">
+                         <x-subscription.breadcrumb />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success/Error Messages -->
             @if(isset($currentPlan) && $canceled)
                 <div class="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
                     <div class="flex">

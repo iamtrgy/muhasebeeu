@@ -1,14 +1,15 @@
 <x-app-layout>
-    <x-page-header
-        title="{{ __('My Companies') }}"
-        :breadcrumbs="[
-            ['title' => 'Dashboard', 'url' => route('user.dashboard')],
-            ['title' => 'Companies', 'current' => true]
-        ]"
-    />
-
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Add Accountant Style Breadcrumb Navigation -->
+            <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mb-6">
+                <div class="px-4 py-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center text-sm">
+                         <x-company.breadcrumb />
+                    </div>
+                </div>
+            </div>
+
             <!-- Success/Error Messages -->
             @if(session('success'))
                 <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">

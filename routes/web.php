@@ -71,9 +71,9 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
     ->name('user.') // Added name prefix
     ->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
+    Route::get('/current-month-folder', [FolderController::class, 'currentMonthFolder'])->name('current-month-folder');
     // Company Management
-    Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
+    Route::resource('companies', CompanyController::class);
     Route::get('/companies/create', [CompanyController::class, 'create'])->name('companies.create');
     Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
     Route::get('/companies/{company}', [CompanyController::class, 'show'])->name('companies.show');

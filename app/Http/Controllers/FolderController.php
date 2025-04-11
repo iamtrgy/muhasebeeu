@@ -364,4 +364,40 @@ class FolderController extends Controller
             \Log::error("Error deleting folder ID {$folder->id} from Bunny CDN: " . $e->getMessage());
         }
     }
+
+    public function currentMonthFolder()
+    {
+        $user = auth()->user();
+        $currentMonth = now()->format('Y-m');
+        
+        // Get user's companies
+        $companies = $user->companies;
+        
+        // If user has multiple companies, redirect to companies page
+        if ($companies->count() > 1) {
+            return redirect()->route('user.companies.index')
+                ->with('info', 'Please select a company first to access its current month folder.');
+        }
+        
+        // If user has exactly one company, find its current month folder
+        if ($companies->count() === 1) {
+            $folder = Folder::whereHas('users', function($q) {
+                $q->where('user_id', auth()->id());
+            })
+            ->where('company_id', $companies->first()->id)
+            ->where('name', 'LIKE', "%{$currentMonth}%")
+            ->first();
+
+            if (!$folder) {
+                return redirect()->route('user.folders.index')
+                    ->with('error', 'No folder found for the current month. Please select a folder manually.');
+            }
+
+            return redirect()->route('user.folders.show', ['folder' => $folder->id]);
+        }
+
+        // If user has no companies
+        return redirect()->route('user.companies.index')
+            ->with('error', 'You need to create or join a company first.');
+    }
 } 
