@@ -125,8 +125,20 @@ class FolderController extends Controller
             ->withCount(['files', 'children' => function($query) {
                 $query->whereNull('deleted_at');
             }])
-            ->latest()
-            ->get();
+            ->get()
+            ->sortBy(function($folder) {
+                // Extract month number from folder name (e.g., "January 2025" -> 1)
+                if (preg_match('/^(\w+)\s+\d{4}$/', $folder->name, $matches)) {
+                    $month = strtolower($matches[1]);
+                    $months = [
+                        'january' => 1, 'february' => 2, 'march' => 3, 'april' => 4,
+                        'may' => 5, 'june' => 6, 'july' => 7, 'august' => 8,
+                        'september' => 9, 'october' => 10, 'november' => 11, 'december' => 12
+                    ];
+                    return $months[$month] ?? 0;
+                }
+                return 0;
+            });
 
         // Get files with pagination
         $files = $folder->files()
