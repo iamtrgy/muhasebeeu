@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('code', 2)->unique();
+            $table->boolean('is_eu')->default(false);
             $table->timestamps();
         });
     }
