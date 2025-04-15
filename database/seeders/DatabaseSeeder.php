@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             CountrySeeder::class,
             EstonianTaxCalendarSeeder::class,
+            UserSeeder::class,
         ]);
     }
 }
