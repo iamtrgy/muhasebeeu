@@ -6,22 +6,25 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        if (!Schema::hasTable('company_user')) {
-            Schema::create('company_user', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
-                $table->foreignId('user_id')->constrained()->onDelete('cascade');
-                $table->string('role')->default('user'); // owner, admin, user, etc.
-                $table->timestamps();
-
-                $table->unique(['company_id', 'user_id']);
-            });
-        }
+        Schema::create('company_user', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('company_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->timestamps();
+            
+            $table->unique(['company_id', 'user_id']);
+        });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('company_user');
     }
