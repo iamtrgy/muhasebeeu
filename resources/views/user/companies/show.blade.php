@@ -36,7 +36,7 @@
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Company Information') }}</h3>
                                 <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Tax Number') }}</dt>
+                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Registry Number</dt>
                                         <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $company->tax_number ?? '-' }}</dd>
                                     </div>
                                     <div>

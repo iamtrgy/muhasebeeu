@@ -7,12 +7,14 @@
                 Home
             </a>
         </li>
-        <li class="text-gray-400">/</li>
-        <li>
-            <a href="{{ route('user.companies.index') }}" class="text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-gray-300">
-                Companies
-            </a>
-        </li>
+        @if(auth()->user()->companies->count() > 1)
+            <li class="text-gray-400">/</li>
+            <li>
+                <a href="{{ route('user.companies.index') }}" class="text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-gray-300">
+                    Companies
+                </a>
+            </li>
+        @endif
         @if($company)
             <li class="text-gray-400">/</li>
             <li>

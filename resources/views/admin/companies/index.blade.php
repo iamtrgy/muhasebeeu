@@ -71,7 +71,7 @@
                                 <x-admin.table.td>
                                     <div>
                                         @if($company->tax_number)
-                                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ __('Tax Number:') }} {{ $company->tax_number }}</div>
+                                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ __('Registry Number:') }} {{ $company->tax_number }}</div>
                                         @endif
                                         @if($company->vat_number)
                                             <div class="text-sm text-gray-500 dark:text-gray-400">{{ __('VAT:') }} {{ $company->vat_number }}</div>

@@ -18,8 +18,8 @@ class BunnyAdapter implements FilesystemAdapter
 {
     private string $baseUrl;
     private string $storageUrl;
-    private string $apiKey;
-    private string $zone;
+    private ?string $apiKey;
+    private ?string $zone;
 
     public function __construct(array $config)
     {
@@ -432,6 +432,23 @@ class BunnyAdapter implements FilesystemAdapter
         return $this->baseUrl . $path;
     }
 
+    /**
+     * Laravel Storage::put() metoduna benzer şekilde çalışacak metot
+     */
+    public function put(string $path, $contents): bool
+    {
+        try {
+            $this->write($path, $contents, new Config());
+            return true;
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter put error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
     public function upload(UploadedFile $file, string $path): bool
     {
         try {
@@ -466,6 +483,24 @@ class BunnyAdapter implements FilesystemAdapter
             ]);
             
             return false;
+        }
+    }
+
+    /**
+     * Laravel Storage::size() metoduna benzer şekilde çalışacak metot
+     * Dosya boyutunu byte cinsinden döndürür
+     */
+    public function size(string $path): int
+    {
+        try {
+            $attributes = $this->fileSize($path);
+            return $attributes->fileSize() ?? 0;
+        } catch (\Exception $e) {
+            Log::error('BunnyAdapter size error', [
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
         }
     }
 }

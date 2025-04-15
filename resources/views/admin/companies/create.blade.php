@@ -47,7 +47,7 @@
 
                         <!-- Tax Number -->
                         <div>
-                            <x-input-label for="tax_number" :value="__('Tax Number')" />
+                            <x-input-label for="tax_number" :value="__('Registry Number')" />
                             <x-text-input id="tax_number" name="tax_number" type="text" class="mt-1 block w-full" :value="old('tax_number')" />
                             <x-input-error :messages="$errors->get('tax_number')" class="mt-2" />
                         </div>

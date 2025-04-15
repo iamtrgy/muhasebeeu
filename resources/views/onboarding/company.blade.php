@@ -118,7 +118,7 @@
                 <!-- Tax Number -->
                 <div>
                     <label for="tax_number" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                        Tax Number <span class="text-gray-500 text-xs">(Optional)</span>
+                        Registry Number
                     </label>
                     <div class="mt-2">
                         <input type="text" id="tax_number" name="tax_number"
@@ -197,21 +197,34 @@
         <!-- Existing Company Form -->
         <form method="POST" action="{{ route('onboarding.postStep2') }}" 
               x-show="option === 'existing'" 
-              x-cloak
-              @submit="if(isEstonia && !selectedCompany) { $event.preventDefault(); formError = 'Please select a company from the search results first'; return false; }">
+              x-cloak>
             @csrf
             <input type="hidden" name="option" value="existing">
             
+            <!-- Display validation errors -->
+            @if ($errors->any())
+                <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                    <ul class="list-disc list-inside text-sm text-red-600 dark:text-red-400">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="space-y-4">
                 <!-- Standard Company Entry (non-Estonia) -->
-                <div x-show="!isEstonia">
+                <template x-if="!isEstonia">
                     <!-- Company Name -->
                     <div>
                         <label for="company_name" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                             Company Name
                         </label>
                         <div class="mt-2">
-                            <input type="text" id="company_name" name="company_name" :required="!isEstonia"
+                            <input type="text" 
+                                id="company_name" 
+                                name="company_name" 
+                                x-bind:required="!isEstonia"
                                 class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
                                 placeholder="Enter your existing company name">
                         </div>
@@ -219,7 +232,66 @@
                             <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
-                </div>
+
+                    <!-- Company Address -->
+                    <div class="mt-4">
+                        <label for="company_address" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                            Company Address <span class="text-gray-500 text-xs">(Optional)</span>
+                        </label>
+                        <div class="mt-2">
+                            <input type="text" id="company_address" name="company_address"
+                                class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
+                                placeholder="Enter company address">
+                        </div>
+                    </div>
+
+                    <!-- Company Phone -->
+                    <div class="mt-4">
+                        <label for="company_phone" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                            Company Phone <span class="text-gray-500 text-xs">(Optional)</span>
+                        </label>
+                        <div class="mt-2">
+                            <input type="text" id="company_phone" name="company_phone"
+                                class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
+                                placeholder="Enter company phone number">
+                        </div>
+                    </div>
+
+                    <!-- Company Email -->
+                    <div class="mt-4">
+                        <label for="company_email" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                            Company Email <span class="text-gray-500 text-xs">(Optional)</span>
+                        </label>
+                        <div class="mt-2">
+                            <input type="email" id="company_email" name="company_email"
+                                class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
+                                placeholder="Enter company email">
+                        </div>
+                    </div>
+
+                    <!-- Company VAT Number -->
+                    <div class="mt-4">
+                        <label for="company_vat_number" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                            VAT Number <span class="text-gray-500 text-xs">(Optional)</span>
+                        </label>
+                        <div class="mt-2">
+                            <input type="text" id="company_vat_number" name="company_vat_number"
+                                class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
+                                placeholder="Enter VAT number">
+                        </div>
+                    </div>
+
+                    <!-- Company Foundation Date -->
+                    <div class="mt-4">
+                        <label for="company_foundation_date" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                            Foundation Date <span class="text-gray-500 text-xs">(Optional)</span>
+                        </label>
+                        <div class="mt-2">
+                            <input type="date" id="company_foundation_date" name="company_foundation_date"
+                                class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600">
+                        </div>
+                    </div>
+                </template>
 
                 <!-- Estonia Company Search -->
                 <div x-show="isEstonia" x-cloak>
@@ -295,68 +367,51 @@
                                 For Estonian companies, VAT numbers typically follow the format "EE" followed by the registry code.
                             </p>
                         </div>
+
+                        <!-- Company Foundation Date -->
+                        <div x-show="selectedCompany" class="mt-4">
+                            <label for="company_foundation_date" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                                Foundation Date <span class="text-gray-500 text-xs">(Required)</span>
+                            </label>
+                            <div class="mt-2">
+                                <input type="date" id="company_foundation_date" name="company_foundation_date" required
+                                    class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600">
+                            </div>
+                            @error('company_foundation_date')
+                                <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                You can find your company's foundation date on the Estonian Business Registry website 
+                                <template x-if="selectedCompany">
+                                    <span>
+                                        at <a :href="'https://ariregister.rik.ee/eng/company/' + selectedCompany.reg_code" 
+                                           target="_blank" 
+                                           class="text-blue-600 dark:text-blue-400 hover:underline">
+                                            https://ariregister.rik.ee/eng/company/<span x-text="selectedCompany.reg_code"></span>
+                                        </a>
+                                    </span>
+                                </template>
+                            </p>
+                        </div>
                     </div>
 
                     <!-- Form error message -->
                     <div x-show="formError" class="mt-2 text-sm text-red-600 dark:text-red-400" x-text="formError"></div>
                     
-                    <!-- Estonia company fields - make them hidden but not with absolute positioning -->
-                    <div>
-                        <input type="hidden" id="est_company_name" name="company_name" :value="selectedCompany ? selectedCompany.name : ''">
-                        <input type="hidden" id="est_registry_code" name="company_registry_code" :value="selectedCompany ? selectedCompany.reg_code : ''">
-                        <input type="hidden" id="est_company_address" name="company_address" :value="selectedCompany ? selectedCompany.legal_address : ''">
-                        <!-- VAT number is now provided through the manual input field -->
-                    </div>
-                </div>
-
-                <!-- Additional fields for non-Estonian existing companies -->
-                <div x-show="!isEstonia && option === 'existing'" x-cloak>
-                    <!-- Company Address -->
-                    <div class="mt-4">
-                        <label for="company_address" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                            Company Address <span class="text-gray-500 text-xs">(Optional)</span>
-                        </label>
-                        <div class="mt-2">
-                            <input type="text" id="company_address" name="company_address"
-                                class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
-                                placeholder="Enter company address">
-                        </div>
-                    </div>
-
-                    <!-- Company Phone -->
-                    <div class="mt-4">
-                        <label for="company_phone" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                            Company Phone <span class="text-gray-500 text-xs">(Optional)</span>
-                        </label>
-                        <div class="mt-2">
-                            <input type="text" id="company_phone" name="company_phone"
-                                class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
-                                placeholder="Enter company phone number">
-                        </div>
-                    </div>
-
-                    <!-- Company Email -->
-                    <div class="mt-4">
-                        <label for="company_email" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                            Company Email <span class="text-gray-500 text-xs">(Optional)</span>
-                        </label>
-                        <div class="mt-2">
-                            <input type="email" id="company_email" name="company_email"
-                                class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
-                                placeholder="Enter company email">
-                        </div>
-                    </div>
-
-                    <!-- Company VAT Number -->
-                    <div class="mt-4">
-                        <label for="company_vat_number" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                            VAT Number <span class="text-gray-500 text-xs">(Optional)</span>
-                        </label>
-                        <div class="mt-2">
-                            <input type="text" id="company_vat_number" name="company_vat_number"
-                                class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
-                                placeholder="Enter VAT number">
-                        </div>
+                    <!-- Hidden fields for Estonia company -->
+                    <div x-show="isEstonia">
+                        <input type="hidden" 
+                            name="company_name" 
+                            x-bind:required="isEstonia"
+                            x-bind:disabled="!isEstonia"
+                            :value="selectedCompany ? selectedCompany.name : ''">
+                        <input type="hidden" 
+                            name="company_registry_code" 
+                            x-bind:required="isEstonia"
+                            :value="selectedCompany ? selectedCompany.reg_code : ''">
+                        <input type="hidden" 
+                            name="company_address" 
+                            :value="selectedCompany ? selectedCompany.legal_address : ''">
                     </div>
                 </div>
 
@@ -368,9 +423,11 @@
                             </svg>
                             Back
                         </a>
-                        <button type="submit" class="flex justify-center items-center gap-2 rounded-md bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors duration-200 w-2/3 dark:bg-blue-700 dark:hover:bg-blue-600" 
-                        :class="{ 'opacity-50 cursor-not-allowed': isEstonia && !selectedCompany }"
-                        :disabled="isEstonia && !selectedCompany">
+                        <button type="submit" 
+                            class="flex justify-center items-center gap-2 rounded-md bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors duration-200 w-2/3 dark:bg-blue-700 dark:hover:bg-blue-600" 
+                            :class="{ 'opacity-50 cursor-not-allowed': isEstonia && !selectedCompany }"
+                            :disabled="isEstonia && !selectedCompany"
+                            @click="if(isEstonia && !selectedCompany) { formError = 'Please select a company from the search results first'; $event.preventDefault(); }">
                             Complete Setup
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />

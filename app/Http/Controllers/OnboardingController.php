@@ -41,21 +41,31 @@ class OnboardingController extends Controller
     {
         $user = Auth::user();
 
-        // If onboarding is already completed, redirect to dashboard
-        if ($user->onboarding_completed) {
+        // If onboarding is completed and user has at least one company, redirect to dashboard
+        if ($user->onboarding_completed && $user->companies()->count() > 0) {
             return redirect()->route('user.dashboard');
+        }
+
+        // If onboarding is marked as completed but user has no companies,
+        // reset onboarding status and redirect to company creation
+        if ($user->onboarding_completed && $user->companies()->count() === 0) {
+            $user->update([
+                'onboarding_completed' => false,
+                'onboarding_step' => 'company_creation'
+            ]);
+            return redirect()->route('onboarding.step2');
         }
 
         // Redirect to the appropriate step based on the user's onboarding status
         switch ($user->onboarding_step) {
             case 'country_selection':
-                return redirect()->route('onboarding.country');
+                return redirect()->route('onboarding.step1');
             case 'company_creation':
-                return redirect()->route('onboarding.company');
+                return redirect()->route('onboarding.step2');
             default:
                 // Start with country selection if no step is set
                 $user->update(['onboarding_step' => 'country_selection']);
-                return redirect()->route('onboarding.country');
+                return redirect()->route('onboarding.step1');
         }
     }
 
@@ -149,54 +159,44 @@ class OnboardingController extends Controller
                 'is_own_company' => true,
                 'foundation_date' => $request->foundation_date,
             ]);
-            
-            // Create folder structure for the company (REMOVED)
-            // $this->folderService->createCompanyFolders($user, $company);
+
+            // Attach company to user with owner role
+            $user->companies()->attach($company->id, ['role' => 'owner']);
         } elseif ($request->option === 'existing') {
             // Check if it's Estonia
             $isEstonia = $user->country && $user->country->code === 'EE';
             
             if ($isEstonia) {
                 $request->validate([
-                    'company_name' => 'required|string|max:255|unique:companies,name',
-                    'company_registry_code' => 'required|string|max:50|unique:companies,tax_number',
+                    'company_name' => 'required|string|max:255',
+                    'company_registry_code' => 'required|string|max:50',
                     'company_address' => 'nullable|string|max:255',
                     'company_vat_number' => 'nullable|string|max:100',
+                    'company_foundation_date' => 'required|date',
                 ]);
-                
-                // Get additional company details from Estonian Business Registry
-                $foundationDate = null;
-                if ($request->company_registry_code) {
-                    $companyDetails = $this->estonianCompanyService->getCompanyDetails($request->company_registry_code);
-                    if ($companyDetails && isset($companyDetails['foundation_date'])) {
-                        $foundationDate = $companyDetails['foundation_date'];
-                    }
-                }
                 
                 // Create a record for the existing Estonian company
                 $company = Company::create([
                     'name' => $request->company_name,
                     'country_id' => $user->country_id,
                     'user_id' => $user->id,
-                    'tax_number' => $request->company_registry_code, // Use registry code as tax number
-                    'vat_number' => $request->company_vat_number, // Store the VAT number separately
-                    'address' => $request->company_address, // Save the address
+                    'tax_number' => $request->company_registry_code,
+                    'vat_number' => $request->company_vat_number,
+                    'address' => $request->company_address,
                     'is_own_company' => false,
-                    'foundation_date' => $foundationDate,
+                    'foundation_date' => $request->company_foundation_date,
                 ]);
-                
-                // Create folder structure for the company (REMOVED)
-                // $this->folderService->createCompanyFolders($user, $company);
             } else {
                 $request->validate([
-                    'company_name' => 'required|string|max:255|unique:companies,name',
+                    'company_name' => 'required|string|max:255',
                     'company_address' => 'nullable|string|max:255',
                     'company_phone' => 'nullable|string|max:20',
                     'company_email' => 'nullable|email|max:255',
                     'company_vat_number' => 'nullable|string|max:100',
+                    'company_foundation_date' => 'nullable|date',
                 ]);
                 
-                // Create a record for the existing company with more complete info
+                // Create a record for the existing company
                 $company = Company::create([
                     'name' => $request->company_name,
                     'country_id' => $user->country_id,
@@ -205,28 +205,30 @@ class OnboardingController extends Controller
                     'phone' => $request->company_phone,
                     'email' => $request->company_email,
                     'vat_number' => $request->company_vat_number,
+                    'foundation_date' => $request->company_foundation_date,
                     'is_own_company' => false,
                 ]);
-                
-                // Create folder structure for the company (REMOVED)
-                // $this->folderService->createCompanyFolders($user, $company);
             }
+
+            // Attach company to user with owner role
+            $user->companies()->attach($company->id, ['role' => 'owner']);
         } else {
             return back()->withErrors(['option' => 'Please select a valid option.']);
         }
 
-        // Mark onboarding as completed
+        // Set as current company and mark onboarding as completed
         $user->update([
+            'current_company_id' => $company->id,
             'onboarding_completed' => true,
-            'onboarding_step' => 'completed',
+            'onboarding_step' => 'completed'
         ]);
 
-        // Check subscription status and redirect accordingly
-        if ($user->subscribed('default')) { // Assuming 'default' is your subscription name
-            return redirect()->route('user.dashboard')->with('success', 'Onboarding completed successfully!');
-        } else {
-            return redirect()->route('user.subscription.plans')->with('info', 'Onboarding completed! Please choose a subscription plan to continue.');
-        }
+        // Create folder structure for the company
+        $this->folderService->createCompanyFolders($user, $company);
+
+        // Redirect to dashboard with success message
+        return redirect()->route('user.dashboard')
+            ->with('success', 'Company setup completed successfully!');
     }
 
     /**
@@ -242,5 +244,44 @@ class OnboardingController extends Controller
         ]);
 
         return redirect()->route('user.dashboard')->with('success', 'Onboarding skipped.');
+    }
+
+    public function storeCompany(Request $request)
+    {
+        $validated = $request->validate([
+            'company_name' => 'required|string|max:255',
+            'company_tax_number' => 'required|string|max:255',
+            'company_vat_number' => 'nullable|string|max:255',
+            'company_foundation_date' => 'nullable|date',
+            'company_id' => 'nullable|exists:companies,id',
+        ]);
+
+        $user = auth()->user();
+
+        if ($validated['company_id']) {
+            // Use existing company
+            $company = Company::find($validated['company_id']);
+            $company->update([
+                'vat_number' => $validated['company_vat_number'],
+                'foundation_date' => $validated['company_foundation_date'],
+            ]);
+        } else {
+            // Create new company
+            $company = Company::create([
+                'name' => $validated['company_name'],
+                'tax_number' => $validated['company_tax_number'],
+                'vat_number' => $validated['company_vat_number'],
+                'foundation_date' => $validated['company_foundation_date'],
+                'country' => 'EE',
+            ]);
+        }
+
+        // Attach company to user
+        $user->companies()->attach($company->id, ['role' => 'owner']);
+
+        // Set as current company
+        $user->update(['current_company_id' => $company->id]);
+
+        return redirect()->route('onboarding.step3');
     }
 }

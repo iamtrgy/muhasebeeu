@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use App\Services\FolderStructureService;
 
 class Kernel extends ConsoleKernel
 {
@@ -15,6 +16,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\ResetAdminPassword::class,
         Commands\RestoreAdmin::class,
+        Commands\RecreateCompanyFolders::class,
     ];
 
     /**
@@ -22,7 +24,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Create next month's folders on the 25th of each month
+        $schedule->call(function () {
+            $folderService = app(FolderStructureService::class);
+            $folderService->createNextMonthFolders();
+        })->monthlyOn(25, '00:00');
     }
 
     /**

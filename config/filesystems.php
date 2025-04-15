@@ -32,10 +32,8 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
-            'serve' => true,
+            'root' => storage_path('app'),
             'throw' => false,
-            'report' => false,
         ],
 
         'public' => [
@@ -64,8 +62,8 @@ return [
             'driver' => 'bunny',
             'storage_zone_name' => env('BUNNY_STORAGE_ZONE', 'all-files'),
             'api_key' => env('BUNNY_API_KEY'),
-            'region' => env('BUNNY_REGION', 'de'),
-            'url' => env('BUNNY_URL', 'storage.bunnycdn.com/all-files'),
+            'region' => env('BUNNY_REGION', '920428'),
+            'url' => env('BUNNY_URL', 'https://storage.bunnycdn.com/all-files'),
             'cdn_url' => env('BUNNY_CDN_URL', 'https://all-files-1.b-cdn.net'),
         ],
 

@@ -13,7 +13,13 @@ class BunnyServiceProvider extends ServiceProvider
     {
         Storage::extend('bunny', function ($app, $config) {
             Log::debug('BunnyServiceProvider extending storage with config:', $config);
-            return new BunnyAdapter($config);
+            try {
+                return new BunnyAdapter($config);
+            } catch (\Exception $e) {
+                Log::error('BunnyAdapter error: ' . $e->getMessage());
+                // Varsayılan olarak local disk kullanılacak
+                return Storage::createLocalDriver(['root' => storage_path('app')]);
+            }
         });
     }
 

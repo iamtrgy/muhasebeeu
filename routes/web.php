@@ -10,6 +10,7 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\InvoiceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckOnboardingStatus;
 use App\Http\Middleware\RedirectAdminToDashboard;
@@ -41,7 +42,7 @@ Route::get('/', function () {
 })->name('home');
 
 // Subscription Routes
-Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class, \App\Http\Middleware\EnsureOnboardingIsComplete::class])->prefix('user')->name('user.')->group(function () {
     Route::get('/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
     Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
     Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('subscription.create');
@@ -66,12 +67,29 @@ Route::middleware('auth')->group(function () {
 });
 
 // Authenticated User Routes (Non-Admin, Non-Accountant)
-Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class, 'subscribed'])
+Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class, 'subscribed', \App\Http\Middleware\EnsureOnboardingIsComplete::class])
     ->prefix('user') // Added prefix for clarity
     ->name('user.') // Added name prefix
     ->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/current-month-folder', [FolderController::class, 'currentMonthFolder'])->name('current-month-folder');
+
+    // Add routes here
+    
+    // Clients Management (new)
+    Route::resource('clients', \App\Http\Controllers\User\UserClientController::class);
+    
+    // Customers Management (legacy - keep for now)
+    Route::resource('userclients', \App\Http\Controllers\User\CustomerController::class);
+    
+    // Folders Management
+    Route::resource('folders', FolderController::class);
+    
+    // Invoices Management
+    Route::resource('invoices', InvoiceController::class);
+    Route::get('invoices/{invoice}/download-pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.download-pdf');
+    Route::post('invoices/{invoice}/regenerate-pdf', [InvoiceController::class, 'regeneratePdf'])->name('invoices.regenerate-pdf');
+    
     // Company Management
     Route::resource('companies', CompanyController::class);
     Route::get('/companies/create', [CompanyController::class, 'create'])->name('companies.create');

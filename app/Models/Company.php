@@ -60,4 +60,22 @@ class Company extends Model
     {
         return $this->hasMany(Folder::class);
     }
+
+    /**
+     * Get the users associated with the company.
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'company_user')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the users who have this as their current company.
+     */
+    public function currentUsers()
+    {
+        return $this->hasMany(User::class, 'current_company_id');
+    }
 }

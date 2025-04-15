@@ -6,17 +6,14 @@ use App\Models\Folder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use App\Services\AIFileUploadService;
 
 class ChunkedFileUploadService
 {
     protected $fileService;
-    protected $aiFileUploadService;
 
-    public function __construct(FileService $fileService, AIFileUploadService $aiFileUploadService)
+    public function __construct(FileService $fileService)
     {
         $this->fileService = $fileService;
-        $this->aiFileUploadService = $aiFileUploadService;
     }
 
     /**
@@ -31,9 +28,8 @@ class ChunkedFileUploadService
         int $fileSize,
         string $mimeType,
         Folder $folder,
-        int $userId,
-        bool $useAI = false
-    ): array {
+        int $userId
+    ) {
         $tempDir = storage_path('app/chunks');
         $finalPath = null;
         
@@ -93,35 +89,30 @@ class ChunkedFileUploadService
                 );
 
                 try {
-                    if ($useAI) {
-                        // Use AIFileUploadService for the final upload
-                        $file = $this->aiFileUploadService->uploadWithAI($uploadedFile, $folder, $userId, true);
-                    } else {
-                        // Regular upload without AI
-                        $fileDetails = $this->fileService->processFileName($uploadedFile, $folder);
-                        $filePath = $fileDetails['file_path'];
+                    // Regular upload
+                    $fileDetails = $this->fileService->processFileName($uploadedFile, $folder);
+                    $filePath = $fileDetails['file_path'];
 
-                        // Ensure the file contents are valid
-                        $fileContents = file_get_contents($finalPath);
-                        if ($fileContents === false) {
-                            throw new \Exception("Failed to read final file contents");
-                        }
-
-                        // Store in Bunny storage
-                        if (!Storage::disk('bunny')->write($filePath, $fileContents)) {
-                            throw new \Exception("Failed to write to Bunny storage");
-                        }
-
-                        // Create database record
-                        $file = $folder->files()->create([
-                            'name' => $fileDetails['final_name'],
-                            'original_name' => $originalFilename,
-                            'path' => $filePath,
-                            'size' => $fileSize,
-                            'mime_type' => $mimeType,
-                            'uploaded_by' => $userId,
-                        ]);
+                    // Ensure the file contents are valid
+                    $fileContents = file_get_contents($finalPath);
+                    if ($fileContents === false) {
+                        throw new \Exception("Failed to read final file contents");
                     }
+
+                    // Store in Bunny storage
+                    if (!Storage::disk('bunny')->write($filePath, $fileContents)) {
+                        throw new \Exception("Failed to write to Bunny storage");
+                    }
+
+                    // Create database record
+                    $file = $folder->files()->create([
+                        'name' => $fileDetails['final_name'],
+                        'original_name' => $originalFilename,
+                        'path' => $filePath,
+                        'size' => $fileSize,
+                        'mime_type' => $mimeType,
+                        'uploaded_by' => $userId,
+                    ]);
 
                     return ['all_chunks_received' => true, 'file' => $file];
                 } finally {
@@ -134,20 +125,11 @@ class ChunkedFileUploadService
 
             return ['all_chunks_received' => false];
         } catch (\Exception $e) {
-            Log::error('Error in handleChunkUpload: ' . $e->getMessage(), [
+            Log::error('Error in chunked upload: ' . $e->getMessage(), [
                 'chunk_index' => $chunkIndex,
                 'total_chunks' => $totalChunks,
-                'temp_filename' => $tempFilename,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
-
-            // Clean up any temporary files
-            array_map('unlink', glob("{$tempDir}/{$tempFilename}.part*"));
-            if ($finalPath && file_exists($finalPath)) {
-                unlink($finalPath);
-            }
-
             throw $e;
         }
     }

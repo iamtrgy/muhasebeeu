@@ -26,6 +26,13 @@
                         {{ __('Folders') }}
                     </a>
                 </li>
+
+                <li>
+                    <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 dark:text-gray-400 dark:hover:text-slate-300 {{ request()->routeIs('user.invoices.*') ? 'bg-gray-100 dark:bg-gray-900 dark:text-white' : '' }}" href="{{ route('user.invoices.index') }}">
+                        <svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+                        {{ __('Invoices') }}
+                    </a>
+                </li>
             </ul>
         </div>
 
@@ -34,9 +41,9 @@
             <p class="px-2.5 text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{{ __('Additional') }}</p>
             <ul class="space-y-1.5">
                 <li>
-                    <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 dark:text-gray-400 dark:hover:text-slate-300 {{ request()->routeIs('user.companies.*') ? 'bg-gray-100 dark:bg-gray-900 dark:text-white' : '' }}" href="{{ route('user.companies.index') }}">
-                        <svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                        {{ __('Companies') }}
+                    <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 dark:text-gray-400 dark:hover:text-slate-300 {{ request()->routeIs('user.clients.*') ? 'bg-gray-100 dark:bg-gray-900 dark:text-white' : '' }}" href="{{ route('user.clients.index') }}">
+                        <svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        {{ __('Clients') }}
                     </a>
                 </li>
             </ul>
@@ -46,6 +53,17 @@
     <!-- Bottom Actions -->
     <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
         <ul class="space-y-1.5">
+            <!-- Company -->
+            <li>
+                <a href="{{ route('user.companies.index') }}" 
+                   class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 dark:text-gray-400 dark:hover:text-gray-300 {{ request()->routeIs('user.companies.*') ? 'bg-gray-100 dark:bg-gray-900 dark:text-white' : '' }}">
+                    <svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    {{ auth()->user()->companies->count() > 0 ? auth()->user()->companies->count() . ' Companies' : 'Companies' }}
+                </a>
+            </li>
+
             <!-- Settings -->
             <li>
                 <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 dark:text-gray-400 dark:hover:text-slate-300 {{ request()->routeIs('user.profile.edit') ? 'bg-gray-100 dark:bg-gray-900 dark:text-white' : '' }}" href="{{ route('user.profile.edit') }}">

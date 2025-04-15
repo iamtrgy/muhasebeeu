@@ -259,11 +259,21 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the companies that belong to the user.
+     * Get the companies associated with the user.
      */
     public function companies()
     {
-        return $this->hasMany(Company::class);
+        return $this->belongsToMany(Company::class, 'company_user')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the user's current company.
+     */
+    public function currentCompany()
+    {
+        return $this->belongsTo(Company::class, 'current_company_id');
     }
 
     /**
@@ -288,5 +298,13 @@ class User extends Authenticatable
     public function assignedCompanies()
     {
         return $this->belongsToMany(Company::class, 'accountant_company', 'accountant_id', 'company_id');
+    }
+
+    /**
+     * Get the clients that belong to the user.
+     */
+    public function userClients()
+    {
+        return $this->hasMany(UserClient::class);
     }
 }

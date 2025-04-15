@@ -22,28 +22,84 @@ class EstonianCompanyService
     public function getCompanyDetails(string $registryCode)
     {
         try {
-            // Make API request to get company details
-            $response = Http::get("{$this->baseUrl}/est/api/card/company/{$registryCode}");
+            // Get company name from the database
+            $company = \App\Models\Company::where('tax_number', $registryCode)->first();
+            if (!$company) {
+                Log::warning("Company not found with registry code: {$registryCode}");
+                return null;
+            }
+
+            Log::info("Searching for company", [
+                'name' => $company->name,
+                'registry_code' => $registryCode
+            ]);
+
+            // Get company information from autocomplete endpoint
+            $url = "{$this->baseUrl}/est/api/autocomplete";
+            $params = ['q' => $company->name];
             
-            // If the request was successful
-            if ($response->successful()) {
-                $data = $response->json();
-                
-                // Extract the needed information
-                return [
-                    'name' => $data['name'] ?? null,
-                    'registry_code' => $data['code'] ?? $registryCode,
-                    'address' => $data['address'] ?? null,
-                    'foundation_date' => $this->extractFoundationDate($data),
-                    'status' => $data['status'] ?? null,
-                    'vat_number' => $this->formatVatNumber($data, $registryCode),
-                ];
+            Log::info("Making API request", [
+                'url' => $url,
+                'params' => $params
+            ]);
+
+            $response = Http::get($url, $params);
+            
+            if (!$response->successful()) {
+                Log::warning("Failed to get company information: {$response->status()}");
+                return null;
+            }
+
+            $data = $response->json();
+            $companyData = null;
+
+            if (isset($data['data']) && is_array($data['data'])) {
+                foreach ($data['data'] as $result) {
+                    if ((string)$result['reg_code'] === (string)$registryCode) {
+                        $companyData = $result;
+                        break;
+                    }
+                }
+            }
+
+            if (!$companyData) {
+                Log::warning("No company found with name: {$company->name} and registry code: {$registryCode}");
+                return null;
             }
             
-            Log::warning("Failed to get Estonian company details: {$response->status()}");
-            return null;
+            Log::info("Company data", [
+                'data' => $companyData
+            ]);
+
+            // Try to extract foundation date from available fields
+            $foundationDate = null;
+            if (isset($companyData['reg_date'])) {
+                try {
+                    $foundationDate = Carbon::parse($companyData['reg_date'])->format('Y-m-d');
+                } catch (\Exception $e) {
+                    Log::warning("Failed to parse registration date: {$e->getMessage()}");
+                }
+            }
+            
+            $result = [
+                'name' => $companyData['name'] ?? $company->name,
+                'registry_code' => $companyData['reg_code'] ?? $registryCode,
+                'address' => $companyData['legal_address'] ?? null,
+                'foundation_date' => $foundationDate,
+                'status' => $companyData['status'] ?? null,
+                'vat_number' => $companyData['vat_number'] ?? null
+            ];
+            
+            Log::info("Extracted company details", [
+                'result' => $result
+            ]);
+            
+            return $result;
         } catch (\Exception $e) {
-            Log::error("Error fetching Estonian company details: {$e->getMessage()}");
+            Log::error("Error fetching Estonian company details: {$e->getMessage()}", [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
             return null;
         }
     }
@@ -56,20 +112,39 @@ class EstonianCompanyService
      */
     private function extractFoundationDate(array $data)
     {
+        // Log the data to see what's available
+        Log::debug('Checking foundation date fields in company data', [
+            'available_fields' => array_keys($data)
+        ]);
+        
         // Try to get foundation date from the API response
-        if (isset($data['foundation_date'])) {
-            return Carbon::parse($data['foundation_date'])->format('Y-m-d');
+        if (isset($data['registration_date'])) {
+            Log::debug("Found foundation date in 'registration_date' field", ['value' => $data['registration_date']]);
+            return Carbon::parse($data['registration_date'])->format('Y-m-d');
         }
         
         // Alternative field names that might contain the foundation date
-        $possibleFields = ['registered_at', 'registration_date', 'established_on'];
+        $possibleFields = [
+            'registered_at', 
+            'foundation_date',
+            'established_on',
+            'asutatud', // Estonian for "founded"
+            'registreeritud', // Estonian for "registered"
+            'reg_date',
+            'establishment_date',
+            'date_of_establishment',
+            'incorporation_date',
+            'date_of_incorporation'
+        ];
         
         foreach ($possibleFields as $field) {
             if (isset($data[$field])) {
+                Log::debug("Found foundation date in '{$field}' field", ['value' => $data[$field]]);
                 return Carbon::parse($data[$field])->format('Y-m-d');
             }
         }
         
+        Log::warning("No foundation date found in company data");
         return null;
     }
     
@@ -115,5 +190,33 @@ class EstonianCompanyService
         // If no VAT number is found, return null
         Log::debug("No VAT number found for company with registry code {$registryCode}");
         return null;
+    }
+    
+    /**
+     * Extract address from company data
+     */
+    private function extractAddress($data)
+    {
+        if (isset($data['address'])) {
+            return $data['address'];
+        }
+        
+        // Try to combine address parts if available
+        $addressParts = [];
+        
+        $addressFields = [
+            'street', 'house', 'apartment',
+            'city', 'county', 'country',
+            'postal_code', 'address_line1',
+            'address_line2'
+        ];
+        
+        foreach ($addressFields as $field) {
+            if (isset($data[$field]) && !empty($data[$field])) {
+                $addressParts[] = $data[$field];
+            }
+        }
+        
+        return !empty($addressParts) ? implode(', ', $addressParts) : null;
     }
 } 
