@@ -176,53 +176,76 @@ class FolderStructureService
             $companies = Company::all();
             
             foreach ($companies as $company) {
-                $user = User::find($company->user_id);
-                if (!$user) continue;
+                try {
+                    $user = User::find($company->user_id);
+                    if (!$user) {
+                        Log::warning("Skipping folder creation for company {$company->id}: User not found");
+                        continue;
+                    }
 
-                // Find or create year folder
-                $yearFolder = Folder::firstOrCreate(
-                    [
-                        'name' => (string) $nextMonth->year,
-                        'company_id' => $company->id,
-                        'parent_id' => Folder::where('name', $company->name)
-                            ->where('company_id', $company->id)
-                            ->where('parent_id', null)
-                            ->first()->id
-                    ],
-                    [
-                        'created_by' => $user->id,
-                        'is_public' => false,
-                        'allow_uploads' => false,
-                        'path' => '/' . $company->name . '/' . $nextMonth->year
-                    ]
-                );
+                    // Find root company folder
+                    $rootFolder = Folder::where('name', $company->name)
+                        ->where('company_id', $company->id)
+                        ->where('parent_id', null)
+                        ->first();
 
-                // Associate the folder with the user if it's new
-                if ($yearFolder->wasRecentlyCreated) {
-                    $yearFolder->users()->attach($user->id);
-                }
+                    if (!$rootFolder) {
+                        Log::warning("Skipping folder creation for company {$company->id}: Root folder not found");
+                        continue;
+                    }
 
-                // Check if month folder already exists
-                $monthName = $nextMonth->format('F');
-                $existingMonthFolder = Folder::where('name', $monthName)
-                    ->where('parent_id', $yearFolder->id)
-                    ->first();
-
-                if (!$existingMonthFolder) {
-                    // Create the month folder and its categories
-                    $this->createMonthFolders(
-                        $user,
-                        $yearFolder,
-                        $company->id,
-                        $nextMonth->month,
-                        $nextMonth->month
+                    // Find or create year folder
+                    $yearFolder = Folder::firstOrCreate(
+                        [
+                            'name' => (string) $nextMonth->year,
+                            'company_id' => $company->id,
+                            'parent_id' => $rootFolder->id,
+                            'path' => '/' . $company->name . '/' . $nextMonth->year
+                        ],
+                        [
+                            'created_by' => $user->id,
+                            'is_public' => false,
+                            'allow_uploads' => false
+                        ]
                     );
+
+                    // Associate the folder with the user if it's new
+                    if ($yearFolder->wasRecentlyCreated) {
+                        $yearFolder->users()->attach($user->id);
+                    }
+
+                    // Check if month folder already exists
+                    $monthName = $nextMonth->format('F');
+                    $monthPath = $yearFolder->path . '/' . $monthName;
                     
-                    Log::info("Created folders for {$company->name} - {$monthName} {$nextMonth->year}");
+                    $existingMonthFolder = Folder::where('name', $monthName)
+                        ->where('parent_id', $yearFolder->id)
+                        ->where('company_id', $company->id)
+                        ->where('path', $monthPath)
+                        ->first();
+
+                    if (!$existingMonthFolder) {
+                        // Create the month folder and its categories
+                        $this->createMonthFolders(
+                            $user,
+                            $yearFolder,
+                            $company->id,
+                            $nextMonth->month,
+                            $nextMonth->month
+                        );
+                        
+                        Log::info("Created folders for {$company->name} - {$monthName} {$nextMonth->year}");
+                    } else {
+                        Log::info("Folders already exist for {$company->name} - {$monthName} {$nextMonth->year}");
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Error processing company {$company->id}: " . $e->getMessage());
+                    // Continue with next company instead of breaking the entire process
+                    continue;
                 }
             }
         } catch (\Exception $e) {
-            Log::error("Error creating next month folders: " . $e->getMessage());
+            Log::error("Error in createNextMonthFolders: " . $e->getMessage());
             throw $e;
         }
     }

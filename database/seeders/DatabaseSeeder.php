@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             CountrySeeder::class,
+            TaxCalendarSeeder::class,
             UserSeeder::class,
         ]);
     }
