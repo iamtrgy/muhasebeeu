@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('invoice_number')->unique();
             $table->foreignId('company_id')->constrained(); // Faturayı oluşturan şirket
-            $table->foreignId('client_id')->nullable()->constrained('customers'); // Müşteri şirket
+            $table->foreignId('client_id')->nullable()->constrained('user_clients'); // Müşteri şirket
             $table->string('client_name')->nullable(); // Alternatif olarak ad-soyad girebilmek için
             $table->string('client_vat_number')->nullable(); // VAT numarası (vergi numarası)
             $table->string('client_company_reg_number')->nullable(); // Şirket sicil numarası
