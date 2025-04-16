@@ -41,9 +41,13 @@ Route::get('/', function () {
     }
 })->name('home');
 
-// Subscription Routes
+// Subscription Routes (without onboarding check)
+Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class])->group(function () {
+    Route::get('/plans', [SubscriptionController::class, 'showPlans'])->name('plans.index');
+});
+
+// Subscription Routes (with onboarding check)
 Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class, \App\Http\Middleware\EnsureOnboardingIsComplete::class])->prefix('user')->name('user.')->group(function () {
-    Route::get('/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
     Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
     Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('subscription.create');
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
