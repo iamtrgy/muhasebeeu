@@ -11,7 +11,7 @@
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <!-- Plan Details -->
                     <div class="mb-8">
-                        <h3 class="text-lg font-semibold mb-4">Plan Details</h3>
+                        <h3 class="text-lg font-semibold mb-4">Plan Detail</h3>
                         <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
                             @php
                                 $planDetails = [
