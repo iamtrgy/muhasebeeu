@@ -226,9 +226,9 @@ class OnboardingController extends Controller
         // Create folder structure for the company
         $this->folderService->createCompanyFolders($user, $company);
 
-        // Always redirect to plans after onboarding
-        return redirect()->route('plans.index')
-            ->with('success', 'Company setup completed! Please select a plan to continue.');
+        // Redirect to subscription plans
+        return redirect()->route('user.subscription.plans')
+            ->with('success', 'Company setup completed! Please select a subscription plan to continue.');
     }
 
     /**

@@ -41,18 +41,19 @@ Route::get('/', function () {
     }
 })->name('home');
 
-// Subscription Routes (without onboarding check)
+// Subscription Routes
 Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class])->prefix('user')->name('user.')->group(function () {
+    // Routes that don't require onboarding completion
     Route::get('/subscription/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
-});
-
-// Subscription Routes (with onboarding check)
-Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class, \App\Http\Middleware\EnsureOnboardingIsComplete::class])->prefix('user')->name('user.')->group(function () {
-    Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
-    Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('subscription.create');
-    Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
-    Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
-    Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('subscription.billing.portal');
+    
+    // Routes that require onboarding completion
+    Route::middleware([\App\Http\Middleware\EnsureOnboardingIsComplete::class])->group(function () {
+        Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
+        Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('subscription.create');
+        Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+        Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
+        Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('subscription.billing.portal');
+    });
 });
 
 // Onboarding Routes
