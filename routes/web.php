@@ -41,19 +41,15 @@ Route::get('/', function () {
     }
 })->name('home');
 
-// Subscription Routes
+// Routes that don't require subscription (plans and profile)
 Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class])->prefix('user')->name('user.')->group(function () {
-    // Routes that don't require onboarding completion
+    // Subscription Plans
     Route::get('/subscription/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
     
-    // Routes that require onboarding completion
-    Route::middleware([\App\Http\Middleware\EnsureOnboardingIsComplete::class])->group(function () {
-        Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
-        Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('subscription.create');
-        Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
-        Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
-        Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('subscription.billing.portal');
-    });
+    // Profile routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 // Onboarding Routes
@@ -71,53 +67,45 @@ Route::middleware('auth')->group(function () {
     Route::get('/onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 });
 
-// Authenticated User Routes (Non-Admin, Non-Accountant)
+// All routes that require subscription
 Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class, 'subscribed', \App\Http\Middleware\EnsureOnboardingIsComplete::class])
-    ->prefix('user') // Added prefix for clarity
-    ->name('user.') // Added name prefix
+    ->prefix('user')
+    ->name('user.')
     ->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/current-month-folder', [FolderController::class, 'currentMonthFolder'])->name('current-month-folder');
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/current-month-folder', [FolderController::class, 'currentMonthFolder'])->name('current-month-folder');
 
-    // Add routes here
-    
-    // Clients Management (new)
-    Route::resource('clients', \App\Http\Controllers\User\UserClientController::class);
-    
-    // Customers Management (legacy - keep for now)
-    Route::resource('userclients', \App\Http\Controllers\User\CustomerController::class);
-    
-    // Folders Management
-    Route::resource('folders', FolderController::class);
-    
-    // Invoices Management
-    Route::resource('invoices', InvoiceController::class);
-    Route::get('invoices/{invoice}/download-pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.download-pdf');
-    Route::post('invoices/{invoice}/regenerate-pdf', [InvoiceController::class, 'regeneratePdf'])->name('invoices.regenerate-pdf');
-    
-    // Company Management
-    Route::resource('companies', CompanyController::class);
-    
-    // Folder routes (accessible to users)
-    Route::get('/folders', [FolderController::class, 'index'])->name('folders.index');
-    Route::get('/folders/{folder}', [FolderController::class, 'show'])->name('folders.show');
-    Route::delete('/folders/{folder}', [FolderController::class, 'destroy'])->name('folders.destroy');
-
-    // File routes
-    Route::get('files/{file}/download', [FileController::class, 'download'])->name('files.download');
-    Route::get('files/{file}/preview', [FileController::class, 'preview'])->name('files.preview');
-    Route::delete('files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
-    Route::post('/folders/{folder}/upload', [FileController::class, 'store'])->name('files.upload');
-    Route::post('/folders/{folder}/chunk', [FileController::class, 'storeChunk'])->name('files.chunk');
-});
-
-// All folder and company routes now require subscription
-
-// Profile routes - Available to all authenticated users
-Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        // Subscription management (requires active subscription)
+        Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
+        Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('subscription.create');
+        Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+        Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
+        Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('subscription.billing.portal');
+        
+        // Clients Management
+        Route::resource('clients', \App\Http\Controllers\User\UserClientController::class);
+        
+        // Customers Management
+        Route::resource('userclients', \App\Http\Controllers\User\CustomerController::class);
+        
+        // Folders Management
+        Route::resource('folders', FolderController::class);
+        
+        // Invoices Management
+        Route::resource('invoices', InvoiceController::class);
+        Route::get('invoices/{invoice}/download-pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.download-pdf');
+        Route::post('invoices/{invoice}/regenerate-pdf', [InvoiceController::class, 'regeneratePdf'])->name('invoices.regenerate-pdf');
+        
+        // Company Management
+        Route::resource('companies', CompanyController::class);
+        
+        // File Management
+        Route::get('files/{file}/download', [FileController::class, 'download'])->name('files.download');
+        Route::get('files/{file}/preview', [FileController::class, 'preview'])->name('files.preview');
+        Route::delete('files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
+        Route::post('/folders/{folder}/upload', [FileController::class, 'store'])->name('files.upload');
+        Route::post('/folders/{folder}/chunk', [FileController::class, 'storeChunk'])->name('files.chunk');
 });
 
 // Admin Routes
