@@ -57,13 +57,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // All routes that require subscription - MUST COME BEFORE UNPROTECTED ROUTES
-Route::middleware([
-    \App\Http\Middleware\Authenticate::class,
-    \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-    \App\Http\Middleware\UserMiddleware::class,
-    \App\Http\Middleware\EnsureUserIsSubscribed::class,
-    \App\Http\Middleware\EnsureOnboardingIsComplete::class
-])
+Route::middleware(['auth', 'verified', 'user', 'subscribed', 'onboarding.complete'])
     ->prefix('user')
     ->name('user.')
     ->group(function () {
