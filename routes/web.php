@@ -68,7 +68,13 @@ Route::middleware('auth')->group(function () {
 });
 
 // All routes that require subscription
-Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class, 'subscribed', \App\Http\Middleware\EnsureOnboardingIsComplete::class])
+Route::middleware([
+    \App\Http\Middleware\Authenticate::class,
+    \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+    \App\Http\Middleware\UserMiddleware::class,
+    \App\Http\Middleware\EnsureUserIsSubscribed::class,
+    \App\Http\Middleware\EnsureOnboardingIsComplete::class
+])
     ->prefix('user')
     ->name('user.')
     ->group(function () {
