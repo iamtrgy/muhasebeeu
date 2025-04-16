@@ -35,9 +35,10 @@ class EnsureUserIsSubscribed
 
         // Check if 'subscriptions' table exists
         if (!Schema::hasTable('subscriptions')) {
-            Log::warning('Subscriptions table does not exist. Running in development mode.');
-            // Allow access as if user is subscribed
-            return $next($request);
+            Log::warning('Subscriptions table does not exist. Redirecting to plans.');
+            // Redirect to plans instead of allowing access
+            return redirect()->route('user.subscription.plans')
+                ->with('warning', 'Please subscribe to access this feature.');
         }
 
         try {
@@ -65,9 +66,10 @@ class EnsureUserIsSubscribed
 
         } catch (\Exception $e) {
             Log::error('Error checking subscription: ' . $e->getMessage() . ' for user ' . $request->user()->id, ['exception' => $e]);
-            // Allow access in case of errors to prevent blocking legitimate users
-            Log::info("Allowing access due to subscription check error for user {$request->user()->id}");
-            return $next($request);
+            // Redirect to plans instead of allowing access on error
+            Log::info("Redirecting to plans due to subscription check error for user {$request->user()->id}");
+            return redirect()->route('user.subscription.plans')
+                ->with('warning', 'Please subscribe to access this feature.');
         }
 
         // Store the intended URL for redirection after subscription
