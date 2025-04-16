@@ -72,8 +72,8 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// All routes that require subscription - MUST COME BEFORE UNPROTECTED ROUTES
-Route::middleware(['auth', 'verified', 'subscribed', 'onboarding.complete'])
+// All routes that require subscription
+Route::middleware(['auth', 'verified', 'subscribed'])
     ->prefix('user')
     ->name('user.')
     ->group(function () {
