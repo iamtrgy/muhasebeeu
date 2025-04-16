@@ -56,6 +56,22 @@ Route::middleware('auth')->group(function () {
     Route::get('/onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 });
 
+// Routes that don't require subscription (plans and profile) - MUST COME AFTER PROTECTED ROUTES
+Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class])->prefix('user')->name('user.')->group(function () {
+    // Subscription Plans
+    Route::get('/subscription/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
+    Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
+    Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('subscription.create');
+    Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
+    Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('subscription.billing.portal');
+    
+    // Profile routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
 // All routes that require subscription - MUST COME BEFORE UNPROTECTED ROUTES
 Route::middleware(['auth', 'verified', 'subscribed', 'onboarding.complete'])
     ->prefix('user')
@@ -64,13 +80,6 @@ Route::middleware(['auth', 'verified', 'subscribed', 'onboarding.complete'])
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/current-month-folder', [FolderController::class, 'currentMonthFolder'])->name('current-month-folder');
-
-        // Subscription management (requires active subscription)
-        Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
-        Route::post('/subscription/create', [SubscriptionController::class, 'subscribe'])->name('subscription.create');
-        Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
-        Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
-        Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('subscription.billing.portal');
         
         // Clients Management
         Route::resource('clients', \App\Http\Controllers\User\UserClientController::class);
@@ -95,17 +104,6 @@ Route::middleware(['auth', 'verified', 'subscribed', 'onboarding.complete'])
         Route::delete('files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
         Route::post('/folders/{folder}/upload', [FileController::class, 'store'])->name('files.upload');
         Route::post('/folders/{folder}/chunk', [FileController::class, 'storeChunk'])->name('files.chunk');
-});
-
-// Routes that don't require subscription (plans and profile) - MUST COME AFTER PROTECTED ROUTES
-Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class])->prefix('user')->name('user.')->group(function () {
-    // Subscription Plans
-    Route::get('/subscription/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
-    
-    // Profile routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 // Admin Routes

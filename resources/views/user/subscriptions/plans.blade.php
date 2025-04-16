@@ -205,58 +205,28 @@
                         </tr>
                         <!-- Action Buttons -->
                         <tr>
-                            <th scope="row" class="px-6 py-8 bg-gray-50 dark:bg-gray-900">
+                            <th scope="row" class="px-6 py-4 font-medium bg-gray-50 dark:bg-gray-900">
                                 <span class="sr-only">Choose plan</span>
                             </th>
                             <td class="px-6 py-8 text-center">
-                                @if($currentPlan == 'basic')
-                                    <span class="inline-flex items-center px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-lg dark:bg-blue-900/20 dark:text-blue-400">
-                                        Current Plan
-                                    </span>
-                                @else
-                                    <a href="{{ route('user.subscription.payment.form', 'basic') }}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                                        Choose Basic
-                                    </a>
-                                @endif
+                                <a href="{{ route('user.subscription.payment.form', 'basic') }}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                                    Choose Basic
+                                </a>
                             </td>
                             <td class="px-6 py-8 text-center">
-                                @if($currentPlan == 'pro')
-                                    <span class="inline-flex items-center px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-lg dark:bg-blue-900/20 dark:text-blue-400">
-                                        Current Plan
-                                    </span>
-                                @else
-                                    <a href="{{ route('user.subscription.payment.form', 'pro') }}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
-                                        Choose Pro
-                                    </a>
-                                @endif
+                                <a href="{{ route('user.subscription.payment.form', 'pro') }}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                                    Choose Pro
+                                </a>
                             </td>
                             <td class="px-6 py-8 text-center">
-                                @if($currentPlan == 'enterprise')
-                                    <span class="inline-flex items-center px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-lg dark:bg-blue-900/20 dark:text-blue-400">
-                                        Current Plan
-                                    </span>
-                                @else
-                                    <a href="{{ route('user.subscription.payment.form', 'enterprise') }}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                                        Choose Enterprise
-                                    </a>
-                                @endif
+                                <a href="{{ route('user.subscription.payment.form', 'enterprise') }}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                                    Choose Enterprise
+                                </a>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-
-            <!-- Resume Subscription Button -->
-            @if($canceled)
-                <div class="mt-8 flex justify-center">
-                    <form action="{{ route('user.subscription.resume') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Resume Current Subscription
-                        </button>
-                    </form>
-                </div>
-            @endif
         </div>
     </div>
 </x-app-layout>
