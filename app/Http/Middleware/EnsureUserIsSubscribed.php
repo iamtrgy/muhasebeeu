@@ -43,10 +43,20 @@ class EnsureUserIsSubscribed
         try {
             Log::info("Checking subscription for user {$request->user()->id}");
             
+            // First check if user has any subscription at all
+            $hasAnySubscription = $request->user()->subscriptions()->exists();
+            Log::info("User has any subscription: " . ($hasAnySubscription ? 'true' : 'false'));
+            
+            if (!$hasAnySubscription) {
+                Log::info("User {$request->user()->id} has no subscription at all. Redirecting to plans.");
+                return redirect()->route('user.subscription.plans')
+                    ->with('warning', 'Please subscribe to access this feature.');
+            }
+
+            // Check if user has an active subscription using Laravel Cashier
             $isSubscribedCashier = $request->user()->subscribed('default');
             Log::info("Cashier check (subscribed('default')): " . ($isSubscribedCashier ? 'true' : 'false'));
 
-            // Check if user has an active subscription using Laravel Cashier
             if ($isSubscribedCashier) {
                 Log::info("User is subscribed (Cashier check passed).");
                 return $next($request);
