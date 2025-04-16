@@ -41,17 +41,6 @@ Route::get('/', function () {
     }
 })->name('home');
 
-// Routes that don't require subscription (plans and profile)
-Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class])->prefix('user')->name('user.')->group(function () {
-    // Subscription Plans
-    Route::get('/subscription/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
-    
-    // Profile routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
 // Onboarding Routes
 Route::middleware('auth')->group(function () {
     Route::get('/onboarding/step1', [OnboardingController::class, 'showCountryStep'])->name('onboarding.step1');
@@ -67,7 +56,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 });
 
-// All routes that require subscription
+// All routes that require subscription - MUST COME BEFORE UNPROTECTED ROUTES
 Route::middleware([
     \App\Http\Middleware\Authenticate::class,
     \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
@@ -112,6 +101,17 @@ Route::middleware([
         Route::delete('files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
         Route::post('/folders/{folder}/upload', [FileController::class, 'store'])->name('files.upload');
         Route::post('/folders/{folder}/chunk', [FileController::class, 'storeChunk'])->name('files.chunk');
+});
+
+// Routes that don't require subscription (plans and profile) - MUST COME AFTER PROTECTED ROUTES
+Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class])->prefix('user')->name('user.')->group(function () {
+    // Subscription Plans
+    Route::get('/subscription/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
+    
+    // Profile routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 // Admin Routes
