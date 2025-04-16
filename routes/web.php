@@ -190,4 +190,9 @@ Route::prefix('/accountant')
     Route::delete('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/subscription/complete', [SubscriptionController::class, 'complete'])
+        ->name('user.subscription.complete');
+});
+
 require __DIR__.'/auth.php';

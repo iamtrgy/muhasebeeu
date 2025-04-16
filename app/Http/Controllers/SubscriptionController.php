@@ -71,26 +71,29 @@ class SubscriptionController extends Controller
                 // If the current plan is different from the selected one, swap plans
                 if ($subscription->stripe_price !== $stripePriceId) {
                     $subscription->swap($stripePriceId);
-                    $message = 'Your subscription has been updated to the ' . ucfirst($request->plan) . ' plan!';
+                    return redirect()->route('user.dashboard')
+                        ->with('success', 'Your subscription has been updated to the ' . ucfirst($request->plan) . ' plan!');
                 } else {
-                    $message = 'You are already subscribed to this plan.';
+                    return redirect()->route('user.dashboard')
+                        ->with('info', 'You are already subscribed to this plan.');
                 }
             } else {
                 // Create a new subscription
                 $user->newSubscription('default', $stripePriceId)
                     ->create($request->payment_method);
                     
-                $message = 'Your subscription was successful!';
+                return redirect()->route('user.dashboard')
+                    ->with('success', 'Your subscription was successful!');
             }
-
-            return redirect()->route('user.dashboard')
-                ->with('success', $message);
                 
         } catch (IncompletePayment $exception) {
             return redirect()->route('cashier.payment', [
                 $exception->payment->id,
                 'redirect' => route('user.dashboard')
             ]);
+        } catch (\Exception $e) {
+            return redirect()->route('user.subscription.plans')
+                ->with('error', 'Subscription failed: ' . $e->getMessage());
         }
     }
 
