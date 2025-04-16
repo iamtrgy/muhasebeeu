@@ -226,7 +226,13 @@ class OnboardingController extends Controller
         // Create folder structure for the company
         $this->folderService->createCompanyFolders($user, $company);
 
-        // Redirect to dashboard with success message
+        // Check if user has an active subscription/plan
+        if (!$user->subscription || !$user->hasActiveSubscription()) {
+            return redirect()->route('plans.index')
+                ->with('success', 'Company setup completed! Please select a plan to continue.');
+        }
+
+        // If user has a plan, redirect to dashboard
         return redirect()->route('user.dashboard')
             ->with('success', 'Company setup completed successfully!');
     }
