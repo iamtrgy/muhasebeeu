@@ -34,22 +34,8 @@ class EventServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Listen for the eloquent.created: Company event
-        \App\Models\Company::created(function (\App\Models\Company $company) {
-            // Skip if this is being run in a console command
-            if (app()->runningInConsole()) {
-                return;
-            }
-            
-            // Get the user
-            $user = \App\Models\User::find($company->user_id);
-            
-            // Create folder structure
-            if ($user) {
-                $folderService = app(\App\Services\FolderStructureService::class);
-                $folderService->createCompanyFolders($user, $company);
-            }
-        });
+        // We removed the Company::created event listener since folder creation
+        // is already handled in OnboardingController@processCompanyStep
     }
 
     /**
