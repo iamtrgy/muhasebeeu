@@ -81,9 +81,9 @@
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
                 paramName: "files",
-                maxFilesize: 10,
+                maxFilesize: 10, // 10MB max file size
                 maxFiles: 10,
-                parallelUploads: 3, // Reduced for better stability
+                parallelUploads: 5 // Increased parallel uploads for better performance
                 uploadMultiple: true,
                 addRemoveLinks: true,
                 dictRemoveFile: "Remove",
