@@ -61,7 +61,7 @@
                                     @endif
                                     <span class="text-2xl font-bold text-gray-900 dark:text-white">Basic</span>
                                     <p class="mt-2 flex items-baseline justify-center gap-x-1">
-                                        <span class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">$9</span>
+                                        <span class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">€9</span>
                                         <span class="text-sm font-semibold leading-6 text-gray-600 dark:text-gray-400">/month</span>
                                     </p>
                                 </div>
@@ -81,7 +81,7 @@
                                         </span>
                                     </div>
                                     <p class="mt-2 flex items-baseline justify-center gap-x-1">
-                                        <span class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">$29</span>
+                                        <span class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">€29</span>
                                         <span class="text-sm font-semibold leading-6 text-gray-600 dark:text-gray-400">/month</span>
                                     </p>
                                 </div>
@@ -96,7 +96,7 @@
                                     @endif
                                     <span class="text-2xl font-bold text-gray-900 dark:text-white">Enterprise</span>
                                     <p class="mt-2 flex items-baseline justify-center gap-x-1">
-                                        <span class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">$99</span>
+                                        <span class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">€49</span>
                                         <span class="text-sm font-semibold leading-6 text-gray-600 dark:text-gray-400">/month</span>
                                     </p>
                                 </div>

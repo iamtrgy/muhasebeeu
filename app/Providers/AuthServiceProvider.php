@@ -7,6 +7,8 @@ use App\Models\Folder;
 use App\Policies\FolderPolicy;
 use App\Models\File;
 use App\Policies\FilePolicy;
+use App\Models\TaxCalendarTask;
+use App\Policies\TaxCalendarTaskPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -18,6 +20,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Folder::class => FolderPolicy::class,
         File::class => FilePolicy::class,
+        TaxCalendarTask::class => TaxCalendarTaskPolicy::class,
     ];
 
     /**

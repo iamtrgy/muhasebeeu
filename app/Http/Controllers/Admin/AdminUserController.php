@@ -230,7 +230,7 @@ class AdminUserController extends Controller
                     'Up to 10 files',
                     'Basic support'
                 ],
-                'price' => '$9.99/month',
+                'price' => '€9.99/month',
                 'price_id' => env('STRIPE_BASIC_PRICE_ID')
             ],
             'price_pro' => [
@@ -241,7 +241,7 @@ class AdminUserController extends Controller
                     'Priority support',
                     'Advanced features'
                 ],
-                'price' => '$19.99/month',
+                'price' => '€19.99/month',
                 'price_id' => env('STRIPE_PRO_PRICE_ID')
             ],
             'price_enterprise' => [
@@ -253,7 +253,7 @@ class AdminUserController extends Controller
                     'Advanced features',
                     'Custom integrations'
                 ],
-                'price' => '$49.99/month',
+                'price' => '€49.99/month',
                 'price_id' => env('STRIPE_ENTERPRISE_PRICE_ID')
             ]
         ];

@@ -29,6 +29,13 @@ class Kernel extends ConsoleKernel
             $folderService = app(FolderStructureService::class);
             $folderService->createNextMonthFolders();
         })->monthlyOn(25, '00:00');
+
+        // Run the task creation command daily at midnight
+        $schedule->command('tax-calendar:create-tasks')
+            ->dailyAt('00:00')
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(config('mail.admin_email'));
     }
 
     /**

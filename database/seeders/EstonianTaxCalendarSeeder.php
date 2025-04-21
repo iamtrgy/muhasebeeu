@@ -23,7 +23,39 @@ class EstonianTaxCalendarSeeder extends Seeder
             'emta_link' => 'https://www.emta.ee/en/business-client/taxes-and-payment/value-added-tax-vat/vat-return',
             'country_code' => 'EE',
             'is_active' => true,
-            'requires_payment' => true
+            'requires_payment' => true,
+            'default_checklist' => [
+                [
+                    'title' => 'Review sales invoices',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Review purchase invoices',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Check VAT rates',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Verify EU transactions',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Complete KMD form',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Submit KMD INF if required',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Verify payment amount',
+                    'completed' => false
+                ]
+            ],
+            'task_instructions' => "1. Log in to e-MTA\n2. Go to VAT Returns\n3. Fill in form KMD\n4. Check if KMD INF is required\n5. Submit the return\n6. Make payment if required",
+            'reminder_days_before' => 5
         ]);
 
         // Income and Social Tax Return (TSD)
@@ -37,7 +69,39 @@ class EstonianTaxCalendarSeeder extends Seeder
             'emta_link' => 'https://www.emta.ee/en/business-client/taxes-and-payment/income-and-social-tax/tsd-return',
             'country_code' => 'EE',
             'is_active' => true,
-            'requires_payment' => true
+            'requires_payment' => true,
+            'default_checklist' => [
+                [
+                    'title' => 'Review salary payments',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Check benefits and fringe benefits',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Verify social tax calculations',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Check unemployment insurance premiums',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Verify pension contributions',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Complete TSD annexes',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Verify payment amount',
+                    'completed' => false
+                ]
+            ],
+            'task_instructions' => "1. Log in to e-MTA\n2. Go to TSD Returns\n3. Fill in TSD main form\n4. Complete required annexes\n5. Submit the return\n6. Make payment",
+            'reminder_days_before' => 5
         ]);
 
         // Annual Report Submission
@@ -50,7 +114,43 @@ class EstonianTaxCalendarSeeder extends Seeder
             'emta_link' => 'https://www.rik.ee/en/e-business-register',
             'country_code' => 'EE',
             'is_active' => true,
-            'requires_payment' => false
+            'requires_payment' => false,
+            'default_checklist' => [
+                [
+                    'title' => 'Prepare balance sheet',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Prepare income statement',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Prepare cash flow statement',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Write notes to financial statements',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Management report',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Auditor review (if required)',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Board approval',
+                    'completed' => false
+                ],
+                [
+                    'title' => 'Shareholder approval',
+                    'completed' => false
+                ]
+            ],
+            'task_instructions' => "1. Prepare financial statements\n2. Get necessary approvals\n3. Log in to Business Register Portal\n4. Fill in the required forms\n5. Upload financial statements\n6. Submit the report",
+            'reminder_days_before' => 14
         ]);
     }
 }

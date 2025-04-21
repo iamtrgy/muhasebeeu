@@ -337,12 +337,18 @@ class SubscriptionService
      */
     private function getPlanPriceId(string $plan): string
     {
-        return match($plan) {
-            'basic' => env('STRIPE_BASIC_PRICE_ID'),
-            'pro' => env('STRIPE_PRO_PRICE_ID'),
-            'enterprise' => env('STRIPE_ENTERPRISE_PRICE_ID'),
-            default => env('STRIPE_BASIC_PRICE_ID')
+        $priceId = match($plan) {
+            'basic' => config('cashier.prices.basic'),
+            'pro' => config('cashier.prices.pro'),
+            'enterprise' => config('cashier.prices.enterprise'),
+            default => config('cashier.prices.basic')
         };
+
+        if (!$priceId) {
+            throw new \RuntimeException("Stripe price ID not found for plan: $plan. Please check your configuration.");
+        }
+
+        return $priceId;
     }
     
     /**
@@ -354,9 +360,9 @@ class SubscriptionService
     private function getPlanName(string $priceId): string
     {
         return match($priceId) {
-            env('STRIPE_BASIC_PRICE_ID') => 'Basic',
-            env('STRIPE_PRO_PRICE_ID') => 'Pro',
-            env('STRIPE_ENTERPRISE_PRICE_ID') => 'Enterprise',
+            config('cashier.prices.basic') => 'Basic',
+            config('cashier.prices.pro') => 'Pro',
+            config('cashier.prices.enterprise') => 'Enterprise',
             default => 'Unknown'
         };
     }

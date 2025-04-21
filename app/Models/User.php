@@ -293,6 +293,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the accountants this user is assigned to (alias for accountants).
+     */
+    public function assignedAccountants()
+    {
+        return $this->belongsToMany(User::class, 'accountant_user', 'user_id', 'accountant_id');
+    }
+
+    /**
      * Get the companies assigned to this accountant.
      */
     public function assignedCompanies()

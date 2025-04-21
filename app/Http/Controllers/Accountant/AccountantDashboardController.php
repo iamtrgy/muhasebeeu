@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Company;
 use App\Models\File;
+use App\Models\TaxCalendarTask;
 use Illuminate\Support\Facades\DB;
 
 class AccountantDashboardController extends Controller
@@ -28,6 +29,13 @@ class AccountantDashboardController extends Controller
         // Count of assigned companies
         $companiesCount = $accountant->assignedCompanies()->count();
         
+        // Count of tasks pending review
+        $pendingReviewCount = TaxCalendarTask::where('status', 'under_review')
+            ->whereHas('company', function ($query) use ($accountant) {
+                $query->whereIn('id', $accountant->assignedCompanies()->pluck('companies.id'));
+            })
+            ->count();
+        
         // Recent users and companies
         $recentUsers = $accountant->assignedUsers()->latest()->take(5)->get();
         $recentCompanies = $accountant->assignedCompanies()->latest()->take(5)->get();
@@ -47,6 +55,7 @@ class AccountantDashboardController extends Controller
         return view('accountant.dashboard.index', compact(
             'usersCount',
             'companiesCount',
+            'pendingReviewCount',
             'recentUsers',
             'recentCompanies',
             'recentFiles'

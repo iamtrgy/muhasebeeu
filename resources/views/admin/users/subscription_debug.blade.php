@@ -201,7 +201,7 @@
                                     </div>
                                     <div>
                                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Price</p>
-                                        <p class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ number_format($stripePlanAmount / 100, 2) }} {{ strtoupper($stripePlanCurrency) }} / {{ $stripePlanInterval }}</p>
+                                        <p class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ number_format($stripePlanAmount / 100, 2) }} EUR / {{ $stripePlanInterval }}</p>
                                     </div>
                                     <div>
                                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">View in Stripe</p>

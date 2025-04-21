@@ -128,6 +128,7 @@ return [
          * Laravel Framework Service Providers...
          */
         Illuminate\Auth\AuthServiceProvider::class,
+        Illuminate\Broadcasting\BroadcastServiceProvider::class,
         Illuminate\Bus\BusServiceProvider::class,
         Illuminate\Cache\CacheServiceProvider::class,
         Illuminate\Foundation\Providers\ConsoleSupportServiceProvider::class,
@@ -164,6 +165,7 @@ return [
         // App\Providers\BunnyStorageServiceProvider::class, // Remove this duplicate/incorrect provider
         App\Providers\MiddlewareServiceProvider::class,
         App\Providers\ViewComponentServiceProvider::class,
+        App\Providers\ViewComposerServiceProvider::class,
     ],
 
 ];

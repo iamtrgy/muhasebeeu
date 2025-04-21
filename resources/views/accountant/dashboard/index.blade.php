@@ -12,7 +12,7 @@
             </div>
             
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <!-- Users Count Card -->
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
                     <div class="p-6 flex items-center">
@@ -68,6 +68,36 @@
                         <div class="text-sm">
                             <a href="{{ route('accountant.companies.index') }}" class="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
                                 {{ __('View all companies') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Pending Review Card -->
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                    <div class="p-6 flex items-center">
+                        <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
+                            <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                    {{ __('Tasks Pending Review') }}
+                                </dt>
+                                <dd>
+                                    <div class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                        {{ $pendingReviewCount ?? 0 }}
+                                    </div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+                        <div class="text-sm">
+                            <a href="{{ route('accountant.tax-calendar.reviews') }}" class="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
+                                {{ __('View pending reviews') }}
                             </a>
                         </div>
                     </div>

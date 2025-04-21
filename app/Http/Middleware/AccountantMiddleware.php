@@ -23,7 +23,7 @@ class AccountantMiddleware
         
         if (!auth()->user()->is_accountant && !auth()->user()->is_admin) {
             Log::warning('User is not an accountant or admin: ' . auth()->user()->email);
-            return redirect()->route('dashboard')
+            return redirect()->route('user.dashboard')
                 ->with('error', 'You do not have permission to access this area.');
         }
         

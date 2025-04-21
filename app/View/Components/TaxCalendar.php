@@ -28,16 +28,17 @@ class TaxCalendar extends Component
             ->get()
             ->map(function($deadline) {
                 $nextDeadline = $deadline->next_deadline;
-                // Fix: Calculate days until by using now()->diffInDays($nextDeadline) instead
                 $daysUntil = $nextDeadline ? now()->startOfDay()->diffInDays($nextDeadline->startOfDay(), false) : null;
                 
-                // Debug output
-                \Log::info("Tax Calendar Debug", [
-                    'name' => $deadline->name,
-                    'current_time' => now()->toDateTimeString(),
-                    'next_deadline' => $nextDeadline ? $nextDeadline->toDateTimeString() : null,
-                    'days_until' => $daysUntil
-                ]);
+                // Get tasks for the current user's companies for this deadline
+                $tasks = $deadline->tasks()
+                    ->whereIn('company_id', auth()->user()->companies->pluck('id'))
+                    ->where('due_date', $nextDeadline)
+                    ->get();
+                
+                $totalTasks = $tasks->count();
+                $completedTasks = $tasks->where('status', 'completed')->count();
+                $progress = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
                 
                 return [
                     'name' => $deadline->name,
@@ -48,7 +49,10 @@ class TaxCalendar extends Component
                     'next_payment' => $deadline->next_payment_date,
                     'days_until' => $daysUntil,
                     'urgency' => $this->getUrgencyLevel($daysUntil),
-                    'status' => $this->getStatus($daysUntil)
+                    'status' => $this->getStatus($daysUntil),
+                    'progress' => $progress,
+                    'total_tasks' => $totalTasks,
+                    'completed_tasks' => $completedTasks
                 ];
             })
             ->unique('name')

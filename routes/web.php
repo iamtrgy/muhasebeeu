@@ -22,6 +22,9 @@ use App\Http\Controllers\Accountant\AccountantDashboardController;
 use App\Http\Controllers\Accountant\AccountantUserController;
 use App\Http\Controllers\Accountant\AccountantCompanyController;
 use App\Http\Controllers\Accountant\AccountantFolderController;
+use App\Http\Controllers\TaxCalendarTaskController;
+use App\Http\Controllers\TaskMessageController;
+use App\Http\Controllers\TaxCalendarReviewController;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -42,7 +45,7 @@ Route::get('/', function () {
 })->name('home');
 
 // Onboarding Routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\RedirectAdminToDashboard::class])->group(function () {
     Route::get('/onboarding/step1', [OnboardingController::class, 'showCountryStep'])->name('onboarding.step1');
     Route::post('/onboarding/step1', [OnboardingController::class, 'processCountryStep'])->name('onboarding.postStep1');
     Route::get('/onboarding/step2', [OnboardingController::class, 'showCompanyStep'])->name('onboarding.step2');
@@ -73,13 +76,26 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
 });
 
 // All routes that require subscription
-Route::middleware(['auth', 'verified', 'subscribed'])
+Route::middleware(['auth', 'verified', 'subscribed', \App\Http\Middleware\EnsureOnboardingIsComplete::class])
     ->prefix('user')
     ->name('user.')
     ->group(function () {
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/current-month-folder', [FolderController::class, 'currentMonthFolder'])->name('current-month-folder');
+        
+        // Tax Calendar Routes
+        Route::get('/tax-calendar', [TaxCalendarTaskController::class, 'userIndex'])->name('tax-calendar.index');
+        Route::get('/tax-calendar/{task}', [TaxCalendarTaskController::class, 'userShow'])->name('tax-calendar.show');
+        Route::patch('/tax-calendar/{task}/checklist', [TaxCalendarTaskController::class, 'updateChecklist'])->name('tax-calendar.update-checklist');
+        Route::patch('/tax-calendar/{task}/notes', [TaxCalendarTaskController::class, 'updateNotes'])->name('tax-calendar.update-notes');
+        Route::patch('/tax-calendar/{task}/complete', [TaxCalendarTaskController::class, 'complete'])->name('tax-calendar.complete');
+        Route::patch('/tax-calendar/{task}/reopen', [TaxCalendarTaskController::class, 'reopen'])->name('tax-calendar.reopen');
+        Route::patch('/tax-calendar/{task}/submit-for-review', [TaxCalendarTaskController::class, 'submitForReview'])->name('tax-calendar.submit-for-review');
+        
+        // Task Messages
+        Route::post('/tax-calendar/{task}/send-message', [TaskMessageController::class, 'store'])->name('tax-calendar.send-message');
+        Route::post('/tax-calendar/{task}/mark-messages-read', [TaskMessageController::class, 'markAsRead'])->name('tax-calendar.mark-messages-read');
         
         // Clients Management
         Route::resource('clients', \App\Http\Controllers\User\UserClientController::class);
@@ -161,6 +177,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/settings', [\App\Http\Controllers\Admin\AdminProfileController::class, 'edit'])->name('settings');
     Route::delete('/settings', [\App\Http\Controllers\Admin\AdminProfileController::class, 'destroy'])->name('settings.destroy');
     Route::patch('/settings', [\App\Http\Controllers\Admin\AdminProfileController::class, 'update'])->name('settings.update');
+
+    // Tax Calendar Routes
+    Route::get('/tax-calendar', [TaxCalendarTaskController::class, 'index'])->name('tax-calendar.index');
+    Route::get('/tax-calendar/create', [TaxCalendarTaskController::class, 'create'])->name('tax-calendar.create');
+    Route::post('/tax-calendar', [TaxCalendarTaskController::class, 'store'])->name('tax-calendar.store');
+    Route::get('/tax-calendar/{task}', [TaxCalendarTaskController::class, 'show'])->name('tax-calendar.show');
+    Route::patch('/tax-calendar/{task}/checklist', [TaxCalendarTaskController::class, 'updateChecklist'])->name('tax-calendar.update-checklist');
+    Route::patch('/tax-calendar/{task}/notes', [TaxCalendarTaskController::class, 'updateNotes'])->name('tax-calendar.update-notes');
+    Route::patch('/tax-calendar/{task}/complete', [TaxCalendarTaskController::class, 'complete'])->name('tax-calendar.complete');
+    Route::patch('/tax-calendar/{task}/reopen', [TaxCalendarTaskController::class, 'reopen'])->name('tax-calendar.reopen');
 });
 
 // Accountant Routes
@@ -168,26 +194,36 @@ Route::prefix('/accountant')
     ->name('accountant.')
     ->middleware(['auth', \App\Http\Middleware\AccountantMiddleware::class])
     ->group(function () {
-    // Accountant Dashboard
-    Route::get('/dashboard', [AccountantDashboardController::class, 'index'])->name('dashboard');
-    
-    // Accountant User Management
-    Route::get('/users', [AccountantUserController::class, 'index'])->name('users.index');
-    Route::get('/users/{user}', [AccountantUserController::class, 'show'])->name('users.show');
-    Route::get('/users/{userId}/folders/{folderId}', [AccountantUserController::class, 'viewFolder'])->name('users.viewFolder');
-    
-    // Accountant File Management
-    Route::get('/files/{file}/download', [\App\Http\Controllers\Accountant\AccountantFileController::class, 'download'])->name('files.download');
-    Route::get('/files/{file}/preview', [\App\Http\Controllers\Accountant\AccountantFileController::class, 'preview'])->name('files.preview');
-    
-    // Accountant Company Management
-    Route::get('/companies', [AccountantCompanyController::class, 'index'])->name('companies.index');
-    Route::get('/companies/{company}', [AccountantCompanyController::class, 'show'])->name('companies.show');
+        // Accountant Dashboard
+        Route::get('/dashboard', [AccountantDashboardController::class, 'index'])->name('dashboard');
+        
+        // Tax Calendar Review Routes
+        Route::prefix('tax-calendar')->name('tax-calendar.')->group(function () {
+            Route::get('/reviews', [TaxCalendarReviewController::class, 'index'])->name('reviews');
+            Route::get('/reviews/{task}', [TaxCalendarReviewController::class, 'show'])->name('reviews.show');
+            Route::put('/reviews/{task}', [TaxCalendarReviewController::class, 'update'])->name('reviews.update');
+            Route::post('/reviews/{task}/send-message', [TaskMessageController::class, 'store'])->name('send-message');
+            Route::post('/reviews/{task}/mark-messages-read', [TaskMessageController::class, 'markAsRead'])->name('mark-messages-read');
+            Route::get('/reviews/{task}/messages', [TaskMessageController::class, 'getNewMessages'])->name('messages');
+        });
+        
+        // Accountant User Management
+        Route::get('/users', [AccountantUserController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}', [AccountantUserController::class, 'show'])->name('users.show');
+        Route::get('/users/{userId}/folders/{folderId}', [AccountantUserController::class, 'viewFolder'])->name('users.viewFolder');
+        
+        // Accountant File Management
+        Route::get('/files/{file}/download', [\App\Http\Controllers\Accountant\AccountantFileController::class, 'download'])->name('files.download');
+        Route::get('/files/{file}/preview', [\App\Http\Controllers\Accountant\AccountantFileController::class, 'preview'])->name('files.preview');
+        
+        // Accountant Company Management
+        Route::get('/companies', [AccountantCompanyController::class, 'index'])->name('companies.index');
+        Route::get('/companies/{company}', [AccountantCompanyController::class, 'show'])->name('companies.show');
 
-    // Accountant Profile Management
-    Route::get('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'destroy'])->name('profile.destroy');
+        // Accountant Profile Management
+        Route::get('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

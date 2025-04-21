@@ -21,8 +21,10 @@ class RedirectAdminToDashboard
             $user = Auth::user();
             
             // Redirect admins to admin dashboard
-            if ($user->is_admin && $request->routeIs('user.dashboard')) {
-                return redirect()->route('admin.dashboard');
+            if ($user->is_admin) {
+                if ($request->routeIs('user.dashboard') || $request->routeIs('onboarding.*')) {
+                    return redirect()->route('admin.dashboard');
+                }
             }
             
             // Redirect accountants to accountant dashboard

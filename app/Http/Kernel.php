@@ -76,6 +76,6 @@ class Kernel extends HttpKernel
         'subscribed' => \App\Http\Middleware\EnsureUserIsSubscribed::class,
         'redirect.admin' => \App\Http\Middleware\RedirectAdminToDashboard::class,
         'user' => \App\Http\Middleware\UserMiddleware::class,
-        'onboarding.complete' => \App\Http\Middleware\EnsureOnboardingIsComplete::class,
+        'onboarding_complete' => \App\Http\Middleware\EnsureOnboardingIsComplete::class,
     ];
 } 
