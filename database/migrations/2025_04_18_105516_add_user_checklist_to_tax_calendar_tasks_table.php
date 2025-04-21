@@ -13,8 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tax_calendar_tasks', function (Blueprint $table) {
-            $table->json('user_checklist')->nullable()->after('checklist');
-        });
+    if (!Schema::hasColumn('tax_calendar_tasks', 'user_checklist')) {
+        $table->json('user_checklist')->nullable()->after('checklist');
+    }
+});
 
         // Update existing tasks with user checklists
         $tasks = TaxCalendarTask::all();
