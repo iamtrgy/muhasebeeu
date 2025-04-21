@@ -83,7 +83,7 @@
                 paramName: "files",
                 maxFilesize: 10, // 10MB max file size
                 maxFiles: 10,
-                parallelUploads: 5 // Increased parallel uploads for better performance
+                parallelUploads: 5, // Increased parallel uploads for better performance
                 uploadMultiple: true,
                 addRemoveLinks: true,
                 dictRemoveFile: "Remove",
