@@ -29,6 +29,8 @@ class TaxCalendarTask extends Model
         'due_date' => 'datetime',
         'completed_at' => 'datetime',
         'reminder_sent_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'reviewed_at' => 'datetime',
         'checklist' => 'array',
         'user_checklist' => 'array'
     ];

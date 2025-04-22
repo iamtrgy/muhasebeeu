@@ -1,61 +1,56 @@
 <x-app-layout>
     <x-unified-header>
-        <div class="flex items-center space-x-4 mt-2">
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 flex items-center">
-                                    <span class="flex items-center">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                        </svg>
-                                        {{ $task->company->name }}
-                                    </span>
-                                    <span class="mx-2">•</span>
-                                    <span class="flex items-center">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                        Due: {{ $task->due_date ? $task->due_date->format('M d, Y') : 'No due date' }}
-                                        @if($task->due_date && $task->due_date->isPast())
-                                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400">
-                                                Overdue
-                                            </span>
-                                        @elseif($task->due_date && $task->due_date->diffInDays(now()) <= 3)
-                                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400">
-                                                Due Soon
-                                            </span>
-                                        @endif
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                            <div class="flex flex-col items-end">
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">Status:</span>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                        @if($task->status === 'under_review') bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400
-                                        @elseif($task->status === 'changes_requested') bg-orange-100 text-orange-800 dark:bg-orange-800/20 dark:text-orange-400
-                                        @elseif($task->status === 'approved') bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400
-                                        @elseif($task->status === 'rejected') bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400
-                                        @elseif($task->status === 'in_progress') bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400
-                                        @endif">
-                                        {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                                    </span>
-                                </div>
-                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    Submitted {{ $task->submitted_at ? $task->submitted_at->diffForHumans() : 'Not yet' }}
-                                </div>
-                            </div>
-                            </div>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                    <span class="flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        {{ $task->company->name }}
+                    </span>
+                    <span class="mx-2">•</span>
+                    <span class="flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        Due: {{ $task->due_date ? $task->due_date->format('M d, Y') : 'No due date' }}
+                        @if($task->due_date && $task->due_date->isPast())
+                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400">
+                                Overdue
+                            </span>
+                        @elseif($task->due_date && $task->due_date->diffInDays(now()) <= 3)
+                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400">
+                                Due Soon
+                            </span>
+                        @endif
+                    </span>
+                </p>
+            </div>
+            <div class="flex items-center">
+                <div class="flex flex-col items-end">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+                        <span class="status-badge {{ $task->status }} px-2.5 py-0.5 rounded-full text-xs font-medium">
+                            {{ ucfirst(str_replace('_', ' ', $task->status)) }}
+                        </span>
+                    </div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Submitted {{ $task->submitted_at ? $task->submitted_at->diffForHumans() : 'Not yet' }}
                     </div>
                 </div>
-                            </div>
+            </div>
+        </div>
+    </x-unified-header>
 
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
                 <div class="p-6">
                     <!-- Main Content Grid -->
-                    <div class="grid grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Left Column (2/3) -->
-                        <div class="col-span-2">
+                        <div class="lg:col-span-2">
                             <!-- Task Description -->
                             <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 mb-6">
                                 <h2 class="text-base font-medium text-gray-900 dark:text-white mb-3">Task Description</h2>
@@ -66,7 +61,7 @@
                     </div>
 
                         <!-- Right Column (1/3) -->
-                        <div class="col-span-1">
+                        <div class="lg:col-span-1">
                             <!-- Company Card -->
                             <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 mb-6">
                                 <div class="flex items-center mb-4">
@@ -156,12 +151,12 @@
                         <!-- Dynamic hint will be inserted here -->
 
                         <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl checklist-items">
-                                    @if($task->user_checklist)
+                            @if($task->user_checklist)
                                 <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                                        @foreach($task->user_checklist as $index => $item)
+                                    @foreach($task->user_checklist as $index => $item)
                                         <div class="group relative hover:bg-white dark:hover:bg-gray-800 transition-colors p-4 first:rounded-t-xl last:rounded-b-xl"
-                                                 id="checklist-item-{{ $index }}"
-                                                 data-item-title="{{ $item['title'] }}"
+                                             id="checklist-item-{{ $index }}"
+                                             data-item-title="{{ $item['title'] }}"
                                              data-item-index="{{ $index }}">
                                             
                                             <div class="flex items-start">
@@ -185,10 +180,11 @@
                                                         
                                                         <!-- Selection for Review -->
                                                         <button type="button" 
-                                                                class="select-for-review hidden px-3 py-1.5 text-xs font-medium rounded-lg
+                                                                class="select-for-review px-3 py-1.5 text-xs font-medium rounded-lg
                                                                 bg-gray-100 text-gray-700 hover:bg-gray-200 
                                                                 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600
                                                                 transition-colors"
+                                                                style="display: none;"
                                                                 data-index="{{ $index }}"
                                                                 data-title="{{ $item['title'] }}">
                                                             Select for Review
@@ -204,7 +200,7 @@
                                             </div>
 
                                             <!-- Selected Indicator -->
-                                            <div class="absolute inset-y-0 right-0 hidden pr-3 flex items-center pointer-events-none selected-indicator">
+                                            <div class="absolute inset-y-0 right-0 pr-3 items-center pointer-events-none selected-indicator" style="display: none;">
                                                 <span class="flex items-center text-blue-600 dark:text-blue-400">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -213,7 +209,7 @@
                                             </div>
                                         </div>
                                     @endforeach
-                                    </div>
+                                </div>
                             @else
                                 <div class="p-4 text-sm text-gray-500 dark:text-gray-400">
                                     No checklist items found.
@@ -223,7 +219,7 @@
                     </div>
 
                     <!-- Selected Items Summary (Initially Hidden) -->
-                    <div id="selected-items-summary" class="hidden mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                    <div id="selected-items-summary" class="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4" style="display: none;">
                         <h3 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">Selected Items for Review</h3>
                         <ul class="space-y-1" id="selected-items-list">
                             <!-- Items will be populated by JavaScript -->
@@ -527,9 +523,9 @@
                                 const showChecklist = ['changes_requested', 'rejected'].includes(status);
                                 document.querySelectorAll('.select-for-review').forEach(button => {
                                     if (showChecklist) {
-                                        button.classList.remove('hidden');
+                                        button.style.display = 'inline-flex';
                                     } else {
-                                        button.classList.add('hidden');
+                                        button.style.display = 'none';
                                         // Reset button state
                                         button.textContent = 'Select for Review';
                                         button.classList.remove('bg-blue-100', 'text-blue-700');
@@ -543,7 +539,7 @@
                                     updateSelectedItemsSummary();
                                     // Hide all selected indicators
                                     document.querySelectorAll('.selected-indicator').forEach(indicator => {
-                                        indicator.classList.add('hidden');
+                                        indicator.style.display = 'none';
                                     });
                                 }
 
@@ -567,13 +563,13 @@
                                 const itemsList = document.getElementById('selected-items-list');
                                 
                                 if (selectedItems.size > 0) {
-                                    summary.classList.remove('hidden');
+                                    summary.style.display = 'block';
                                     itemsList.innerHTML = Array.from(selectedItems).map(index => {
                                         const item = document.querySelector(`#checklist-item-${index}`);
                                         return `<li class="text-sm text-blue-700 dark:text-blue-300">• ${item.dataset.itemTitle}</li>`;
                                     }).join('');
                                 } else {
-                                    summary.classList.add('hidden');
+                                    summary.style.display = 'none';
                                 }
 
                                 // Update textarea with selected items
@@ -610,13 +606,13 @@
                                     
                                     if (selectedItems.has(index)) {
                                         selectedItems.delete(index);
-                                        indicator.classList.add('hidden');
+                                        indicator.style.display = 'none';
                                         button.textContent = 'Select for Review';
                                         button.classList.remove('bg-blue-100', 'text-blue-700');
                                         button.classList.add('bg-gray-100', 'text-gray-700');
                                     } else {
                                         selectedItems.add(index);
-                                        indicator.classList.remove('hidden');
+                                        indicator.style.display = 'flex';
                                         button.textContent = 'Selected';
                                         button.classList.remove('bg-gray-100', 'text-gray-700');
                                         button.classList.add('bg-blue-100', 'text-blue-700');
@@ -682,4 +678,29 @@
             </div>
         </div>
     </div>
-</x-app-layout> 
+    <style>
+        .status-badge {
+            @apply inline-flex items-center transition-all duration-200 shadow-sm;
+        }
+        .status-badge.pending {
+            @apply bg-gradient-to-r from-yellow-500/10 to-yellow-500/20 text-yellow-700 ring-1 ring-yellow-500/20;
+            @apply dark:from-yellow-400/10 dark:to-yellow-400/20 dark:text-yellow-400 dark:ring-yellow-400/30;
+        }
+        .status-badge.changes_requested {
+            @apply bg-gradient-to-r from-orange-500/10 to-orange-500/20 text-orange-700 ring-1 ring-orange-500/20;
+            @apply dark:from-orange-400/10 dark:to-orange-400/20 dark:text-orange-400 dark:ring-orange-400/30;
+        }
+        .status-badge.rejected {
+            @apply bg-gradient-to-r from-red-500/10 to-red-500/20 text-red-700 ring-1 ring-red-500/20;
+            @apply dark:from-red-400/10 dark:to-red-400/20 dark:text-red-400 dark:ring-red-400/30;
+        }
+        .status-badge.in_progress {
+            @apply bg-gradient-to-r from-blue-500/10 to-blue-500/20 text-blue-700 ring-1 ring-blue-500/20;
+            @apply dark:from-blue-400/10 dark:to-blue-400/20 dark:text-blue-400 dark:ring-blue-400/30;
+        }
+        .status-badge.completed {
+            @apply bg-gradient-to-r from-emerald-500/10 to-emerald-500/20 text-emerald-700 ring-1 ring-emerald-500/20;
+            @apply dark:from-emerald-400/10 dark:to-emerald-400/20 dark:text-emerald-400 dark:ring-emerald-400/30;
+        }
+    </style>
+</x-app-layout>

@@ -5,19 +5,18 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Stats Section -->
             <div class="mb-6 flex justify-end">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                            <span class="inline-block w-3 h-3 rounded-full bg-yellow-400"></span>
-                            <span>{{ $pendingCount ?? 0 }} Pending</span>
-                        </div>
-                        <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                            <span class="inline-block w-3 h-3 rounded-full bg-blue-400"></span>
-                            <span>In Progress</span>
-                        </div>
-                        <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                            <span class="inline-block w-3 h-3 rounded-full bg-green-400"></span>
-                            <span>Completed</span>
-                        </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span class="inline-block w-3 h-3 rounded-full bg-yellow-400"></span>
+                        <span>{{ $pendingCount ?? 0 }} Pending</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span class="inline-block w-3 h-3 rounded-full bg-blue-400"></span>
+                        <span>In Progress</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span class="inline-block w-3 h-3 rounded-full bg-green-400"></span>
+                        <span>Completed</span>
                     </div>
                 </div>
             </div>
@@ -25,9 +24,9 @@
             <!-- Tab Navigation -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6">
                 <div class="border-b border-gray-200 dark:border-gray-700">
-                    <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                    <nav class="flex flex-wrap px-6" aria-label="Tabs">
                         <a href="{{ route('accountant.tax-calendar.reviews') }}"
-                            class="@if(!request('status') && !request('archived')) border-blue-500 text-blue-600 dark:text-blue-500 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center group transition-colors">
+                            class="@if(!request('status') && !request('archived')) border-blue-500 text-blue-600 @else border-transparent hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-3 mr-4 border-b-2 font-medium text-sm flex items-center group transition-colors">
                             <svg class="w-5 h-5 mr-2 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -40,7 +39,7 @@
                         </a>
 
                         <a href="{{ route('accountant.tax-calendar.reviews', ['status' => 'changes_requested']) }}"
-                            class="@if(request('status') === 'changes_requested') border-yellow-500 text-yellow-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center group transition-colors">
+                            class="@if(request('status') === 'changes_requested') border-yellow-500 text-yellow-600 @else border-transparent hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-3 mr-4 border-b-2 font-medium text-sm flex items-center group transition-colors">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                             </svg>
@@ -48,15 +47,15 @@
                         </a>
 
                         <a href="{{ route('accountant.tax-calendar.reviews', ['status' => 'in_progress']) }}"
-                            class="@if(request('status') === 'in_progress') border-blue-500 text-blue-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center group transition-colors">
+                            class="@if(request('status') === 'in_progress') border-blue-500 text-blue-600 @else border-transparent hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-3 mr-4 border-b-2 font-medium text-sm flex items-center group transition-colors">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                             </svg>
                             <span>In Progress</span>
                         </a>
 
                         <a href="{{ route('accountant.tax-calendar.reviews', ['status' => 'completed']) }}"
-                            class="@if(request('status') === 'completed') border-green-500 text-green-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center group transition-colors">
+                            class="@if(request('status') === 'completed') border-green-500 text-green-600 @else border-transparent hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-3 mr-4 border-b-2 font-medium text-sm flex items-center group transition-colors">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -64,7 +63,7 @@
                         </a>
 
                         <a href="{{ route('accountant.tax-calendar.reviews', ['status' => 'rejected']) }}"
-                            class="@if(request('status') === 'rejected') border-red-500 text-red-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center group transition-colors">
+                            class="@if(request('status') === 'rejected') border-red-500 text-red-600 @else border-transparent hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-3 mr-4 border-b-2 font-medium text-sm flex items-center group transition-colors">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -72,7 +71,7 @@
                         </a>
 
                         <a href="{{ route('accountant.tax-calendar.reviews', ['archived' => true]) }}"
-                            class="@if(request('archived')) border-gray-500 text-gray-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center group transition-colors">
+                            class="@if(request('archived')) border-gray-500 text-gray-600 @else border-transparent hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-3 mr-4 border-b-2 font-medium text-sm flex items-center group transition-colors">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
                             </svg>
@@ -220,19 +219,24 @@
             @apply inline-flex items-center transition-all duration-200 shadow-sm;
         }
         .status-badge.pending {
-            @apply bg-gradient-to-r from-yellow-500/10 to-yellow-500/20 text-yellow-700 ring-1 ring-yellow-500/20 dark:from-yellow-400/10 dark:to-yellow-400/20 dark:text-yellow-400 dark:ring-yellow-400/30;
+            @apply bg-gradient-to-r from-yellow-500/10 to-yellow-500/20 text-yellow-700 ring-1 ring-yellow-500/20;
+            @apply dark:from-yellow-400/10 dark:to-yellow-400/20 dark:text-yellow-400 dark:ring-yellow-400/30;
         }
         .status-badge.changes_requested {
-            @apply bg-gradient-to-r from-orange-500/10 to-orange-500/20 text-orange-700 ring-1 ring-orange-500/20 dark:from-orange-400/10 dark:to-orange-400/20 dark:text-orange-400 dark:ring-orange-400/30;
+            @apply bg-gradient-to-r from-orange-500/10 to-orange-500/20 text-orange-700 ring-1 ring-orange-500/20;
+            @apply dark:from-orange-400/10 dark:to-orange-400/20 dark:text-orange-400 dark:ring-orange-400/30;
         }
         .status-badge.rejected {
-            @apply bg-gradient-to-r from-red-500/10 to-red-500/20 text-red-700 ring-1 ring-red-500/20 dark:from-red-400/10 dark:to-red-400/20 dark:text-red-400 dark:ring-red-400/30;
+            @apply bg-gradient-to-r from-red-500/10 to-red-500/20 text-red-700 ring-1 ring-red-500/20;
+            @apply dark:from-red-400/10 dark:to-red-400/20 dark:text-red-400 dark:ring-red-400/30;
         }
         .status-badge.in_progress {
-            @apply bg-gradient-to-r from-blue-500/10 to-blue-500/20 text-blue-700 ring-1 ring-blue-500/20 dark:from-blue-400/10 dark:to-blue-400/20 dark:text-blue-400 dark:ring-blue-400/30;
+            @apply bg-gradient-to-r from-blue-500/10 to-blue-500/20 text-blue-700 ring-1 ring-blue-500/20;
+            @apply dark:from-blue-400/10 dark:to-blue-400/20 dark:text-blue-400 dark:ring-blue-400/30;
         }
         .status-badge.completed {
-            @apply bg-gradient-to-r from-emerald-500/10 to-emerald-500/20 text-emerald-700 ring-1 ring-emerald-500/20 dark:from-emerald-400/10 dark:to-emerald-400/20 dark:text-emerald-400 dark:ring-emerald-400/30;
+            @apply bg-gradient-to-r from-emerald-500/10 to-emerald-500/20 text-emerald-700 ring-1 ring-emerald-500/20;
+            @apply dark:from-emerald-400/10 dark:to-emerald-400/20 dark:text-emerald-400 dark:ring-emerald-400/30;
         }
     </style>
-</x-app-layout> 
+</x-app-layout>
