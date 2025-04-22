@@ -53,6 +53,7 @@ class BreadcrumbService
             } 
             else {
                 // For custom actions, try to find a specific method
+                $singularResource = \Illuminate\Support\Str::singular($resource);
                 $customMethodName = $area . ucfirst($singularResource) . ucfirst($action);
                 if (method_exists(self::class, $customMethodName)) {
                     $methodName = $customMethodName;

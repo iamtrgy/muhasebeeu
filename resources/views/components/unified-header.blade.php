@@ -51,6 +51,18 @@
                                 // Special cases for segment names
                                 if ($segment === 'tax-calendar') {
                                     $segmentName = 'Tax Calendar';
+                                    
+                                    // Fix the Tax Calendar URL based on user role
+                                    if ($i > 0 && isset($segments[$i-1])) {
+                                        $role = $segments[$i-1];
+                                        if ($role === 'user') {
+                                            $currentUrl = url('/user/tax-calendar');
+                                        } elseif ($role === 'admin') {
+                                            $currentUrl = url('/admin/tax-calendar');
+                                        } elseif ($role === 'accountant') {
+                                            $currentUrl = url('/accountant/tax-calendar');
+                                        }
+                                    }
                                 }
                                 
                                 // Handle folder names in breadcrumbs
@@ -106,6 +118,18 @@
                                             }
                                             
                                             $showedParents = true;
+                                        }
+                                    }
+                                }
+                                
+                                // Handle tax calendar task IDs
+                                if (is_numeric($segment) && $i > 0) {
+                                    // Check if previous segment is tax-calendar
+                                    if (isset($segments[$i-1]) && $segments[$i-1] === 'tax-calendar') {
+                                        // Get the task name from the database
+                                        $task = \App\Models\TaxCalendarTask::find($segment);
+                                        if ($task && $task->taxCalendar) {
+                                            $segmentName = $task->taxCalendar->name;
                                         }
                                     }
                                 }
