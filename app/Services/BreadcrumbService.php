@@ -5,6 +5,86 @@ namespace App\Services;
 class BreadcrumbService
 {
     /**
+     * Generate breadcrumbs based on route name and parameters
+     * This is a generic method that can be used by the base layout
+     *
+     * @param string $routeName
+     * @param array $routeParams
+     * @return array
+     */
+    public static function generateBreadcrumbs($routeName, $routeParams = [])
+    {
+        // Extract the method name from the route
+        $segments = explode('.', $routeName);
+        $methodName = '';
+        
+        // Handle different route patterns
+        if (count($segments) === 1) {
+            // For single segment routes like 'profile', 'dashboard'
+            $methodName = $segments[0];
+        } 
+        else if (count($segments) === 2) {
+            // For routes like 'admin.dashboard', 'admin.settings'
+            $area = $segments[0]; // admin, user, accountant
+            $action = $segments[1]; // dashboard, settings
+            
+            // Format method name like adminDashboard
+            $methodName = $area . ucfirst($action);
+        }
+        else if (count($segments) >= 3) {
+            // For routes like 'admin.users.index', 'user.folders.show'
+            $area = $segments[0]; // admin, user, accountant
+            $resource = $segments[1]; // users, folders, companies
+            $action = $segments[2]; // index, show, edit
+            
+            // Format the method name based on common patterns
+            if ($action === 'index') {
+                $methodName = $area . ucfirst($resource);
+            } 
+            else if (in_array($action, ['show', 'edit', 'update'])) {
+                $singularResource = \Illuminate\Support\Str::singular($resource);
+                $methodName = $area . ucfirst($singularResource) . 'Detail';
+                
+                // Check if the method exists
+                if (!method_exists(self::class, $methodName)) {
+                    // Fallback to the resource list if detail method doesn't exist
+                    $methodName = $area . ucfirst($resource);
+                }
+            } 
+            else {
+                // For custom actions, try to find a specific method
+                $customMethodName = $area . ucfirst($singularResource) . ucfirst($action);
+                if (method_exists(self::class, $customMethodName)) {
+                    $methodName = $customMethodName;
+                } else {
+                    // Fallback to the resource list
+                    $methodName = $area . ucfirst($resource);
+                }
+            }
+        }
+        
+        // Call the breadcrumb method if it exists
+        if (!empty($methodName) && method_exists(self::class, $methodName)) {
+            // Find model parameters if any
+            $modelParam = null;
+            foreach ($routeParams as $param) {
+                if (is_object($param)) {
+                    $modelParam = $param;
+                    break;
+                }
+            }
+            
+            if ($modelParam) {
+                return self::{$methodName}($modelParam);
+            } else {
+                return self::{$methodName}();
+            }
+        }
+        
+        // Default empty breadcrumbs if no method found
+        return [];
+    }
+    /**
      * Generate breadcrumbs for user dashboard
      *
      * @return array

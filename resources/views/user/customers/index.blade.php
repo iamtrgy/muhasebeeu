@@ -1,32 +1,13 @@
 <x-app-layout>
-    <div class="py-6">
+    <x-unified-header />
+    
+    <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-            <!-- Breadcrumb Navigation -->
-            <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mb-6">
-                <div class="px-4 py-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center text-sm">
-                        <nav class="flex min-w-full" aria-label="Breadcrumb">
-                            <ol role="list" class="flex items-center space-x-2">
-                                <li>
-                                    <a href="{{ route('user.dashboard') }}" class="text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-gray-300">
-                                        Home
-                                    </a>
-                                </li>
-                                <li class="text-gray-400">/</li>
-                                <li>
-                                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100">Clients</span>
-                                </li>
-                            </ol>
-                        </nav>
-                    </div>
-                </div>
-            </div>
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-4 sm:p-6 text-gray-900 dark:text-gray-100">
                     <div class="mb-6 flex justify-end">
-                        <a href="{{ route('user.customers.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                        <a href="{{ route('user.userclients.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
@@ -118,7 +99,7 @@
                             <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No customers') }}</h3>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('Get started by creating a new customer.') }}</p>
                             <div class="mt-6">
-                                <a href="{{ route('user.customers.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                <a href="{{ route('user.userclients.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                     </svg>

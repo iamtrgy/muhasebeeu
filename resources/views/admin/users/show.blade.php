@@ -1,5 +1,5 @@
 <x-admin-layout>
-    <div class="py-6">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div x-data="{ activeTab: window.location.hash ? window.location.hash.substring(1) : 'profile' }" class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                 <div class="border-b border-gray-200 dark:border-gray-700">

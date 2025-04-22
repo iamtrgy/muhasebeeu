@@ -3,7 +3,7 @@
         <x-admin.page-title title="{{ __('Manage Subscription') }}"></x-admin.page-title>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto">
         <!-- User Profile Header -->
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">

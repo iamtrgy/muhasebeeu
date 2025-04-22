@@ -1,9 +1,5 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Tax Calendar') }}
-        </h2>
-    </x-slot>
+    <x-unified-header />
 
     <div class="container mx-auto px-4 py-8">
         <div class="flex justify-between items-center mb-6">

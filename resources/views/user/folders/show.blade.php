@@ -1,16 +1,9 @@
 <x-app-layout>
+    <x-unified-header />
     <x-folder.file-preview-modal />
 
-    <div class="py-6">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Add Accountant Style Breadcrumb Navigation -->
-            <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mb-6">
-                <div class="px-4 py-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center text-sm">
-                         <x-folder.breadcrumb :folder="$folder" />
-                    </div>
-                </div>
-            </div>
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <div class="flex justify-between items-center gap-4 mb-6">

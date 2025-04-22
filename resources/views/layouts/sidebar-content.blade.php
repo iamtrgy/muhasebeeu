@@ -3,9 +3,9 @@
 @endphp
 
 @if($user && $user->is_admin)
-    @include('layouts.admin-sidebar')
+    <x-sidebar-admin />
 @elseif($user && $user->is_accountant)
-    @include('layouts.accountant-sidebar')
+    <x-sidebar-accountant />
 @else
-    @include('layouts.user-sidebar')
+    <x-sidebar-user />
 @endif

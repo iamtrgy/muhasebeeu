@@ -3,7 +3,7 @@
         <x-admin.page-title title="{{ __('Admin Settings') }}"></x-admin.page-title>
     </x-slot>
     
-    <div class="py-6">
+    <div class="py-8">
             <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
                 <!-- Tabs Navigation -->
                 <div class="border-b border-gray-200 dark:border-gray-700">

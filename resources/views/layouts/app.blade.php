@@ -77,16 +77,9 @@
             <main class="min-h-screen flex-1 lg:pl-64">
                 <!-- Page Heading -->
                 @if (isset($header))
-                    <header class="bg-white dark:bg-gray-800 shadow">
-                        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                            {{ $header }}
-                            @if(!empty($breadcrumbs))
-                                <div class="mt-2">
-                                    <x-breadcrumb :items="$breadcrumbs" />
-                                </div>
-                            @endif
-                        </div>
-                    </header>
+                    <x-unified-header :breadcrumbs="$breadcrumbs">
+                        {{ $header }}
+                    </x-unified-header>
                 @endif
 
                 <!-- Page Content -->

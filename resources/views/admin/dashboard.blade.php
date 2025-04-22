@@ -6,7 +6,7 @@
     <!-- Include the file preview modal component -->
     <x-folder.file-preview-modal />
 
-    <div class="py-6">
+    <div class="py-8">
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <!-- Users Card -->

@@ -1,17 +1,7 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Create New Folder') }}
-            </h2>
-            <a href="{{ route('user.folders.index') }}" class="inline-flex items-center gap-x-3.5 py-2 px-3 text-sm text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800">
-                <svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                {{ __('Back to Folders') }}
-            </a>
-        </div>
-    </x-slot>
+    <x-unified-header />
 
-    <div class="py-6">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">

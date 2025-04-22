@@ -1,22 +1,7 @@
 <x-app-layout>
-    <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6">
-                <div class="px-6 py-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-4">
-                    <a href="{{ route('accountant.tax-calendar.reviews') }}" 
-                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                                </svg>
-                            </a>
-                            <div>
-                                <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
-                                    {{ $task->taxCalendar->name }}
-                                </h1>
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 flex items-center">
+    <x-unified-header>
+        <div class="flex items-center space-x-4 mt-2">
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 flex items-center">
                                     <span class="flex items-center">
                                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>

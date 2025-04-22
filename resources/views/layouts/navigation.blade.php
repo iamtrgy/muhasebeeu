@@ -42,7 +42,17 @@
          x-transition:leave-end="-translate-x-full"
          class="fixed top-0 start-0 bottom-0 z-40 w-64 bg-white border-r border-gray-200 pt-7 pb-10 overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
         <!-- Sidebar Content -->
-        @include('layouts.sidebar-content')
+        @php
+            $user = auth()->user();
+        @endphp
+
+        @if($user && $user->is_admin)
+            <x-sidebar-admin />
+        @elseif($user && $user->is_accountant)
+            <x-sidebar-accountant />
+        @else
+            <x-sidebar-user />
+        @endif
     </div>
 </div>
 
@@ -50,6 +60,16 @@
 <div class="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-64 lg:flex-col">
     <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-200 pt-7 pb-10 dark:bg-gray-800 dark:border-gray-700">
         <!-- Sidebar Content -->
-        @include('layouts.sidebar-content')
+        @php
+            $user = auth()->user();
+        @endphp
+
+        @if($user && $user->is_admin)
+            <x-sidebar-admin />
+        @elseif($user && $user->is_accountant)
+            <x-sidebar-accountant />
+        @else
+            <x-sidebar-user />
+        @endif
     </div>
 </div>

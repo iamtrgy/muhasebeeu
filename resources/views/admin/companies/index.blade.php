@@ -4,7 +4,7 @@
         </x-admin.page-title>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto">
 
             <!-- Success/Error Messages -->

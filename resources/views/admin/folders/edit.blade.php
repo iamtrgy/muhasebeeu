@@ -3,7 +3,7 @@
         <x-admin.page-title title="{{ __('Edit Folder:') }} {{ $folder->name }}"></x-admin.page-title>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto">
             <!-- Folder Quick Info -->
             <div class="mb-6 bg-white overflow-hidden shadow-sm sm:rounded-lg">

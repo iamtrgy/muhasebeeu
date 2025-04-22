@@ -3,7 +3,7 @@
         <x-admin.page-title title="{{ __('User Details') }}"></x-admin.page-title>
         </x-slot>
 
-    <div class="py-6">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto">
             @include('admin.users.partials.profile-header', ['user' => $user])
 
