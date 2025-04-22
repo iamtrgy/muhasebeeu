@@ -17,7 +17,7 @@
                     </div>
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Overdue</p>
-                        <p class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">{{ $deadlines->where('days_until', '<', 0)->count() }}</p>
+                        <p class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">{{ $deadlines->where('days_until', '<', 0)->where('status', '!=', 'completed')->count() }}</p>
                     </div>
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
@@ -26,11 +26,11 @@
                 </div>
                 
                 <!-- Debug Info -->
-                @if($deadlines->where('days_until', '<', 0)->count() > 0)
+                @if($deadlines->where('days_until', '<', 0)->where('status', '!=', 'completed')->count() > 0)
                 <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <h3 class="font-medium text-yellow-800">Overdue Task Details:</h3>
                     <ul class="mt-2 list-disc list-inside">
-                    @foreach($deadlines->where('days_until', '<', 0) as $overdue)
+                    @foreach($deadlines->where('days_until', '<', 0)->where('status', '!=', 'completed') as $overdue)
                         <li>
                             <strong>{{ $overdue['name'] }}</strong> - 
                             Days until: {{ $overdue['days_until'] }}, 
