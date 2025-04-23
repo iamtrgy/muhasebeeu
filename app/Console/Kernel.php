@@ -19,6 +19,7 @@ class Kernel extends ConsoleKernel
         Commands\RecreateCompanyFolders::class,
         Commands\CleanupDuplicateTasks::class,
         Commands\DiagnoseTaxCalendarTasks::class,
+        Commands\MergeDuplicateTaxCalendars::class,
     ];
 
     /**
