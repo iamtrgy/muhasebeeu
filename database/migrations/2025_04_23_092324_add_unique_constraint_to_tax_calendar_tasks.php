@@ -28,18 +28,14 @@ return new class extends Migration
                 ->delete();
         }
         
-        // Add the unique constraint if it doesn't exist
-        // For SQLite, we need to check if the index exists first
-        $indexExists = DB::select(
-            "SELECT name FROM sqlite_master 
-             WHERE type = 'index' 
-             AND name = 'tax_calendar_tasks_unique_constraint'"
-        );
-        
-        if (empty($indexExists)) {
+        // Add the unique constraint
+        try {
             Schema::table('tax_calendar_tasks', function (Blueprint $table) {
                 $table->unique(['tax_calendar_id', 'company_id', 'due_date'], 'tax_calendar_tasks_unique_constraint');
             });
+        } catch (\Exception $e) {
+            // If the index already exists, this will throw an exception
+            // We can safely ignore it
         }
     }
 
