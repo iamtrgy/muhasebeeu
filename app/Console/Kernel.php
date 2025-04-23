@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
         Commands\ResetAdminPassword::class,
         Commands\RestoreAdmin::class,
         Commands\RecreateCompanyFolders::class,
+        Commands\CleanupDuplicateTasks::class,
     ];
 
     /**
