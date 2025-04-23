@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
         Commands\RestoreAdmin::class,
         Commands\RecreateCompanyFolders::class,
         Commands\CleanupDuplicateTasks::class,
+        Commands\DiagnoseTaxCalendarTasks::class,
     ];
 
     /**
