@@ -13,7 +13,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tax_calendars', function (Blueprint $table) {
-            $table->text('user_instructions')->nullable()->after('task_instructions');
+            if (!Schema::hasColumn('tax_calendars', 'user_instructions')) {
+                $table->text('user_instructions')->nullable()->after('task_instructions');
+            }
         });
 
         // Update existing tax calendars with user instructions

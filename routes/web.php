@@ -92,7 +92,7 @@ Route::middleware(['auth', 'verified', 'subscribed', \App\Http\Middleware\Ensure
         Route::patch('/tax-calendar/{task}/complete', [TaxCalendarTaskController::class, 'complete'])->name('tax-calendar.complete');
         Route::patch('/tax-calendar/{task}/reopen', [TaxCalendarTaskController::class, 'reopen'])->name('tax-calendar.reopen');
         Route::patch('/tax-calendar/{task}/submit-for-review', [TaxCalendarTaskController::class, 'submitForReview'])->name('tax-calendar.submit-for-review');
-        
+
         // Task Messages
         Route::post('/tax-calendar/{task}/send-message', [TaskMessageController::class, 'store'])->name('tax-calendar.send-message');
         Route::post('/tax-calendar/{task}/mark-messages-read', [TaskMessageController::class, 'markAsRead'])->name('tax-calendar.mark-messages-read');

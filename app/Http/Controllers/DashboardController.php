@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\File;
 use App\Models\Folder;
 use App\Models\User;
+use App\Models\TaxCalendarTask;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -37,11 +38,38 @@ class DashboardController extends Controller
         ->take(10)
         ->get();
 
-        // For admin users, get recent user registrations
-        $recentUsers = auth()->user()->is_admin 
-            ? User::latest()->take(5)->get() 
-            : collect();
+        // Get task statistics
+        $pendingTasksCount = TaxCalendarTask::query()
+            ->whereIn('company_id', auth()->user()->companies->pluck('id'))
+            ->where('status', 'pending')
+            ->count();
 
-        return view('user.dashboard', compact('folders', 'recentFiles', 'recentUsers'));
+        $inProgressTasksCount = TaxCalendarTask::query()
+            ->whereIn('company_id', auth()->user()->companies->pluck('id'))
+            ->where('status', 'in_progress')
+            ->count();
+
+        $completedTasksCount = TaxCalendarTask::query()
+            ->whereIn('company_id', auth()->user()->companies->pluck('id'))
+            ->where('status', 'completed')
+            ->count();
+
+        // Get recent tasks
+        $tasks = TaxCalendarTask::query()
+            ->with('taxCalendar')
+            ->whereIn('company_id', auth()->user()->companies->pluck('id'))
+            ->whereIn('status', ['pending', 'in_progress', 'changes_requested'])
+            ->orderBy('due_date')
+            ->take(5)
+            ->get();
+
+        return view('user.dashboard', compact(
+            'folders', 
+            'recentFiles', 
+            'pendingTasksCount',
+            'inProgressTasksCount',
+            'completedTasksCount',
+            'tasks'
+        ));
     }
 } 

@@ -53,9 +53,10 @@ class CreateTaxCalendarTasks extends Command
                     continue;
                 }
 
-                // Check if task already exists for this deadline
+                // Check if task already exists for this deadline and tax calendar
                 $taskExists = $calendar->tasks()
                     ->where('company_id', $company->id)
+                    ->where('tax_calendar_id', $calendar->id)
                     ->where('due_date', $nextDeadline)
                     ->exists();
 

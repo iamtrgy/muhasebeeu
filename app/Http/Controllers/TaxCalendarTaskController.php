@@ -31,7 +31,7 @@ class TaxCalendarTaskController extends Controller
         $tasks = $query->orderBy('due_date')
             ->paginate(10);
 
-        return view('tax-calendar.index', compact('tasks'));
+        return view('tax-calendar.tasks.index', compact('tasks'));
     }
 
     public function show(TaxCalendarTask $task)
