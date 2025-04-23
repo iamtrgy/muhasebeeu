@@ -54,13 +54,13 @@ class DashboardController extends Controller
             ->where('status', 'completed')
             ->count();
 
-        // Get recent tasks
+        // Get recent tasks including completed ones
         $tasks = TaxCalendarTask::query()
             ->with('taxCalendar')
             ->whereIn('company_id', auth()->user()->companies->pluck('id'))
-            ->whereIn('status', ['pending', 'in_progress', 'changes_requested'])
+            ->orderBy('status', 'asc') // Put completed tasks at the end
             ->orderBy('due_date')
-            ->take(5)
+            ->take(8) // Increased limit to show more tasks
             ->get();
 
         return view('user.dashboard', compact(
