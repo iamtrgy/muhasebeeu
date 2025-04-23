@@ -145,7 +145,7 @@
                             @endphp
                             
                             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border-l-4 {{ $statusColors['card'] }} {{ ($daysUntil < 0 && $task->status !== 'completed') ? 'border border-red-500 dark:border-red-700 bg-red-50 dark:bg-red-900/10' : '' }}">
-                                <div class="p-5">
+                                <div class="p-6">
                                     <!-- Header with Status Badge -->
                                     <div class="flex justify-between items-start mb-4">
                                         <div>
@@ -153,11 +153,17 @@
                                                 {{ $task->taxCalendar->name }}
                                                 @if($daysUntil < 0 && $task->status !== 'completed')
                                                     <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 animate-pulse">
-                                                        Overdue
+                                                        OVERDUE
                                                     </span>
                                                 @endif
                                             </h3>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $task->taxCalendar->form_code }}</p>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                @if($task->taxCalendar->form_code)
+                                                    <span class="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-md dark:bg-gray-700 dark:text-gray-300">
+                                                        {{ $task->taxCalendar->form_code }}
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColors['badge'] }}">
                                             {{ $statusText }}
@@ -173,6 +179,37 @@
                                             <span class="text-sm {{ $dueClass }}">{{ $dueText }}</span>
                                         </div>
                                         
+                                        <!-- Payment Date (if applicable) -->
+                                        @if($task->taxCalendar->requires_payment)
+                                            @php
+                                                $paymentDate = $task->due_date->copy()->addDays($task->taxCalendar->payment_due_day - $task->taxCalendar->due_day);
+                                                $paymentDaysUntil = now()->startOfDay()->diffInDays($paymentDate->startOfDay(), false);
+                                                
+                                                if ($task->status === 'completed') {
+                                                    $paymentClass = 'text-green-600 dark:text-green-400';
+                                                    $paymentText = 'Payment completed';
+                                                } elseif ($paymentDaysUntil < 0) {
+                                                    $paymentClass = 'text-red-600 dark:text-red-400 font-medium';
+                                                    $paymentText = 'Payment ' . abs($paymentDaysUntil) . ' days overdue';
+                                                } elseif ($paymentDaysUntil === 0) {
+                                                    $paymentClass = 'text-orange-600 dark:text-orange-400 font-medium';
+                                                    $paymentText = 'Payment due today';
+                                                } elseif ($paymentDaysUntil <= 3) {
+                                                    $paymentClass = 'text-orange-600 dark:text-orange-400';
+                                                    $paymentText = 'Payment due in ' . $paymentDaysUntil . ' days';
+                                                } else {
+                                                    $paymentClass = 'text-gray-600 dark:text-gray-400';
+                                                    $paymentText = 'Payment due on ' . $paymentDate->format('M d, Y');
+                                                }
+                                            @endphp
+                                            <div class="flex items-center mt-1">
+                                                <svg class="w-5 h-5 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span class="text-sm {{ $paymentClass }}">{{ $paymentText }}</span>
+                                            </div>
+                                        @endif
+                                        
                                         <!-- Progress Bar -->
                                         <div class="mt-3">
                                             <div class="flex justify-between items-center mb-1 text-xs">
@@ -184,6 +221,13 @@
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Task Description (if available) -->
+                                    @if($task->taxCalendar->description)
+                                        <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                            <p class="line-clamp-2">{{ $task->taxCalendar->description }}</p>
+                                        </div>
+                                    @endif
                                     
                                     <!-- Action Buttons -->
                                     <div class="mt-4 flex justify-between items-center">
