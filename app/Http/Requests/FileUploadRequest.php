@@ -22,19 +22,21 @@ class FileUploadRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Since we're uploading files individually now, we expect a single file
         return [
-            'files' => 'required|array',
-            'files.*' => [
+            'files' => [
                 'required',
                 'file',
                 'max:10240', // 10MB max
-                'mimes:jpeg,jpg,png,pdf,doc,docx,xls,xlsx,txt,zip,rar',
+                'mimes:jpeg,jpg,png,gif,bmp,svg,pdf,doc,docx,xls,xlsx,txt,csv,zip,rar',
                 function ($attribute, $value, $fail) {
                     // Check for potential malicious files
-                    $forbidden = ['php', 'js', 'exe', 'sh', 'bat'];
-                    $ext = strtolower($value->getClientOriginalExtension());
-                    if (in_array($ext, $forbidden)) {
-                        $fail('The file type ".' . $ext . '" is not allowed for security reasons.');
+                    if ($value instanceof \Illuminate\Http\UploadedFile) {
+                        $forbidden = ['php', 'js', 'exe', 'sh', 'bat'];
+                        $ext = strtolower($value->getClientOriginalExtension());
+                        if (in_array($ext, $forbidden)) {
+                            $fail('The file type ".' . $ext . '" is not allowed for security reasons.');
+                        }
                     }
                 },
             ]
@@ -54,7 +56,7 @@ class FileUploadRequest extends FormRequest
             'files.*.required' => 'Each file is required.',
             'files.*.file' => 'The uploaded file must be a valid file.',
             'files.*.max' => 'The file size cannot exceed 10MB.',
-            'files.*.mimes' => 'The file must be one of the following types: JPEG, PNG, PDF, DOC, DOCX, XLS, XLSX, TXT, ZIP, RAR.'
+            'files.*.mimes' => 'The file must be one of the following types: JPEG, JPG, PNG, GIF, BMP, SVG, PDF, DOC, DOCX, XLS, XLSX, TXT, CSV, ZIP, RAR.'
         ];
     }
 }

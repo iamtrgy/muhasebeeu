@@ -11,12 +11,29 @@ $maxWidth = [
 @endphp
 
 <div
-    x-data="{ show: false }"
+    x-data="{ 
+        show: false,
+        modalId: '{{ $id }}'
+    }"
+    x-init="$watch('show', value => {
+        if (value) {
+            if (window.modalManager) {
+                window.modalManager.open(modalId, $el);
+            } else {
+                document.body.style.overflow = 'hidden';
+            }
+        } else {
+            if (window.modalManager) {
+                window.modalManager.close(modalId);
+            } else {
+                document.body.style.overflow = 'auto';
+            }
+        }
+    })"
     x-on:close.stop="show = false"
-    x-on:keydown.escape.window="show = false"
     x-show="show"
     id="{{ $id }}"
-    class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50"
+    class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0"
     style="display: none;"
 >
     <div
@@ -64,17 +81,22 @@ $maxWidth = [
 <!-- Modal Trigger -->
 @once
 <script>
-    window.openModal = function(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            Alpine.evaluate(modal, 'show = true');
+    // Override global modal functions if they don't exist
+    if (!window.openModal) {
+        window.openModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal && window.Alpine) {
+                window.Alpine.evaluate(modal, 'show = true');
+            }
         }
     }
     
-    window.closeModal = function(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            Alpine.evaluate(modal, 'show = false');
+    if (!window.closeModal) {
+        window.closeModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal && window.Alpine) {
+                window.Alpine.evaluate(modal, 'show = false');
+            }
         }
     }
 </script>

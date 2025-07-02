@@ -76,32 +76,47 @@ class FileController extends Controller
      */
     public function store(FileUploadRequest $request, Folder $folder)
     {
+        // CRITICAL: Check authorization before processing files
+        $this->authorize('upload', $folder);
+        
         try {
             if (!$request->hasFile('files')) {
                 return response()->json(['error' => 'No files uploaded'], 400);
             }
 
-            $uploadedFiles = [];
-            foreach ($request->file('files') as $file) {
-                $fileDetails = $this->fileService->processFileName($file, $folder);
-                $filePath = $fileDetails['file_path'];
+            // Since we're uploading files individually, handle single file
+            $file = $request->file('files');
+            
+            // Log for debugging
+            \Log::info('File upload request', [
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+                'user_id' => auth()->id(),
+                'folder_id' => $folder->id
+            ]);
+            
+            $fileDetails = $this->fileService->processFileName($file, $folder);
+            $filePath = $fileDetails['file_path'];
 
-                // Store in Bunny storage
-                if (!Storage::disk('bunny')->putFileAs('', $file, $filePath)) {
-                    throw new \Exception("Failed to upload file: " . $file->getClientOriginalName());
-                }
+            // Store in Bunny storage
+            if (!Storage::disk('bunny')->putFileAs('', $file, $filePath)) {
+                throw new \Exception("Failed to upload file: " . $file->getClientOriginalName());
+            }
 
-                // Create database record
-                $fileRecord = $folder->files()->create([
-                    'name' => $fileDetails['final_name'],
-                    'original_name' => $file->getClientOriginalName(),
-                    'path' => $filePath,
-                    'size' => $file->getSize(),
-                    'mime_type' => $file->getMimeType(),
-                    'uploaded_by' => auth()->id(),
-                ]);
+            // Create database record
+            $fileRecord = $folder->files()->create([
+                'name' => $fileDetails['final_name'],
+                'original_name' => $file->getClientOriginalName(),
+                'path' => $filePath,
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'uploaded_by' => auth()->id(),
+            ]);
 
-                $uploadedFiles[] = [
+            return response()->json([
+                'success' => true,
+                'message' => 'File uploaded successfully',
+                'data' => [
                     'id' => $fileRecord->id,
                     'name' => $fileRecord->name,
                     'original_name' => $fileRecord->original_name,
@@ -109,13 +124,7 @@ class FileController extends Controller
                     'size' => $fileRecord->size,
                     'mime_type' => $fileRecord->mime_type,
                     'created_at' => $fileRecord->created_at
-                ];
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Files uploaded successfully',
-                'data' => $uploadedFiles
+                ]
             ]);
 
         } catch (\Exception $e) {

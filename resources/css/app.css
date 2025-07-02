@@ -119,3 +119,36 @@
 .dark .dropzone .dz-preview .dz-error-message {
     color: #f87171;
 }
+
+/* Modal body overflow handling */
+body.modal-open {
+    overflow: hidden;
+    padding-right: var(--scrollbar-width, 0);
+}
+
+/* Modal z-index hierarchy */
+.modal-backdrop {
+    z-index: 40;
+}
+
+.modal-content {
+    z-index: 50;
+}
+
+/* Stacked modals */
+.modal-backdrop.stacked {
+    z-index: 60;
+}
+
+.modal-content.stacked {
+    z-index: 70;
+}
+
+/* Higher stacked modals */
+.modal-backdrop.stacked-high {
+    z-index: 80;
+}
+
+.modal-content.stacked-high {
+    z-index: 90;
+}

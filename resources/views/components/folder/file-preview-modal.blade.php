@@ -1,10 +1,10 @@
 <!-- File Preview Modal -->
-<div id="filePreviewModal" class="hidden fixed inset-0 z-[70]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+<div id="filePreviewModal" class="hidden fixed inset-0" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <!-- Backdrop -->
     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" id="modal-backdrop"></div>
 
     <!-- Modal Content -->
-    <div class="fixed inset-0 z-[80] overflow-y-auto">
+    <div class="fixed inset-0 overflow-y-auto">
         <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
             <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl">
                 <div class="absolute top-0 right-0 pt-4 pr-4">
@@ -40,6 +40,13 @@ window.previewFile = function(fileName, mimeType, url) {
     
     modal.classList.remove('hidden');
     
+    // Use modal manager if available
+    if (window.modalManager) {
+        window.modalManager.open('filePreviewModal', modal);
+    } else {
+        document.body.style.overflow = 'hidden';
+    }
+    
     if (mimeType.startsWith('image/')) {
         content.innerHTML = `<img src="${url}" alt="${fileName}" class="max-w-full h-auto mx-auto">`;
     } else if (mimeType === 'application/pdf') {
@@ -62,6 +69,13 @@ window.previewFile = function(fileName, mimeType, url) {
 window.closePreviewModal = function() {
     const modal = document.getElementById('filePreviewModal');
     modal.classList.add('hidden');
+    
+    // Use modal manager if available
+    if (window.modalManager) {
+        window.modalManager.close('filePreviewModal');
+    } else {
+        document.body.style.overflow = 'auto';
+    }
 }
 
 // Initialize event listeners when the document is ready
@@ -72,13 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close modal when clicking the backdrop
     backdrop.addEventListener('click', function(event) {
         if (event.target === backdrop) {
-            closePreviewModal();
-        }
-    });
-
-    // Close modal on escape key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
             closePreviewModal();
         }
     });

@@ -231,4 +231,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('user.subscription.complete');
 });
 
+// Test route for modal debugging (remove in production)
+Route::middleware(['auth', 'admin'])->get('/test-modals', function () {
+    return view('test-modals');
+})->name('test.modals');
+
 require __DIR__.'/auth.php';

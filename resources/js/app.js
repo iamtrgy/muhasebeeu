@@ -1,5 +1,6 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
+import modalManager from './modal-manager';
 
 // Initialize Alpine
 window.Alpine = Alpine;
@@ -46,10 +47,16 @@ Dropzone.options.dropzoneUpload = {
 };
 
 // Initialize Dropzone when the modal is opened
-window.openModal = function() {
+window.openUploadModal = function() {
     const modal = document.getElementById('uploadModal');
     modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    
+    // Use modal manager if available
+    if (window.modalManager) {
+        window.modalManager.open('uploadModal', modal);
+    } else {
+        document.body.style.overflow = 'hidden';
+    }
 
     // Initialize Dropzone only if not already initialized
     if (!window.myDropzone) {
@@ -104,10 +111,16 @@ window.openModal = function() {
     }
 };
 
-window.closeModal = function() {
+window.closeUploadModal = function() {
     const modal = document.getElementById('uploadModal');
     modal.classList.add('hidden');
-    document.body.style.overflow = 'auto';
+    
+    // Use modal manager if available
+    if (window.modalManager) {
+        window.modalManager.close('uploadModal');
+    } else {
+        document.body.style.overflow = 'auto';
+    }
     
     // Clear dropzone
     if (window.myDropzone) {
@@ -127,13 +140,14 @@ window.submitForm = function() {
 document.addEventListener('DOMContentLoaded', function() {
     const modalBackdrop = document.getElementById('modalBackdrop');
     if (modalBackdrop) {
-        modalBackdrop.addEventListener('click', window.closeModal);
+        modalBackdrop.addEventListener('click', window.closeUploadModal);
     }
-
-    // Close modal on escape key press
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            window.closeModal();
-        }
-    });
+    
+    // Create backward compatibility for old modal functions
+    if (!window.openModal) {
+        window.openModal = window.openUploadModal;
+    }
+    if (!window.closeModal) {
+        window.closeModal = window.closeUploadModal;
+    }
 });
