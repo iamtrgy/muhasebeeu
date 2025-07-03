@@ -32,14 +32,14 @@ $modalId = $id ?? $name ?? 'modal-' . uniqid();
         modalId: '{{ $modalId }}',
         init() {
             // Listen for open events
-            window.addEventListener('open-modal', (event) => {
+            document.addEventListener('open-modal', (event) => {
                 if (event.detail === this.modalId) {
                     this.open();
                 }
             });
             
             // Listen for close events
-            window.addEventListener('close-modal', (event) => {
+            document.addEventListener('close-modal', (event) => {
                 if (!event.detail || event.detail === this.modalId) {
                     this.close();
                 }

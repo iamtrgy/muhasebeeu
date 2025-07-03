@@ -37,7 +37,7 @@ $widthClasses = [
         }
     }"
     x-on:keydown.escape.prevent.stop="close($refs.button)"
-    x-on:focusin.window="! $refs.panel.contains($event.target) && close()"
+    x-on:focusin.window="$refs.panel && !$refs.panel.contains($event.target) && close()"
     x-id="['dropdown-button']"
     class="relative inline-block text-left {{ $dropdownClasses }}"
 >

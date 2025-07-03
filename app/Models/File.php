@@ -20,6 +20,7 @@ class File extends Model
         'path',
         'folder_id',
         'uploaded_by',
+        'notes',
     ];
 
     protected $casts = [

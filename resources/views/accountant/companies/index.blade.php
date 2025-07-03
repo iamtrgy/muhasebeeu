@@ -21,7 +21,7 @@
                             <x-ui.table.head-cell>{{ __('Owner') }}</x-ui.table.head-cell>
                             <x-ui.table.head-cell>{{ __('Country') }}</x-ui.table.head-cell>
                             <x-ui.table.head-cell>{{ __('Tax Number') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell class="text-right">{{ __('Actions') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
                         </x-slot>
                         
                         <x-slot name="body">
@@ -51,9 +51,14 @@
                                         <div class="text-sm text-gray-900 dark:text-gray-100 font-mono">{{ $company->tax_number ?? 'N/A' }}</div>
                                     </x-ui.table.cell>
                                     <x-ui.table.action-cell>
-                                        <x-ui.button.secondary size="sm" href="{{ route('accountant.companies.show', $company) }}">
-                                            {{ __('View') }}
-                                        </x-ui.button.secondary>
+                                        <a href="{{ route('accountant.companies.show', $company) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="{{ __('View details') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </a>
                                     </x-ui.table.action-cell>
                                 </tr>
                             @endforeach

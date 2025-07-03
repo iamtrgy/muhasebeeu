@@ -4,6 +4,7 @@
     'type' => 'button',    // button, submit, reset
     'disabled' => false,
     'fullWidth' => false,
+    'href' => null,
 ])
 
 @php
@@ -31,12 +32,24 @@ $classes = implode(' ', [
     $variantClasses[$variant] ?? $variantClasses['primary'],
     $widthClass,
 ]);
+
+// Check if href is provided in attributes
+$href = $href ?? $attributes->get('href');
 @endphp
 
-<button 
-    type="{{ $type }}"
-    {{ $disabled ? 'disabled' : '' }}
-    {{ $attributes->merge(['class' => $classes]) }}
->
-    {{ $slot }}
-</button>
+@if($href)
+    <a 
+        href="{{ $href }}"
+        {{ $attributes->except('href')->merge(['class' => $classes]) }}
+    >
+        {{ $slot }}
+    </a>
+@else
+    <button 
+        type="{{ $type }}"
+        {{ $disabled ? 'disabled' : '' }}
+        {{ $attributes->merge(['class' => $classes]) }}
+    >
+        {{ $slot }}
+    </button>
+@endif

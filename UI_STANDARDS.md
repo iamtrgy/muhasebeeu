@@ -13,14 +13,15 @@ This document defines the standardized UI components and patterns to be used thr
 5. [Avatar Components](#avatar-components)
 6. [Badge Components](#badge-components)
 7. [Form Components](#form-components)
-8. [Modal Components](#modal-components)
-9. [Color System](#color-system)
-10. [Spacing and Layout](#spacing-and-layout)
-11. [Interactive States](#interactive-states)
-12. [Typography](#typography)
-13. [Icons](#icons)
-14. [Migration Checklist](#migration-checklist)
-15. [Examples](#examples)
+8. [Tab Components](#tab-components)
+9. [Modal Components](#modal-components)
+10. [Color System](#color-system)
+11. [Spacing and Layout](#spacing-and-layout)
+12. [Interactive States](#interactive-states)
+13. [Typography](#typography)
+14. [Icons](#icons)
+15. [Migration Checklist](#migration-checklist)
+16. [Examples](#examples)
 
 ---
 
@@ -129,9 +130,36 @@ This document defines the standardized UI components and patterns to be used thr
                         <x-ui.table.cell>{{ $item->name }}</x-ui.table.cell>
                         <x-ui.table.cell>{{ $item->value }}</x-ui.table.cell>
                         <x-ui.table.action-cell>
-                            <x-ui.button.secondary size="sm" href="{{ route('...', $item) }}">
+                            {{-- Icon-only actions (recommended for tables) --}}
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{{ route('...', $item) }}" 
+                                   class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                   title="View details">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </a>
+                                <a href="{{ route('...', $item) }}" 
+                                   class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                   title="Edit">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </a>
+                                <button type="button" 
+                                        class="p-1 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                        title="Delete">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            {{-- OR Button with text (when space allows) --}}
+                            {{-- <x-ui.button.secondary size="sm" href="{{ route('...', $item) }}">
                                 View
-                            </x-ui.button.secondary>
+                            </x-ui.button.secondary> --}}
                         </x-ui.table.action-cell>
                     </tr>
                 @endforeach
@@ -141,7 +169,142 @@ This document defines the standardized UI components and patterns to be used thr
 </x-ui.card.base>
 ```
 
-### 2. Empty State
+### 3. Table Action Patterns
+
+#### Icon-only Actions (Recommended for tables)
+```blade
+{{-- Standard action icons --}}
+<div class="flex items-center justify-end gap-2">
+    {{-- View/Details --}}
+    <a href="{{ route('...') }}" 
+       class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+       title="View details">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+    </a>
+    
+    {{-- Edit --}}
+    <a href="{{ route('...') }}" 
+       class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+       title="Edit">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+    </a>
+    
+    {{-- Download --}}
+    <a href="{{ route('...') }}" 
+       class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+       title="Download">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+    </a>
+    
+    {{-- Delete (with confirmation) --}}
+    <button type="button" 
+            class="p-1 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            title="Delete"
+            onclick="confirm('Are you sure?') && document.getElementById('delete-form-{{ $item->id }}').submit()">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+    </button>
+</div>
+```
+
+#### Single Action (View-only tables)
+```blade
+{{-- When there's only one primary action --}}
+<a href="{{ route('...') }}" 
+   class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+    View details
+    <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+</a>
+```
+
+#### Button Actions (When explicit actions are needed)
+```blade
+{{-- Use buttons for important actions or when space allows --}}
+<div class="flex items-center gap-2">
+    <x-ui.button.secondary size="sm" href="{{ route('...') }}">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        View
+    </x-ui.button.secondary>
+    
+    <x-ui.button.danger size="sm">
+        Delete
+    </x-ui.button.danger>
+</div>
+```
+
+### 2. Editable Table Cells
+
+For tables that need inline editing functionality (like file notes, user details, etc.):
+
+```blade
+{{-- Basic editable text cell --}}
+<x-ui.table.editable-cell 
+    :value="$record->field_name ?? ''"
+    placeholder="Click to add..."
+    :route="route('model.update-field', $record)"
+    field="field_name"
+    type="text"
+    :maxLength="255"
+/>
+
+{{-- Editable textarea cell for longer content --}}
+<x-ui.table.editable-cell 
+    :value="$file->notes ?? ''"
+    placeholder="Add notes for accountant..."
+    :route="route('user.files.update-notes', $file)"
+    field="notes"
+    type="textarea"
+    :maxLength="1000"
+/>
+```
+
+#### Editable Cell Features:
+- **Click to edit**: Click anywhere on the cell to start editing
+- **Auto-save**: Saves on blur or Enter/Ctrl+Enter
+- **Cancel**: Press Escape to cancel changes
+- **Visual feedback**: Loading spinner during save, success/error messages
+- **Validation**: Client-side max length, server-side validation
+- **Accessibility**: Proper focus management and keyboard navigation
+
+#### Backend Requirements:
+Your controller method must:
+1. Accept PATCH requests with JSON content
+2. Return JSON response with `success` boolean and `message`
+3. Include proper authorization checks
+
+```php
+public function updateField(Request $request, Model $record)
+{
+    $this->authorize('update', $record);
+    
+    $validated = $request->validate([
+        'field_name' => 'nullable|string|max:1000'
+    ]);
+    
+    $record->update($validated);
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Updated successfully',
+        'field_name' => $record->field_name
+    ]);
+}
+```
+
+### 3. Empty State
 ```blade
 <x-ui.table.empty-state>
     <x-slot name="icon">
@@ -233,6 +396,148 @@ This document defines the standardized UI components and patterns to be used thr
     <option value="inactive">Inactive</option>
 </x-ui.form.select>
 ```
+
+## Tab Components
+
+### 1. Basic Tab Structure
+```blade
+<x-ui.tabs.base defaultTab="tab1">
+    <x-ui.tabs.list>
+        <x-ui.tabs.tab name="tab1" label="First Tab" />
+        <x-ui.tabs.tab name="tab2" label="Second Tab" />
+        <x-ui.tabs.tab name="tab3" label="Third Tab" />
+    </x-ui.tabs.list>
+    
+    <x-ui.tabs.panels>
+        <x-ui.tabs.panel name="tab1">
+            <div class="space-y-4">
+                {{-- First tab content --}}
+            </div>
+        </x-ui.tabs.panel>
+        
+        <x-ui.tabs.panel name="tab2">
+            <div class="space-y-4">
+                {{-- Second tab content --}}
+            </div>
+        </x-ui.tabs.panel>
+        
+        <x-ui.tabs.panel name="tab3">
+            <div class="space-y-4">
+                {{-- Third tab content --}}
+            </div>
+        </x-ui.tabs.panel>
+    </x-ui.tabs.panels>
+</x-ui.tabs.base>
+```
+
+### 2. Tabs with Icons
+```blade
+<x-ui.tabs.base defaultTab="notifications">
+    <x-ui.tabs.list>
+        <x-ui.tabs.tab name="notifications">
+            <x-slot name="icon">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+            </x-slot>
+            {{ __('Notifications') }}
+        </x-ui.tabs.tab>
+        
+        <x-ui.tabs.tab name="security">
+            <x-slot name="icon">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            </x-slot>
+            {{ __('Security') }}
+        </x-ui.tabs.tab>
+    </x-ui.tabs.list>
+    
+    <x-ui.tabs.panels>
+        <x-ui.tabs.panel name="notifications">
+            {{-- Notifications content --}}
+        </x-ui.tabs.panel>
+        
+        <x-ui.tabs.panel name="security">
+            {{-- Security content --}}
+        </x-ui.tabs.panel>
+    </x-ui.tabs.panels>
+</x-ui.tabs.base>
+```
+
+### 3. Tabs with Badges
+```blade
+<x-ui.tabs.base defaultTab="messages">
+    <x-ui.tabs.list>
+        <x-ui.tabs.tab name="messages">
+            <x-slot name="icon">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+            </x-slot>
+            <x-slot name="badge">
+                <x-ui.badge size="sm" variant="danger">3</x-ui.badge>
+            </x-slot>
+            {{ __('Messages') }}
+        </x-ui.tabs.tab>
+        
+        <x-ui.tabs.tab name="alerts">
+            <x-slot name="icon">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+            </x-slot>
+            <x-slot name="badge">
+                <x-ui.badge size="sm" variant="warning">12</x-ui.badge>
+            </x-slot>
+            {{ __('Alerts') }}
+        </x-ui.tabs.tab>
+    </x-ui.tabs.list>
+    
+    <x-ui.tabs.panels>
+        {{-- Tab panels --}}
+    </x-ui.tabs.panels>
+</x-ui.tabs.base>
+```
+
+### 4. Tab Variants
+```blade
+{{-- Default underline tabs --}}
+<x-ui.tabs.base defaultTab="tab1">
+    {{-- Standard underline style --}}
+</x-ui.tabs.base>
+
+{{-- Pills tabs --}}
+<x-ui.tabs.base defaultTab="tab1" variant="pills">
+    <x-ui.tabs.list variant="pills">
+        <x-ui.tabs.tab name="tab1" variant="pills" label="Overview" />
+        <x-ui.tabs.tab name="tab2" variant="pills" label="Analytics" />
+    </x-ui.tabs.list>
+    {{-- Panels --}}
+</x-ui.tabs.base>
+
+{{-- Bordered tabs --}}
+<x-ui.tabs.base defaultTab="tab1" variant="bordered">
+    <x-ui.tabs.list variant="bordered">
+        <x-ui.tabs.tab name="tab1" variant="bordered" label="Settings" />
+        <x-ui.tabs.tab name="tab2" variant="bordered" label="Profile" />
+    </x-ui.tabs.list>
+    {{-- Panels --}}
+</x-ui.tabs.base>
+```
+
+### 5. Tab Content Structure
+- **Always wrap tab content** in appropriate containers (cards, forms, etc.)
+- **Use consistent spacing** with `space-y-6` or similar
+- **Include proper form handling** in tab panels that contain forms
+- **Maintain content hierarchy** with proper headings and sections
+
+### 6. Tab Best Practices
+- **Default Tab**: Always specify a `defaultTab` to ensure proper initial state
+- **Consistent Naming**: Use descriptive, consistent names for tabs (notifications, security, etc.)
+- **Icon Standards**: Use `h-4 w-4` for tab icons, place icons in `<x-slot name="icon">`
+- **Badge Usage**: Use small badges (`size="sm"`) for counts or status indicators
+- **Content Organization**: Group related settings/content logically within tabs
 
 ## Modal Components
 

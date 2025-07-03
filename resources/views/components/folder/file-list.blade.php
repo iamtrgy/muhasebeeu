@@ -4,17 +4,17 @@
     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
-                <th scope="col" class="w-2/5 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th scope="col" class="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Name
                 </th>
                 <th scope="col" class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Type
                 </th>
                 <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Size/Items
+                    Size
                 </th>
-                <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Created By
+                <th scope="col" class="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Notes
                 </th>
                 <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Date
@@ -27,7 +27,7 @@
         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             @foreach($files as $file)
                 <tr>
-                    <td class="px-6 py-4 whitespace-nowrap w-2/5">
+                    <td class="px-6 py-4 whitespace-nowrap w-1/4">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 h-5 w-5">
                                 <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,10 +52,15 @@
                             {{ number_format($file->size / 1024, 2) }} KB
                         </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap w-1/6">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ $file->uploader->name }}
-                        </div>
+                    <td class="px-6 py-4 w-1/4">
+                        <x-ui.table.editable-cell 
+                            :value="$file->notes ?? ''"
+                            placeholder="Add notes for accountant..."
+                            :route="route('user.files.update-notes', $file)"
+                            field="notes"
+                            type="textarea"
+                            :maxLength="1000"
+                        />
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-1/6">
                         {{ $file->created_at->format('M d, Y H:i') }}

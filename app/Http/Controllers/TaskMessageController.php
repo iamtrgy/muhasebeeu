@@ -9,34 +9,40 @@ use Illuminate\Http\JsonResponse;
 
 class TaskMessageController extends Controller
 {
-    public function store(Request $request, TaxCalendarTask $task): JsonResponse
+    public function store(Request $request, TaxCalendarTask $task)
     {
         $this->authorize('view', $task);
 
         $validated = $request->validate([
-            'message' => ['required', 'string', 'max:1000'],
+            'content' => ['required', 'string', 'max:1000'],
         ]);
 
         $message = $task->messages()->create([
             'user_id' => auth()->id(),
-            'content' => $validated['message'],
+            'content' => $validated['content'],
         ]);
 
         $message->load('user');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Message sent successfully',
-            'data' => [
-                'id' => $message->id,
-                'content' => $message->content,
-                'created_at' => $message->created_at->format('M d, H:i'),
-                'user' => [
-                    'id' => $message->user->id,
-                    'name' => $message->user->name,
+        // Handle AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Message sent successfully',
+                'data' => [
+                    'id' => $message->id,
+                    'content' => $message->content,
+                    'created_at' => $message->created_at->format('M d, H:i'),
+                    'user' => [
+                        'id' => $message->user->id,
+                        'name' => $message->user->name,
+                    ],
                 ],
-            ],
-        ]);
+            ]);
+        }
+
+        // Handle regular form submissions
+        return redirect()->back()->with('success', 'Message sent successfully');
     }
 
     public function markAsRead(TaxCalendarTask $task): JsonResponse

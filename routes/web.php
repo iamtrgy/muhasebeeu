@@ -117,6 +117,7 @@ Route::middleware(['auth', 'verified', 'subscribed', \App\Http\Middleware\Ensure
         // File Management
         Route::get('files/{file}/download', [FileController::class, 'download'])->name('files.download');
         Route::get('files/{file}/preview', [FileController::class, 'preview'])->name('files.preview');
+        Route::patch('files/{file}/notes', [FileController::class, 'updateNotes'])->name('files.update-notes');
         Route::delete('files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
         Route::post('/folders/{folder}/upload', [FileController::class, 'store'])->name('files.upload');
         Route::post('/folders/{folder}/chunk', [FileController::class, 'storeChunk'])->name('files.chunk');
@@ -207,23 +208,27 @@ Route::prefix('/accountant')
             Route::get('/reviews/{task}/messages', [TaskMessageController::class, 'getNewMessages'])->name('messages');
         });
         
-        // Accountant User Management
-        Route::get('/users', [AccountantUserController::class, 'index'])->name('users.index');
-        Route::get('/users/{user}', [AccountantUserController::class, 'show'])->name('users.show');
-        Route::get('/users/{userId}/folders/{folderId}', [AccountantUserController::class, 'viewFolder'])->name('users.viewFolder');
         
         // Accountant File Management
         Route::get('/files/{file}/download', [\App\Http\Controllers\Accountant\AccountantFileController::class, 'download'])->name('files.download');
         Route::get('/files/{file}/preview', [\App\Http\Controllers\Accountant\AccountantFileController::class, 'preview'])->name('files.preview');
+        Route::patch('/files/{file}/notes', [\App\Http\Controllers\Accountant\AccountantFileController::class, 'updateNotes'])->name('files.update-notes');
         
         // Accountant Company Management
         Route::get('/companies', [AccountantCompanyController::class, 'index'])->name('companies.index');
         Route::get('/companies/{company}', [AccountantCompanyController::class, 'show'])->name('companies.show');
+        Route::get('/companies/{company}/folders/{folder}', [AccountantCompanyController::class, 'viewFolder'])->name('companies.folders.show');
 
         // Accountant Profile Management
         Route::get('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'update'])->name('profile.update');
+        Route::patch('/profile/password', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'updatePassword'])->name('profile.password.update');
         Route::delete('/profile', [\App\Http\Controllers\Accountant\AccountantProfileController::class, 'destroy'])->name('profile.destroy');
+        
+        // Accountant Settings
+        Route::get('/settings', [\App\Http\Controllers\Accountant\AccountantSettingsController::class, 'index'])->name('settings');
+        Route::patch('/settings/notifications', [\App\Http\Controllers\Accountant\AccountantSettingsController::class, 'updateNotifications'])->name('settings.notifications');
+        Route::patch('/settings/appearance', [\App\Http\Controllers\Accountant\AccountantSettingsController::class, 'updateAppearance'])->name('settings.appearance');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

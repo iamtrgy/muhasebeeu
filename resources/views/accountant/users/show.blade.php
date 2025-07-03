@@ -65,7 +65,7 @@
         </div>
 
         <!-- Document Management Section -->
-        <x-ui.card.base>
+        <x-ui.card.base x-data="folderManager()" x-init="initFolders({{ Js::from($folders) }})">
             <x-ui.card.header>
                 <div class="flex items-center justify-between">
                     <div>
@@ -126,7 +126,29 @@
             </x-ui.card.header>
             <x-ui.card.body>
                 @if($folders->count() > 0)
-                    <div x-data="folderManager()" x-init="initFolders(@js($folders->toArray()))">
+                    <div>
+                        <!-- Debug: Show raw folder count -->
+                        <div x-show="false" class="mb-4 p-2 bg-yellow-100 text-sm">
+                            Total folders from PHP: {{ $folders->count() }}<br>
+                            Total folders in Alpine: <span x-text="folders.length"></span><br>
+                            Filtered folders: <span x-text="filteredFolders.length"></span>
+                        </div>
+                        
+                        <!-- Folder Path Breadcrumb -->
+                        <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div class="flex items-center space-x-2 text-sm">
+                                <span class="flex items-center text-gray-500 dark:text-gray-400">
+                                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                    </svg>
+                                    {{ __('Root') }}
+                                </span>
+                                <span class="text-gray-400">
+                                    {{ __('(Showing root level folders)') }}
+                                </span>
+                            </div>
+                        </div>
+                        
                         <x-ui.table.base>
                             <x-slot name="head">
                                 <x-ui.table.head-cell>{{ __('Folder Name') }}</x-ui.table.head-cell>
@@ -134,13 +156,13 @@
                                 <x-ui.table.head-cell>{{ __('Size') }}</x-ui.table.head-cell>
                                 <x-ui.table.head-cell>{{ __('Last Modified') }}</x-ui.table.head-cell>
                                 <x-ui.table.head-cell>{{ __('Status') }}</x-ui.table.head-cell>
-                                <x-ui.table.head-cell class="text-right">{{ __('Actions') }}</x-ui.table.head-cell>
+                                <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
                             </x-slot>
-                            <x-slot name="body">
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 <template x-for="folder in filteredFolders" :key="folder.id">
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                        <x-ui.table.cell>
-                                            <a x-bind:href="window.location.origin + '/accountant/users/{{ $user->id }}/folders/' + folder.id" 
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <a x-bind:href="'/accountant/users/{{ $user->id }}/folders/' + folder.id" 
                                                class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 group">
                                                 <div class="flex-shrink-0">
                                                     <svg class="h-5 w-5 text-yellow-500 group-hover:text-yellow-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,40 +174,46 @@
                                                     <div class="text-xs text-gray-500 dark:text-gray-400" x-text="folder.description" x-show="folder.description"></div>
                                                 </div>
                                             </a>
-                                        </x-ui.table.cell>
-                                        <x-ui.table.cell>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <span x-text="folder.files_count" class="text-sm font-medium text-gray-900 dark:text-gray-100"></span>
                                                 <svg class="h-4 w-4 ml-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                 </svg>
                                             </div>
-                                        </x-ui.table.cell>
-                                        <x-ui.table.cell>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
                                             <span x-text="folder.total_size" class="text-sm text-gray-900 dark:text-gray-100"></span>
-                                        </x-ui.table.cell>
-                                        <x-ui.table.cell>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
                                             <span x-text="folder.last_modified_human" class="text-sm text-gray-500 dark:text-gray-400" x-show="folder.last_modified_human"></span>
                                             <span x-show="!folder.last_modified_human" class="text-sm text-gray-400">-</span>
-                                        </x-ui.table.cell>
-                                        <x-ui.table.cell>
-                                            <x-ui.badge x-bind:variant="folder.is_public ? 'success' : 'secondary'" x-text="folder.is_public ? '{{ __('Public') }}' : '{{ __('Private') }}'"></x-ui.badge>
-                                        </x-ui.table.cell>
-                                        <x-ui.table.action-cell>
-                                            <div class="flex items-center gap-2">
-                                                <x-ui.button.secondary size="sm" x-bind:href="window.location.origin + '/accountant/users/{{ $user->id }}/folders/' + folder.id">
-                                                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span x-show="folder.is_public" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                                {{ __('Public') }}
+                                            </span>
+                                            <span x-show="!folder.is_public" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                                {{ __('Private') }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <div class="flex items-center justify-end space-x-2">
+                                                <a x-bind:href="'/accountant/users/{{ $user->id }}/folders/' + folder.id" 
+                                                   class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                   title="{{ __('View folder') }}">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
-                                                    {{ __('View') }}
-                                                </x-ui.button.secondary>
+                                                </a>
                                                 <span x-show="folder.files_count > 0" class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full" x-text="`${folder.files_count} files`"></span>
                                             </div>
-                                        </x-ui.table.action-cell>
+                                        </td>
                                     </tr>
                                 </template>
-                            </x-slot>
+                            </tbody>
                         </x-ui.table.base>
                         
                         <!-- No results after filtering -->
@@ -196,7 +224,6 @@
                             <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No folders found') }}</h3>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('Try adjusting your search or filter criteria') }}</p>
                         </div>
-                    </div>
                 @else
                     <x-ui.table.empty-state>
                         <x-slot name="icon">
@@ -273,8 +300,19 @@
                 sortField: 'name',
                 
                 initFolders(foldersData) {
-                    this.folders = foldersData;
+                    // Process folders data to ensure all required fields exist
+                    this.folders = foldersData.map(folder => ({
+                        id: folder.id,
+                        name: folder.name || '',
+                        description: folder.description || '',
+                        files_count: folder.files_count || 0,
+                        is_public: folder.is_public || false,
+                        total_size: folder.total_size || '0 KB',
+                        last_modified_human: folder.updated_at ? new Date(folder.updated_at).toLocaleDateString() : null,
+                        updated_at: folder.updated_at
+                    }));
                     this.filteredFolders = [...this.folders];
+                    console.log('Folders initialized:', this.folders); // Debug log
                 },
                 
                 filterFolders() {

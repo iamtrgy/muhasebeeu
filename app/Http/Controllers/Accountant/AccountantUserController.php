@@ -35,8 +35,16 @@ class AccountantUserController extends Controller
         $accountant = Auth::user();
         $user = $accountant->assignedUsers()->findOrFail($id);
         
-        // Get user's folders
-        $folders = $user->folders()->whereNull('parent_id')->get();
+        // Get user's folders with files count
+        $folders = $user->folders()
+            ->whereNull('parent_id')
+            ->withCount('files')
+            ->get()
+            ->map(function($folder) {
+                $folder->total_size = $folder->totalSize();
+                $folder->last_modified_human = $folder->lastModified() ? $folder->lastModified()->diffForHumans() : null;
+                return $folder;
+            });
         
         // Get user's companies
         $companies = $user->companies;

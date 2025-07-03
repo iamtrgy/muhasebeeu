@@ -25,8 +25,8 @@
                         </div>
                     </div>
                     <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <a href="{{ route('accountant.users.index') }}" class="inline-flex items-center justify-center w-full px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-white transition ease-in-out duration-150 bg-indigo-600 border border-transparent rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                            {{ __('View all users') }}
+                        <a href="{{ route('accountant.companies.index') }}" class="inline-flex items-center justify-center w-full px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-white transition ease-in-out duration-150 bg-indigo-600 border border-transparent rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            {{ __('View companies') }}
                         </a>
                     </div>
                 </x-ui.card.body>
@@ -104,9 +104,16 @@
                                             <div class="text-sm text-gray-500 dark:text-gray-400">{{ $user->email }}</div>
                                         </div>
                                     </div>
-                                    <a href="{{ route('accountant.users.show', $user) }}" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-gray-700 transition ease-in-out duration-150 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                                        {{ __('View') }}
-                                    </a>
+                                    @php
+                                        $company = $user->companies->first();
+                                    @endphp
+                                    @if($company)
+                                        <a href="{{ route('accountant.companies.show', $company) }}" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-gray-700 transition ease-in-out duration-150 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                                            {{ __('View Company') }}
+                                        </a>
+                                    @else
+                                        <span class="text-xs text-gray-500">{{ __('No company') }}</span>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -169,8 +176,9 @@
                             <x-ui.table.head-cell>{{ __('File Name') }}</x-ui.table.head-cell>
                             <x-ui.table.head-cell>{{ __('Folder') }}</x-ui.table.head-cell>
                             <x-ui.table.head-cell>{{ __('Company') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell>{{ __('Notes') }}</x-ui.table.head-cell>
                             <x-ui.table.head-cell>{{ __('Date') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell class="text-right">{{ __('Actions') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
                         </x-slot>
                         <x-slot name="body">
                             @foreach($recentFiles as $file)
@@ -190,7 +198,8 @@
                                                                  name: '{{ $file->original_name }}',
                                                                  type: '{{ $file->mime_type }}',
                                                                  previewUrl: '{{ route('accountant.files.preview', $file) }}',
-                                                                 downloadUrl: '{{ route('accountant.files.download', $file) }}'
+                                                                 downloadUrl: '{{ route('accountant.files.download', $file) }}',
+                                                                 notes: '{{ addslashes($file->notes ?? '') }}'
                                                              });
                                                              $dispatch('open-modal', 'file-preview')
                                                          ">
@@ -206,9 +215,16 @@
                                     </x-ui.table.cell>
                                     <x-ui.table.cell>
                                         @if($file->folder)
-                                            <a href="{{ route('accountant.users.viewFolder', ['userId' => $file->folder->created_by, 'folderId' => $file->folder->id]) }}" class="text-sm text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400">
-                                                {{ $file->folder->name }}
-                                            </a>
+                                            @php
+                                                $company = $file->folder->creator?->companies?->first();
+                                            @endphp
+                                            @if($company)
+                                                <a href="{{ route('accountant.companies.folders.show', ['company' => $company, 'folder' => $file->folder]) }}" class="text-sm text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400">
+                                                    {{ $file->folder->name }}
+                                                </a>
+                                            @else
+                                                <span class="text-sm text-gray-900 dark:text-gray-100">{{ $file->folder->name }}</span>
+                                            @endif
                                         @else
                                             <span class="text-sm text-gray-500 dark:text-gray-400">{{ __('(No folder)') }}</span>
                                         @endif
@@ -226,6 +242,22 @@
                                         @endif
                                     </x-ui.table.cell>
                                     <x-ui.table.cell>
+                                        <x-ui.table.editable-cell 
+                                            :value="$file->notes ?? ''"
+                                            placeholder="Add notes..."
+                                            :route="route('accountant.files.update-notes', $file->id)"
+                                            field="notes"
+                                            type="textarea"
+                                            :maxLength="1000"
+                                            :file="[
+                                                'original_name' => $file->original_name,
+                                                'mime_type' => $file->mime_type,
+                                                'preview_url' => route('accountant.files.preview', $file),
+                                                'download_url' => route('accountant.files.download', $file)
+                                            ]"
+                                        />
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>
                                         <div class="text-sm text-gray-500 dark:text-gray-400">
                                             {{ $file->created_at->format('M d, Y') }}
                                         </div>
@@ -234,8 +266,29 @@
                                         </div>
                                     </x-ui.table.cell>
                                     <x-ui.table.action-cell>
-                                        <a href="{{ route('accountant.files.download', $file) }}" title="{{ __('Download') }}" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-gray-700 transition ease-in-out duration-150 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        @if(in_array($file->mime_type, ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'text/plain']))
+                                            <button type="button" 
+                                                 class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                 title="{{ __('Preview') }}"
+                                                 x-on:click="
+                                                     $dispatch('file-preview-data', {
+                                                         name: '{{ $file->original_name }}',
+                                                         type: '{{ $file->mime_type }}',
+                                                         previewUrl: '{{ route('accountant.files.preview', $file) }}',
+                                                         downloadUrl: '{{ route('accountant.files.download', $file) }}'
+                                                     });
+                                                     $dispatch('open-modal', 'file-preview')
+                                                 ">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </button>
+                                        @endif
+                                        <a href="{{ route('accountant.files.download', $file) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="{{ __('Download') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
                                         </a>

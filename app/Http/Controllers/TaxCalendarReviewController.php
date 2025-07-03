@@ -52,7 +52,29 @@ class TaxCalendarReviewController extends Controller
         // Add debug logging for results
         \Log::info('Found Tasks Count: ' . $tasks->count());
         
-        return view('tax-calendar.accountant.reviews.index', compact('tasks'));
+        // Get total counts for all statuses (not filtered)
+        $totalCounts = TaxCalendarTask::whereHas('company', function ($query) {
+                $query->whereIn('id', auth()->user()->assignedCompanies()->pluck('companies.id'));
+            })
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        // Ensure all statuses have a count
+        $statusCounts = [
+            'pending' => $totalCounts['pending'] ?? 0,
+            'under_review' => $totalCounts['under_review'] ?? 0,
+            'in_progress' => $totalCounts['in_progress'] ?? 0,
+            'completed' => $totalCounts['completed'] ?? 0,
+            'rejected' => $totalCounts['rejected'] ?? 0,
+            'changes_requested' => $totalCounts['changes_requested'] ?? 0,
+        ];
+
+        // Calculate pending count (under_review + pending)
+        $pendingCount = $statusCounts['under_review'] + $statusCounts['pending'];
+        
+        return view('tax-calendar.accountant.reviews.index', compact('tasks', 'statusCounts', 'pendingCount'));
     }
 
     public function show(TaxCalendarTask $task)
@@ -85,17 +107,29 @@ class TaxCalendarReviewController extends Controller
 
         try {
             $validated = $request->validate([
-                'status' => ['required', 'string', 'in:in_progress,completed,rejected,changes_requested'],
-                'review_comments' => ['nullable', 'string', 'max:1000'],
+                'action' => ['required', 'string', 'in:approve,request_changes,reject'],
+                'review_notes' => ['nullable', 'string', 'max:1000'],
             ]);
+
+            // Map action to status
+            $statusMapping = [
+                'approve' => 'completed',
+                'request_changes' => 'changes_requested', 
+                'reject' => 'rejected'
+            ];
+            
+            $targetStatus = $statusMapping[$validated['action']];
+            
+            $validated['status'] = $targetStatus;
+            $validated['review_comments'] = $validated['review_notes'];
 
             \Log::info('Validation passed', ['validated_data' => $validated]);
 
             // Check if the status transition is allowed
-            if (!in_array($validated['status'], $allowedTransitions[$task->status] ?? [])) {
+            if (!in_array($targetStatus, $allowedTransitions[$task->status] ?? [])) {
                 \Log::warning('Invalid status transition', [
                     'current_status' => $task->status,
-                    'requested_status' => $validated['status'],
+                    'requested_status' => $targetStatus,
                     'allowed_transitions' => $allowedTransitions[$task->status] ?? []
                 ]);
 
@@ -113,7 +147,7 @@ class TaxCalendarReviewController extends Controller
             DB::beginTransaction();
 
             $updateData = [
-                'status' => $validated['status'],
+                'status' => $targetStatus,
                 'review_comments' => $validated['review_comments'] ?? null,
                 'reviewed_at' => now(),
                 'reviewed_by' => auth()->id(),
@@ -124,9 +158,9 @@ class TaxCalendarReviewController extends Controller
             $task->update($updateData);
 
             // Create a message about the review
-            $statusMessage = match($validated['status']) {
+            $statusMessage = match($targetStatus) {
                 'in_progress' => '🔄 Task is now in progress.',
-                'completed' => '✅ Task has been completed.',
+                'completed' => '✅ Task has been approved and completed.',
                 'rejected' => '❌ Task has been rejected.',
                 'changes_requested' => '🔄 Changes have been requested.',
             };
@@ -152,7 +186,7 @@ class TaxCalendarReviewController extends Controller
                 'new_status' => $task->status
             ]);
 
-            return redirect()->route('tax-calendar.accountant.reviews.show', $task->id)
+            return redirect()->route('accountant.tax-calendar.reviews.show', $task->id)
                 ->with('success', 'Review updated successfully.');
 
         } catch (\Exception $e) {

@@ -322,4 +322,53 @@ class FileController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Update file notes.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\File $file
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function updateNotes(Request $request, File $file)
+    {
+        try {
+            // Check if user can edit this file (owner or accountant with access)
+            $this->authorize('update', $file);
+
+            $validated = $request->validate([
+                'notes' => 'nullable|string|max:1000'
+            ]);
+
+            $file->update([
+                'notes' => $validated['notes']
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Notes updated successfully',
+                    'notes' => $file->notes
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'File notes updated successfully.');
+
+        } catch (\Exception $e) {
+            Log::error('File notes update failed', [
+                'error' => $e->getMessage(),
+                'file_id' => $file->id,
+                'user_id' => auth()->id()
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update notes: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to update notes: ' . $e->getMessage());
+        }
+    }
 }

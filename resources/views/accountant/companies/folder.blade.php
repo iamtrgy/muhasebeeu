@@ -1,5 +1,5 @@
 @php
-    // Build folder breadcrumbs
+    // Build folder breadcrumbs for internal navigation (separate from header breadcrumbs)
     $folderBreadcrumbs = collect([]);
     $current = $folder;
     
@@ -11,30 +11,11 @@
     
     // Reverse to get the correct order
     $folderBreadcrumbs = $folderBreadcrumbs->reverse();
-    
-    // Create breadcrumb array for layout
-    $breadcrumbsArray = [
-        ['title' => __('Dashboard'), 'href' => route('accountant.dashboard'), 'first' => true],
-        ['title' => __('Users'), 'href' => route('accountant.users.index')],
-        ['title' => $user->name, 'href' => route('accountant.users.show', $user->id)],
-    ];
-    
-    // Add folder breadcrumbs
-    foreach ($folderBreadcrumbs as $folderBreadcrumb) {
-        if ($folderBreadcrumb->id === $folder->id) {
-            $breadcrumbsArray[] = ['title' => $folderBreadcrumb->name];
-        } else {
-            $breadcrumbsArray[] = [
-                'title' => $folderBreadcrumb->name,
-                'href' => route('accountant.users.viewFolder', ['userId' => $user->id, 'folderId' => $folderBreadcrumb->id])
-            ];
-        }
-    }
 @endphp
 
 <x-accountant.layout 
     title="{{ $folder->name }}" 
-    :breadcrumbs="$breadcrumbsArray"
+    :breadcrumbs="$breadcrumbs"
 >
     <div class="space-y-6">
         <!-- Folder Overview -->
@@ -50,7 +31,7 @@
                         </div>
                         <div class="ml-4 flex-1">
                             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $folder->name }}</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $user->name }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $company->name }}</p>
                             <div class="mt-2 flex items-center gap-4">
                                 @if($folder->is_public)
                                     <x-ui.badge variant="success">{{ __('Public') }}</x-ui.badge>
@@ -80,7 +61,7 @@
                         </div>
                         <div class="ml-4">
                             <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Sub-folders') }}</div>
-                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $childFolders->count() }}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $folder->children->count() }}</div>
                         </div>
                     </div>
                 </x-ui.card.body>
@@ -97,7 +78,7 @@
                         </div>
                         <div class="ml-4">
                             <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Files') }}</div>
-                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $files->count() }}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $folder->files->count() }}</div>
                         </div>
                     </div>
                 </x-ui.card.body>
@@ -105,7 +86,7 @@
         </div>
 
         <!-- Child Folders Section -->
-        @if($childFolders->count() > 0)
+        @if($folder->children->count() > 0)
             <x-ui.card.base>
                 <x-ui.card.header>
                     <div class="flex items-center justify-between">
@@ -113,18 +94,18 @@
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{{ __('Sub-folders') }}</h3>
                             <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">{{ __('Folders inside this directory') }}</p>
                         </div>
-                        <x-ui.badge variant="secondary">{{ $childFolders->count() }} {{ __('folders') }}</x-ui.badge>
+                        <x-ui.badge variant="secondary">{{ $folder->children->count() }} {{ __('folders') }}</x-ui.badge>
                     </div>
                 </x-ui.card.header>
                 <x-ui.card.body>
                     <!-- Folder Path Breadcrumb -->
                     <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div class="flex items-center space-x-2 text-sm">
-                            <a href="{{ route('accountant.users.show', $user) }}" class="flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <a href="{{ route('accountant.companies.show', $company) }}" class="flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                                 <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                 </svg>
-                                {{ __('Root') }}
+                                {{ __('Company Root') }}
                             </a>
                             @foreach($folderBreadcrumbs as $index => $breadcrumb)
                                 <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +114,7 @@
                                 @if($breadcrumb->id === $folder->id)
                                     <span class="font-medium text-gray-900 dark:text-gray-100">{{ $breadcrumb->name }}</span>
                                 @else
-                                    <a href="{{ route('accountant.users.viewFolder', ['userId' => $user->id, 'folderId' => $breadcrumb->id]) }}" 
+                                    <a href="{{ route('accountant.companies.folders.show', ['company' => $company->id, 'folder' => $breadcrumb->id]) }}" 
                                        class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                                         {{ $breadcrumb->name }}
                                     </a>
@@ -152,10 +133,10 @@
                             <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
                         </x-slot>
                         <x-slot name="body">
-                            @foreach($childFolders as $childFolder)
+                            @foreach($folder->children as $childFolder)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                     <x-ui.table.cell>
-                                        <a href="{{ route('accountant.users.viewFolder', ['userId' => $user->id, 'folderId' => $childFolder->id]) }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 group">
+                                        <a href="{{ route('accountant.companies.folders.show', ['company' => $company->id, 'folder' => $childFolder->id]) }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 group">
                                             <div class="flex-shrink-0">
                                                 <svg class="h-5 w-5 text-yellow-500 group-hover:text-yellow-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -193,7 +174,7 @@
                                         @endif
                                     </x-ui.table.cell>
                                     <x-ui.table.action-cell>
-                                        <a href="{{ route('accountant.users.viewFolder', ['userId' => $user->id, 'folderId' => $childFolder->id]) }}" 
+                                        <a href="{{ route('accountant.companies.folders.show', ['company' => $company->id, 'folder' => $childFolder->id]) }}" 
                                            class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                            title="{{ __('View folder') }}">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,14 +202,14 @@
                         <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{{ __('Files') }}</h3>
                         <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">{{ __('Documents stored in this folder') }}</p>
                     </div>
-                    @if($files->count() > 0)
+                    @if($folder->files->count() > 0)
                         <div class="flex items-center gap-3">
-                            <x-ui.badge variant="secondary">{{ $files->count() }} {{ __('files') }}</x-ui.badge>
-                            <x-ui.button.secondary size="sm" href="{{ route('accountant.users.show', $user) }}">
+                            <x-ui.badge variant="secondary">{{ $folder->files->count() }} {{ __('files') }}</x-ui.badge>
+                            <x-ui.button.secondary size="sm" href="{{ route('accountant.companies.show', $company) }}">
                                 <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                                 </svg>
-                                {{ __('Back to User') }}
+                                {{ __('Back to Company') }}
                             </x-ui.button.secondary>
                         </div>
                     @endif
@@ -236,14 +217,14 @@
             </x-ui.card.header>
             <x-ui.card.body>
                 <!-- Folder Path Breadcrumb -->
-                @if($folderBreadcrumbs->count() > 1)
+                @if($folderBreadcrumbs->count() >= 1)
                     <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div class="flex items-center space-x-2 text-sm">
-                            <a href="{{ route('accountant.users.show', $user) }}" class="flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <a href="{{ route('accountant.companies.show', $company) }}" class="flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                                 <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                 </svg>
-                                {{ __('Root') }}
+                                {{ __('Company Root') }}
                             </a>
                             @foreach($folderBreadcrumbs as $index => $breadcrumb)
                                 <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +233,7 @@
                                 @if($breadcrumb->id === $folder->id)
                                     <span class="font-medium text-gray-900 dark:text-gray-100">{{ $breadcrumb->name }}</span>
                                 @else
-                                    <a href="{{ route('accountant.users.viewFolder', ['userId' => $user->id, 'folderId' => $breadcrumb->id]) }}" 
+                                    <a href="{{ route('accountant.companies.folders.show', ['company' => $company->id, 'folder' => $breadcrumb->id]) }}" 
                                        class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                                         {{ $breadcrumb->name }}
                                     </a>
@@ -262,7 +243,7 @@
                     </div>
                 @endif
                 
-                @if($files->count() > 0)
+                @if($folder->files->count() > 0)
                     <x-ui.table.base>
                         <x-slot name="head">
                             <x-ui.table.head-cell>{{ __('File Name') }}</x-ui.table.head-cell>
@@ -273,8 +254,8 @@
                             <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
                         </x-slot>
                         <x-slot name="body">
-                            @foreach($files as $file)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            @foreach($folder->files as $file)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-file-id="{{ $file->id }}">
                                     <x-ui.table.cell>
                                         <div class="flex items-center">
                                             <div class="flex-shrink-0">
@@ -297,11 +278,13 @@
                                                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer group" 
                                                          x-on:click="
                                                              $dispatch('file-preview-data', {
+                                                                 id: {{ $file->id }},
                                                                  name: '{{ $file->original_name }}',
                                                                  type: '{{ $file->mime_type }}',
                                                                  previewUrl: '{{ route('accountant.files.preview', $file) }}',
                                                                  downloadUrl: '{{ route('accountant.files.download', $file) }}',
-                                                                 notes: '{{ addslashes($file->notes ?? '') }}'
+                                                                 updateNotesUrl: '{{ route('accountant.files.update-notes', $file->id) }}',
+                                                                 notes: @js($file->notes ?? '')
                                                              });
                                                              $dispatch('open-modal', 'file-preview')
                                                          ">
@@ -321,7 +304,7 @@
                                         </div>
                                     </x-ui.table.cell>
                                     <x-ui.table.cell>
-                                        <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $file->human_readable_size }}</span>
+                                        <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $file->human_readable_size ?? number_format($file->size / 1024, 1) . ' KB' }}</span>
                                     </x-ui.table.cell>
                                     <x-ui.table.cell>
                                         @if($file->mime_type === 'application/pdf')
@@ -342,7 +325,9 @@
                                             field="notes"
                                             type="textarea"
                                             :maxLength="1000"
+                                            class="editable-note-cell"
                                             :file="[
+                                                'id' => $file->id,
                                                 'original_name' => $file->original_name,
                                                 'mime_type' => $file->mime_type,
                                                 'preview_url' => route('accountant.files.preview', $file),
@@ -361,10 +346,13 @@
                                                  title="{{ __('Preview') }}"
                                                  x-on:click="
                                                      $dispatch('file-preview-data', {
+                                                         id: {{ $file->id }},
                                                          name: '{{ $file->original_name }}',
                                                          type: '{{ $file->mime_type }}',
                                                          previewUrl: '{{ route('accountant.files.preview', $file) }}',
-                                                         downloadUrl: '{{ route('accountant.files.download', $file) }}'
+                                                         downloadUrl: '{{ route('accountant.files.download', $file) }}',
+                                                         updateNotesUrl: '{{ route('accountant.files.update-notes', $file->id) }}',
+                                                         notes: @js($file->notes ?? '')
                                                      });
                                                      $dispatch('open-modal', 'file-preview')
                                                  ">
@@ -396,11 +384,11 @@
                         <x-slot name="title">{{ __('No Files') }}</x-slot>
                         <x-slot name="description">{{ __('This folder does not contain any files yet.') }}</x-slot>
                         <x-slot name="action">
-                            <x-ui.button.secondary href="{{ route('accountant.users.show', $user) }}">
+                            <x-ui.button.secondary href="{{ route('accountant.companies.show', $company) }}">
                                 <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                                 </svg>
-                                {{ __('Back to User') }}
+                                {{ __('Back to Company') }}
                             </x-ui.button.secondary>
                         </x-slot>
                     </x-ui.table.empty-state>
@@ -410,10 +398,93 @@
     </div>
     
     <!-- File Preview Modal -->
-    <x-ui.modal.base name="file-preview" maxWidth="lg">
-        <div class="text-center" x-data="{ currentFile: null }" 
-             x-on:file-preview-data.window="currentFile = $event.detail">
-            <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100" x-text="currentFile?.name || 'File Preview'"></h3>
+    <x-ui.modal.base name="file-preview" maxWidth="4xl">
+        <div class="text-center" 
+             x-data="{ 
+                 currentFile: null,
+                 editingNote: false, 
+                 noteValue: '', 
+                 originalNote: '',
+                 saving: false,
+                 error: null,
+                 
+                 
+                 startEdit() {
+                     this.editingNote = true;
+                     this.noteValue = this.currentFile?.notes || '';
+                     this.originalNote = this.noteValue;
+                     this.$nextTick(() => {
+                         if (this.$refs.noteTextarea) {
+                             this.$refs.noteTextarea.focus();
+                         }
+                     });
+                 },
+                 
+                 cancelEdit() {
+                     this.editingNote = false;
+                     this.noteValue = this.originalNote;
+                     this.error = null;
+                 },
+                 
+                 async saveNote() {
+                     if (this.noteValue === this.originalNote) {
+                         this.editingNote = false;
+                         return;
+                     }
+                     
+                     this.saving = true;
+                     this.error = null;
+                     
+                     try {
+                         if (!this.currentFile || !this.currentFile.id) {
+                             throw new Error('No file selected');
+                         }
+                         
+                         const response = await fetch(this.currentFile.updateNotesUrl, {
+                             method: 'PATCH',
+                             headers: {
+                                 'Content-Type': 'application/json',
+                                 'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content,
+                                 'Accept': 'application/json',
+                                 'X-Requested-With': 'XMLHttpRequest'
+                             },
+                             body: JSON.stringify({
+                                 notes: this.noteValue
+                             })
+                         });
+                         
+                         const data = await response.json();
+                         
+                         if (response.ok && data.success) {
+                             // Update the current file data
+                             this.currentFile.notes = this.noteValue;
+                             this.originalNote = this.noteValue;
+                             this.editingNote = false;
+                             
+                             // Show success feedback
+                             if (typeof toastr !== 'undefined') {
+                                 toastr.success(data.message || 'Notes updated successfully');
+                             }
+                         } else {
+                             throw new Error(data.message || 'Update failed');
+                         }
+                     } catch (err) {
+                         this.error = err.message;
+                         if (typeof toastr !== 'undefined') {
+                             toastr.error(this.error);
+                         }
+                     } finally {
+                         this.saving = false;
+                     }
+                 }
+             }" 
+             x-on:file-preview-data.window="currentFile = $event.detail; console.log('File preview data received:', $event.detail)">
+                <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100" x-text="currentFile?.name || 'File Preview'"></h3>
+            
+            <!-- Debug info -->
+            <div x-show="!currentFile" class="text-sm text-gray-500 mb-4">
+                Loading file data...
+            </div>
             
             {{-- Image Preview --}}
             <div x-show="currentFile && ['image/jpeg', 'image/png', 'image/gif'].includes(currentFile.type)">
@@ -442,8 +513,129 @@
                 </div>
             </div>
             
+            {{-- Notes Section - Compact & Prominent --}}
+            <div x-show="currentFile" class="mt-1 border-t border-gray-200 dark:border-gray-700 pt-1">
+                <div class="text-left">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                            <div class="flex items-center justify-center w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-full mr-2">
+                                <svg class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            Important Notes
+                        </h4>
+                        <div class="flex items-center gap-2">
+                            <div x-show="currentFile?.notes && !editingNote" class="flex items-center">
+                                <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-xs text-green-600 dark:text-green-400 font-medium">Has Notes</span>
+                            </div>
+                            <button x-show="currentFile && !editingNote" 
+                                    @click="startEdit()"
+                                    class="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70 rounded-md transition-colors">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                <span x-text="currentFile?.notes ? 'Edit Note' : 'Add Note'"></span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Note Editing Mode -->
+                    <div x-show="editingNote" class="space-y-3">
+                        <div>
+                            <textarea x-ref="noteTextarea"
+                                      x-model="noteValue"
+                                      @keydown.escape="cancelEdit()"
+                                      @keydown.ctrl.enter="saveNote()"
+                                      placeholder="Add notes for this file..."
+                                      rows="4"
+                                      maxlength="1000"
+                                      :disabled="saving"
+                                      class="w-full px-3 py-2 text-sm border border-amber-300 dark:border-amber-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-gray-100 resize-none"></textarea>
+                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <span x-text="noteValue.length"></span>/1000 characters • Ctrl+Enter to save
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div x-show="error" class="text-xs text-red-500" x-text="error"></div>
+                            <div class="flex items-center gap-2 ml-auto">
+                                <button @click="cancelEdit()" 
+                                        :disabled="saving"
+                                        class="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors disabled:opacity-50">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Cancel
+                                </button>
+                                <button @click="saveNote()" 
+                                        :disabled="saving"
+                                        class="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors disabled:opacity-50">
+                                    <svg x-show="!saving" class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <svg x-show="saving" class="w-3 h-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span x-text="saving ? 'Saving...' : 'Save'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Note Display Mode -->
+                    <div x-show="!editingNote">
+                        <!-- Notes exist -->
+                        <div x-show="currentFile?.notes" 
+                             x-data="{ expanded: false }"
+                             class="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 break-words">
+                            
+                            <!-- Truncated view -->
+                            <div x-show="!expanded && currentFile?.notes && currentFile.notes.length > 150">
+                                <p x-text="currentFile.notes.substring(0, 150) + '...'" class="leading-normal"></p>
+                                <button @click="expanded = true" 
+                                        class="inline-flex items-center mt-2 text-xs text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 font-medium">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                    View More
+                                </button>
+                            </div>
+                            
+                            <!-- Full view -->
+                            <div x-show="expanded || (currentFile?.notes && currentFile.notes.length <= 150)">
+                                <p x-text="currentFile?.notes" class="leading-normal"></p>
+                                <button x-show="expanded" 
+                                        @click="expanded = false" 
+                                        class="inline-flex items-center mt-2 text-xs text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 font-medium">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                    </svg>
+                                    View Less
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- No notes -->
+                        <div x-show="!currentFile?.notes" 
+                             class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400 italic text-center flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            No notes available for this file
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="mt-6 flex justify-center gap-3">
-                <x-ui.button.primary x-bind:href="currentFile?.downloadUrl">
+                <x-ui.button.primary x-bind:href="currentFile?.downloadUrl" 
+                                    x-show="currentFile?.downloadUrl"
+                                    download>
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -455,4 +647,4 @@
             </div>
         </div>
     </x-ui.modal.base>
-</x-accountant.layout> 
+</x-accountant.layout>
