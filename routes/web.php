@@ -236,4 +236,14 @@ Route::middleware(['auth', 'admin'])->get('/test-modals', function () {
     return view('test-modals');
 })->name('test.modals');
 
+// UI Component Showcase (for development)
+Route::middleware(['auth', 'admin'])->get('/ui-showcase', function () {
+    return view('ui-showcase');
+})->name('ui.showcase');
+
+// Layout Demo (for development)
+Route::middleware(['auth', 'admin'])->get('/layout-demo', function () {
+    return view('layout-demo');
+})->name('layout.demo');
+
 require __DIR__.'/auth.php';

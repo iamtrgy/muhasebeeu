@@ -1,437 +1,493 @@
-# UI Standards & Design System
+# UI Component Standardization Guide
+
+## Overview
+This document defines the standardized UI components and patterns to be used throughout the application. All pages should follow these standards to ensure consistency, maintainability, and professional appearance.
+
+**🚨 CRITICAL: Always use the new layout system as demonstrated in `/layout-demo`**
 
 ## Table of Contents
-1. [Color System](#color-system)
-2. [Typography](#typography)
-3. [Spacing & Layout](#spacing--layout)
-4. [Components](#components)
-5. [Forms](#forms)
-6. [Icons & Images](#icons--images)
-7. [Responsive Design](#responsive-design)
-8. [Dark Mode](#dark-mode)
-9. [Accessibility](#accessibility)
-10. [Best Practices](#best-practices)
+1. [Layout System](#layout-system)
+2. [Card Components](#card-components)
+3. [Table Components](#table-components)
+4. [Button Components](#button-components)
+5. [Avatar Components](#avatar-components)
+6. [Badge Components](#badge-components)
+7. [Form Components](#form-components)
+8. [Modal Components](#modal-components)
+9. [Color System](#color-system)
+10. [Spacing and Layout](#spacing-and-layout)
+11. [Interactive States](#interactive-states)
+12. [Typography](#typography)
+13. [Icons](#icons)
+14. [Migration Checklist](#migration-checklist)
+15. [Examples](#examples)
 
 ---
+
+## Layout System
+
+### 1. Layout Components
+**ALWAYS use the new layout system as demonstrated in `/layout-demo`**
+
+```blade
+{{-- Role-specific layouts --}}
+<x-accountant.layout title="Page Title" :breadcrumbs="[...]">
+    <div class="space-y-6">
+        {{-- Page content here --}}
+    </div>
+</x-accountant.layout>
+
+<x-admin.layout title="Page Title" :breadcrumbs="[...]">
+    <div class="space-y-6">
+        {{-- Page content here --}}
+    </div>
+</x-admin.layout>
+
+<x-user.layout title="Page Title" :breadcrumbs="[...]">
+    <div class="space-y-6">
+        {{-- Page content here --}}
+    </div>
+</x-user.layout>
+```
+
+### 2. Content Structure
+- **Container**: Always use `<div class="space-y-6">` as main content container
+- **Grid Layouts**: Use `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6` for responsive layouts
+- **No max-width**: Don't use `max-w-7xl mx-auto` - let the layout system handle width
+
+### 3. Breadcrumbs
+```blade
+:breadcrumbs="[
+    ['title' => __('Home'), 'href' => route('dashboard'), 'first' => true],
+    ['title' => __('Current Page')]
+]"
+```
+- First breadcrumb must have `'first' => true` to prevent arrow display
+- Use `route()` helper for links
+- Use `__()` for translations
+
+## Card Components
+
+### 1. Basic Card Structure
+```blade
+<x-ui.card.base>
+    <x-ui.card.header>
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Card Title</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">Optional description</p>
+    </x-ui.card.header>
+    <x-ui.card.body>
+        {{-- Card content --}}
+    </x-ui.card.body>
+</x-ui.card.base>
+```
+
+### 2. Stats Cards (Dashboard)
+```blade
+<x-ui.card.base class="hover:shadow-lg transition-shadow">
+    <x-ui.card.body class="p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0 bg-blue-500 rounded-lg p-3">
+                {{-- Icon SVG --}}
+            </div>
+            <div class="ml-5 flex-1">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Stat Label
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {{ $statValue }}
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <x-ui.button.primary size="sm" href="{{ route('...') }}" class="w-full">
+                Action Button
+            </x-ui.button.primary>
+        </div>
+    </x-ui.card.body>
+</x-ui.card.base>
+```
+
+## Table Components
+
+### 1. Standard Table Structure
+```blade
+<x-ui.card.base>
+    <x-ui.card.header>
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Table Title</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">Table description</p>
+    </x-ui.card.header>
+    <x-ui.card.body>
+        <x-ui.table.base>
+            <x-slot name="head">
+                <x-ui.table.head-cell>Column 1</x-ui.table.head-cell>
+                <x-ui.table.head-cell>Column 2</x-ui.table.head-cell>
+                <x-ui.table.head-cell class="text-right">Actions</x-ui.table.head-cell>
+            </x-slot>
+            <x-slot name="body">
+                @foreach($items as $item)
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <x-ui.table.cell>{{ $item->name }}</x-ui.table.cell>
+                        <x-ui.table.cell>{{ $item->value }}</x-ui.table.cell>
+                        <x-ui.table.action-cell>
+                            <x-ui.button.secondary size="sm" href="{{ route('...', $item) }}">
+                                View
+                            </x-ui.button.secondary>
+                        </x-ui.table.action-cell>
+                    </tr>
+                @endforeach
+            </x-slot>
+        </x-ui.table.base>
+    </x-ui.card.body>
+</x-ui.card.base>
+```
+
+### 2. Empty State
+```blade
+<x-ui.table.empty-state>
+    <x-slot name="icon">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {{-- Icon path --}}
+        </svg>
+    </x-slot>
+    <x-slot name="title">No Items Found</x-slot>
+    <x-slot name="description">Description of empty state</x-slot>
+</x-ui.table.empty-state>
+```
+
+## Button Components
+
+### 1. Button Variants
+```blade
+{{-- Primary actions --}}
+<x-ui.button.primary href="{{ route('...') }}">Primary Action</x-ui.button.primary>
+
+{{-- Secondary actions --}}
+<x-ui.button.secondary href="{{ route('...') }}">Secondary Action</x-ui.button.secondary>
+
+{{-- Destructive actions --}}
+<x-ui.button.danger>Delete</x-ui.button.danger>
+```
+
+### 2. Button Sizes
+```blade
+<x-ui.button.primary size="sm">Small</x-ui.button.primary>
+<x-ui.button.primary size="md">Medium (default)</x-ui.button.primary>
+<x-ui.button.primary size="lg">Large</x-ui.button.primary>
+```
+
+### 3. Button with Icons
+```blade
+<x-ui.button.primary>
+    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {{-- Icon path --}}
+    </svg>
+    Button Text
+</x-ui.button.primary>
+```
+
+## Avatar Components
+
+### 1. Avatar Usage
+```blade
+{{-- Auto-generated from name --}}
+<x-ui.avatar name="{{ $user->name }}" size="sm" />
+<x-ui.avatar name="{{ $user->name }}" size="md" />
+<x-ui.avatar name="{{ $user->name }}" size="lg" />
+
+{{-- With image --}}
+<x-ui.avatar :src="$user->avatar_url" name="{{ $user->name }}" size="md" />
+```
+
+## Badge Components
+
+### 1. Status Badges
+```blade
+<x-ui.badge variant="success">Active</x-ui.badge>
+<x-ui.badge variant="warning">Pending</x-ui.badge>
+<x-ui.badge variant="danger">Rejected</x-ui.badge>
+<x-ui.badge variant="secondary">Draft</x-ui.badge>
+```
+
+## Form Components
+
+### 1. Form Input Structure
+```blade
+<x-ui.form.group>
+    <x-ui.form.input 
+        name="email" 
+        type="email" 
+        label="Email Address"
+        placeholder="Enter your email"
+        :value="old('email')"
+        :error="$errors->first('email')"
+        required
+    />
+</x-ui.form.group>
+```
+
+### 2. Select Components
+```blade
+<x-ui.form.select name="status" label="Status" :error="$errors->first('status')">
+    <option value="">Select Status</option>
+    <option value="active">Active</option>
+    <option value="inactive">Inactive</option>
+</x-ui.form.select>
+```
+
+## Modal Components
+
+### 1. Event-based Modals (Recommended)
+```blade
+{{-- Modal definition --}}
+<x-ui.modal.base name="edit-user">
+    <h3 class="text-lg font-medium mb-4">Edit User</h3>
+    <div class="mt-4">
+        {{-- Modal content --}}
+    </div>
+    <div class="mt-6 flex justify-end gap-3">
+        <x-ui.button.secondary x-on:click="$dispatch('close-modal', 'edit-user')">
+            Cancel
+        </x-ui.button.secondary>
+        <x-ui.button.primary>
+            Save
+        </x-ui.button.primary>
+    </div>
+</x-ui.modal.base>
+
+{{-- Trigger button --}}
+<x-ui.button.primary x-on:click="$dispatch('open-modal', 'edit-user')">
+    Edit User
+</x-ui.button.primary>
+```
 
 ## Color System
 
-### Primary Palette
-```css
-/* Brand Colors */
---color-primary: #6366f1;        /* indigo-500 */
---color-primary-hover: #4f46e5;  /* indigo-600 */
---color-primary-focus: #4338ca;  /* indigo-700 */
+### 1. Primary Colors
+- **Primary**: `indigo-500/600/700` (buttons, links, focus states)
+- **Secondary**: `gray-500/600/700` (secondary buttons, borders)
+- **Success**: `emerald-500` (success states, positive actions)
+- **Warning**: `amber-500` (warning states, caution)
+- **Danger**: `red-500/600/700` (destructive actions, errors)
 
-/* Neutral Colors */
---color-text: #111827;           /* gray-900 */
---color-text-muted: #6b7280;     /* gray-500 */
---color-background: #ffffff;      /* white */
---color-surface: #f9fafb;        /* gray-50 */
---color-border: #e5e7eb;         /* gray-200 */
+### 2. Text Colors
+- **Primary Text**: `text-gray-900 dark:text-gray-100`
+- **Secondary Text**: `text-gray-500 dark:text-gray-400`
+- **Muted Text**: `text-gray-400 dark:text-gray-500`
+
+### 3. Background Colors
+- **Card Background**: `bg-white dark:bg-gray-800`
+- **Page Background**: `bg-gray-50 dark:bg-gray-900`
+- **Hover States**: `hover:bg-gray-50 dark:hover:bg-gray-700`
+
+## Spacing and Layout
+
+### 1. Standard Spacing
+- **Section Spacing**: `space-y-6` (24px)
+- **Card Padding**: `p-6` (24px)
+- **Button Spacing**: `gap-3` (12px)
+- **Grid Gaps**: `gap-6` (24px)
+
+### 2. Responsive Grid
+```blade
+{{-- 1 column on mobile, 2 on tablet, 3 on desktop --}}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {{-- Grid items --}}
+</div>
+
+{{-- Stats cards (responsive) --}}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    {{-- Stat cards --}}
+</div>
 ```
 
-### Semantic Colors
-```css
-/* Status Colors */
---color-success: #10b981;        /* emerald-500 */
---color-warning: #f59e0b;        /* amber-500 */
---color-error: #ef4444;          /* red-500 */
---color-info: #3b82f6;           /* blue-500 */
+## Interactive States
 
-/* Dark Mode Variants */
---color-dark-text: #f9fafb;      /* gray-50 */
---color-dark-background: #111827; /* gray-900 */
---color-dark-surface: #1f2937;   /* gray-800 */
---color-dark-border: #374151;    /* gray-700 */
+### 1. Hover Effects
+```blade
+{{-- Cards --}}
+class="hover:shadow-lg transition-shadow"
+
+{{-- Table rows --}}
+class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+
+{{-- List items --}}
+class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
 ```
 
-### Usage Guidelines
-- **Primary**: Use for primary actions, links, and brand elements
-- **Success**: Positive actions, confirmations, success states
-- **Warning**: Warnings, cautions, pending states
-- **Error**: Errors, destructive actions, failed states
-- **Info**: Informational messages, help text
-
----
+### 2. Focus States
+All interactive elements automatically inherit focus styles from the base components.
 
 ## Typography
 
-### Font Stack
-```css
-font-family: 'Figtree', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+### 1. Headings
+```blade
+{{-- Page titles (in layout) --}}
+title="Page Title"
+
+{{-- Section headings --}}
+<h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+
+{{-- Card titles --}}
+<h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
 ```
 
-### Type Scale
-| Class | Size | Use Case |
-|-------|------|----------|
-| `text-xs` | 0.75rem | Labels, help text, timestamps |
-| `text-sm` | 0.875rem | Body text, form inputs |
-| `text-base` | 1rem | Default text, paragraphs |
-| `text-lg` | 1.125rem | Section headers, card titles |
-| `text-xl` | 1.25rem | Page sub-headers |
-| `text-2xl` | 1.5rem | Page headers |
-| `text-3xl` | 1.875rem | Main titles |
+### 2. Body Text
+```blade
+{{-- Regular text --}}
+<p class="text-sm text-gray-900 dark:text-gray-100">
 
-### Font Weights
-- **Normal** (`font-normal`): Body text
-- **Medium** (`font-medium`): Labels, emphasis
-- **Semibold** (`font-semibold`): Headers, buttons
-- **Bold** (`font-bold`): Important text, CTAs
+{{-- Secondary text --}}
+<p class="text-sm text-gray-500 dark:text-gray-400">
 
-### Text Colors
-```html
-<!-- Primary text -->
-<p class="text-gray-900 dark:text-gray-100">Main content</p>
-
-<!-- Secondary text -->
-<p class="text-gray-600 dark:text-gray-400">Supporting content</p>
-
-<!-- Muted text -->
-<p class="text-gray-500 dark:text-gray-500">Help text</p>
+{{-- Descriptions --}}
+<p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
 ```
 
----
+## Icons
 
-## Spacing & Layout
+### 1. Icon Standards
+- **Size**: `h-4 w-4` for buttons, `h-5 w-5` for table icons, `h-6 w-6` for headers
+- **Color**: Inherit from parent or `text-gray-400` for decorative icons
+- **SVG Icons**: Use Heroicons v2 for consistency
 
-### Spacing Scale
-Use consistent spacing units based on 4px/0.25rem increments:
-
-| Class | Space | Pixels | Use Case |
-|-------|-------|--------|----------|
-| `p-1` | 0.25rem | 4px | Tight spacing |
-| `p-2` | 0.5rem | 8px | Small elements |
-| `p-4` | 1rem | 16px | Default padding |
-| `p-6` | 1.5rem | 24px | Card/section padding |
-| `p-8` | 2rem | 32px | Large sections |
-
-### Container Widths
-```html
-<!-- Full width with max constraint -->
-<div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-  <!-- Content -->
-</div>
-
-<!-- Content sections -->
-<div class="max-w-3xl">  <!-- For text content -->
-<div class="max-w-4xl">  <!-- For forms -->
-<div class="max-w-6xl">  <!-- For dashboards -->
+### 2. Icon in Buttons
+```blade
+<x-ui.button.primary>
+    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="..."/>
+    </svg>
+    Button Text
+</x-ui.button.primary>
 ```
 
-### Grid System
-```html
-<!-- Responsive grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-  <!-- Grid items -->
-</div>
+## Migration Checklist
 
-<!-- Common patterns -->
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">  <!-- Two column -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4">  <!-- Stats grid -->
+When updating a page to use the new UI standards:
+
+### 1. Layout Migration
+- [ ] Replace old layout with role-specific layout (`<x-accountant.layout>`)
+- [ ] Update breadcrumb structure with `'first' => true`
+- [ ] Use `space-y-6` container
+- [ ] Remove `max-w-7xl mx-auto` wrappers
+
+### 2. Component Migration
+- [ ] Replace manual cards with `<x-ui.card.base>`
+- [ ] Update tables to use `<x-ui.table.base>`
+- [ ] Convert buttons to `<x-ui.button.*>`
+- [ ] Replace manual badges with `<x-ui.badge>`
+- [ ] Update avatars to use `<x-ui.avatar>`
+
+### 3. Testing
+- [ ] Test responsive behavior
+- [ ] Verify dark mode compatibility
+- [ ] Check hover/focus states
+- [ ] Validate accessibility
+
+### 4. Build Process
+```bash
+# ALWAYS run after UI changes
+npm run build
+
+# Clear view cache if needed
+php artisan view:clear
 ```
 
----
+## Examples
 
-## Components
+See these files for reference implementations:
+- **Dashboard**: `/resources/views/accountant/dashboard/index.blade.php`
+- **Companies List**: `/resources/views/accountant/companies/index.blade.php`
+- **Layout Demo**: `/resources/views/layout-demo.blade.php`
+- **Component Showcase**: `/resources/views/ui-showcase.blade.php`
 
-### Buttons
+## Dos and Don'ts
 
-#### Primary Button
-```html
-<button class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-  Primary Action
-</button>
-```
-
-#### Secondary Button
-```html
-<button class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-  Secondary Action
-</button>
-```
-
-#### Danger Button
-```html
-<button class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
-  Delete
-</button>
-```
-
-### Cards
-```html
-<div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
-  <div class="p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-      Card Title
-    </h3>
-    <p class="text-gray-600 dark:text-gray-400">
-      Card content goes here...
-    </p>
-  </div>
-</div>
-```
-
-### Badges
-```html
-<!-- Status badges -->
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-  Active
-</span>
-
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-  Pending
-</span>
-
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-  Inactive
-</span>
-```
-
-### Tables
-```html
-<div class="overflow-x-auto">
-  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-    <thead class="bg-gray-50 dark:bg-gray-700">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-          Column Header
-        </th>
-      </tr>
-    </thead>
-    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-      <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-          Cell content
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-```
-
----
-
-## Forms
-
-### Input Fields
-```html
-<div>
-  <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-    Email Address <span class="text-red-500">*</span>
-  </label>
-  <input type="email" 
-         id="email" 
-         name="email" 
-         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
-  <p class="mt-1 text-sm text-gray-500">We'll never share your email.</p>
-</div>
-```
-
-### Select Dropdowns
-```html
-<select class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700">
-  <option>Select an option</option>
-  <option>Option 1</option>
-  <option>Option 2</option>
-</select>
-```
-
-### Checkboxes & Radios
-```html
-<label class="inline-flex items-center">
-  <input type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-  <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Remember me</span>
-</label>
-```
-
-### Form Validation
-```html
-<!-- Error state -->
-<input type="text" class="... border-red-300 focus:border-red-500 focus:ring-red-500">
-<p class="mt-1 text-sm text-red-600">This field is required.</p>
-
-<!-- Success state -->
-<input type="text" class="... border-green-300 focus:border-green-500 focus:ring-green-500">
-<p class="mt-1 text-sm text-green-600">Looks good!</p>
-```
-
----
-
-## Icons & Images
-
-### Icon Guidelines
-- Use consistent icon sizes: `h-4 w-4` (16px), `h-5 w-5` (20px), `h-6 w-6` (24px)
-- Maintain consistent stroke width
-- Use currentColor for dynamic coloring
-
-```html
-<!-- Icon example -->
-<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="..."></path>
-</svg>
-```
-
-### Image Handling
-```html
-<!-- Responsive images -->
-<img src="..." alt="Description" class="w-full h-auto rounded-lg shadow-sm">
-
-<!-- Avatar -->
-<img src="..." alt="User" class="h-10 w-10 rounded-full">
-```
-
----
-
-## Responsive Design
-
-### Breakpoints
-| Breakpoint | Min Width | CSS Class |
-|------------|-----------|-----------|
-| Mobile | 0px | (default) |
-| Small | 640px | `sm:` |
-| Medium | 768px | `md:` |
-| Large | 1024px | `lg:` |
-| Extra Large | 1280px | `xl:` |
-
-### Mobile-First Approach
-```html
-<!-- Stack on mobile, side-by-side on desktop -->
-<div class="flex flex-col md:flex-row gap-4">
-  <div class="flex-1">Content 1</div>
-  <div class="flex-1">Content 2</div>
-</div>
-```
-
----
-
-## Dark Mode
-
-### Implementation
-Always provide dark mode variants for colors:
-
-```html
-<div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-  <p class="text-gray-600 dark:text-gray-400">
-    Supporting text
-  </p>
-</div>
-```
-
-### Color Mappings
-| Light Mode | Dark Mode |
-|------------|-----------|
-| `bg-white` | `dark:bg-gray-800` |
-| `bg-gray-50` | `dark:bg-gray-900` |
-| `text-gray-900` | `dark:text-gray-100` |
-| `text-gray-600` | `dark:text-gray-400` |
-| `border-gray-200` | `dark:border-gray-700` |
-
----
-
-## Accessibility
-
-### Focus States
-All interactive elements must have visible focus states:
-```css
-focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-```
-
-### ARIA Labels
-```html
-<button aria-label="Delete item">
-  <svg aria-hidden="true">...</svg>
-</button>
-```
-
-### Color Contrast
-- Normal text: 4.5:1 contrast ratio
-- Large text: 3:1 contrast ratio
-- Use tools to verify contrast ratios
-
-### Keyboard Navigation
-- All interactive elements must be keyboard accessible
+### ✅ DO
+- Use the new layout system consistently
+- Follow the component patterns exactly
+- Use proper spacing and responsive classes
+- Include hover and transition effects
 - Use semantic HTML elements
-- Provide skip links for navigation
+- Follow accessibility best practices
 
----
+### ❌ DON'T
+- Mix old and new component patterns
+- Use manual HTML when components exist
+- Ignore responsive design patterns
+- Skip dark mode compatibility
+- Use arbitrary spacing values
+- Create custom components without approval
 
-## Best Practices
+## Component Usage Examples
 
-### Do's
-- ✅ Use consistent spacing from the scale
-- ✅ Maintain color consistency across similar elements
-- ✅ Always include dark mode variants
-- ✅ Use semantic HTML elements
-- ✅ Test on multiple screen sizes
-- ✅ Provide meaningful alt text for images
-- ✅ Use focus states for all interactive elements
+### Button
+```blade
+{{-- Primary Button --}}
+<x-ui.button.primary>
+    Save Changes
+</x-ui.button.primary>
 
-### Don'ts
-- ❌ Mix different shades for the same semantic meaning
-- ❌ Use inline styles for common patterns
-- ❌ Forget hover and focus states
-- ❌ Use color alone to convey information
-- ❌ Create new spacing values outside the scale
-- ❌ Mix different button styles in the same context
+{{-- With custom size --}}
+<x-ui.button.secondary size="lg">
+    Cancel
+</x-ui.button.secondary>
 
-### Component Creation Checklist
-When creating new components:
-- [ ] Follow the color system
-- [ ] Use consistent spacing
-- [ ] Include all interactive states (hover, focus, active)
-- [ ] Add dark mode support
-- [ ] Test responsiveness
-- [ ] Verify accessibility
-- [ ] Document usage examples
-
----
-
-## Implementation Examples
-
-### Page Layout
-```html
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-  <!-- Navigation -->
-  <nav class="bg-white dark:bg-gray-800 shadow">
-    <!-- Nav content -->
-  </nav>
-  
-  <!-- Main content -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
-      Page Title
-    </h1>
-    
-    <!-- Content sections -->
-  </main>
-</div>
+{{-- Danger button with icon --}}
+<x-ui.button.danger>
+    <svg class="w-4 h-4 mr-2">...</svg>
+    Delete
+</x-ui.button.danger>
 ```
 
-### Form Section
-```html
-<form class="space-y-6">
-  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-    <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-      Section Title
-    </h2>
-    
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-      <!-- Form fields -->
+### Modal
+```blade
+{{-- Event-based modal (recommended) --}}
+<x-ui.modal.base name="edit-user">
+    <h3 class="text-lg font-medium mb-4">Edit User</h3>
+    <div class="mt-4">
+        {{-- Form content --}}
     </div>
-    
-    <div class="mt-6 flex items-center justify-end space-x-3">
-      <button type="button" class="[secondary button classes]">
-        Cancel
-      </button>
-      <button type="submit" class="[primary button classes]">
-        Save Changes
-      </button>
+    <div class="mt-6 flex justify-end gap-3">
+        <x-ui.button.secondary x-on:click="$dispatch('close-modal', 'edit-user')">
+            Cancel
+        </x-ui.button.secondary>
+        <x-ui.button.primary>
+            Save
+        </x-ui.button.primary>
     </div>
-  </div>
-</form>
+</x-ui.modal.base>
+
+{{-- Open the modal --}}
+<x-ui.button.primary x-on:click="$dispatch('open-modal', 'edit-user')">
+    Edit User
+</x-ui.button.primary>
 ```
+
+## Development Routes
+- `/ui-showcase` - Component showcase page (admin only)
+- `/layout-demo` - Layout components demo with sidebar (admin only)
+
+## Commands to Run
+⚠️ **ALWAYS RUN AFTER UI CHANGES** ⚠️
+```bash
+# 1. REQUIRED: Build Tailwind CSS after any UI component changes
+npm run build
+
+# 2. Clear view cache if needed
+php artisan view:clear
+
+# 3. Run tests to ensure nothing is broken
+php artisan test
+```
+
+## Support
+
+For questions or clarifications about UI standards:
+1. Check the component showcase at `/ui-showcase`
+2. Review the layout demo at `/layout-demo`
+3. Reference this documentation
+4. Follow existing implementations in updated pages
 
 ---
 
-This UI Standards document should be treated as a living document and updated as the design system evolves.
+**This UI Standardization Guide should be treated as a living document and updated as the design system evolves.**

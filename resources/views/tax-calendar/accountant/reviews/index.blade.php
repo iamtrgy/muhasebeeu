@@ -1,8 +1,11 @@
-<x-app-layout>
-    <x-unified-header />
-    
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<x-accountant.layout 
+    title="Task Reviews"
+    :breadcrumbs="[
+        ['title' => __('Home'), 'href' => route('accountant.dashboard'), 'first' => true],
+        ['title' => __('Task Reviews')]
+    ]"
+>
+    <div class="space-y-6">
             <!-- Stats Section -->
             <div class="mb-6 flex justify-end">
                 <div class="flex items-center space-x-4">
@@ -211,7 +214,6 @@
                     {{ $tasks->links() }}
                 </div>
             @endif
-        </div>
     </div>
 
     <style>
@@ -239,4 +241,4 @@
             @apply dark:from-emerald-400/10 dark:to-emerald-400/20 dark:text-emerald-400 dark:ring-emerald-400/30;
         }
     </style>
-</x-app-layout>
+</x-accountant.layout>

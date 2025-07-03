@@ -1,18 +1,18 @@
-@props(['headers' => [], 'id' => null])
+{{-- Legacy component wrapper - use x-ui.table components directly for new implementations --}}
+@props(['headers' => []])
 
-<div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700" @if($id) id="{{ $id }}" @endif>
-        <thead class="bg-gray-50 dark:bg-gray-700">
-            <tr>
+<x-ui.table.base {{ $attributes }}>
+    @if(count($headers) > 0)
+        <x-ui.table.header>
+            <x-ui.table.row>
                 @foreach($headers as $header)
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {{ $header }}
-                    </th>
+                    <x-ui.table.head-cell>{{ $header }}</x-ui.table.head-cell>
                 @endforeach
-            </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {{ $slot }}
-        </tbody>
-    </table>
-</div>
+            </x-ui.table.row>
+        </x-ui.table.header>
+    @endif
+    
+    <x-ui.table.body>
+        {{ $slot }}
+    </x-ui.table.body>
+</x-ui.table.base>

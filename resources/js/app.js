@@ -2,8 +2,15 @@ import './bootstrap';
 import Alpine from 'alpinejs';
 import modalManager from './modal-manager';
 
-// Initialize Alpine
+// Make Alpine available globally before starting
 window.Alpine = Alpine;
+
+// Setup modal manager Alpine integration before Alpine starts
+if (modalManager && modalManager.setupAlpineIntegration) {
+    modalManager.setupAlpineIntegration();
+}
+
+// Start Alpine
 Alpine.start();
 
 // Import Dropzone CSS
@@ -143,11 +150,6 @@ document.addEventListener('DOMContentLoaded', function() {
         modalBackdrop.addEventListener('click', window.closeUploadModal);
     }
     
-    // Create backward compatibility for old modal functions
-    if (!window.openModal) {
-        window.openModal = window.openUploadModal;
-    }
-    if (!window.closeModal) {
-        window.closeModal = window.closeUploadModal;
-    }
+    // Remove this backward compatibility as it conflicts with our unified modal system
+    // The unified modal system already provides window.openModal and window.closeModal
 });

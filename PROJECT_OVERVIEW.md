@@ -239,6 +239,69 @@ Based on uncommitted files, the system includes:
    - Environment variable protection
    - Regular security updates
 
+## View Folder Structure Guidelines
+
+### Current Issues
+1. **Inconsistent Dashboard Locations**:
+   - Admin: `/admin/dashboard.blade.php`
+   - Accountant: `/accountant/dashboard/index.blade.php`
+   - User: `/user/dashboard.blade.php`
+
+2. **Naming Inconsistencies**:
+   - Some files use underscores: `subscription_debug.blade.php`
+   - Others use hyphens: `subscription-debug.blade.php`
+   - Mixed conventions: `company_temp` folder vs other folders
+
+3. **Duplicate/Test Files**:
+   - Multiple test files in root views directory
+   - Backup files (.bak) in production code
+   - Duplicate subscription debug files
+
+### Recommended Structure
+```
+resources/views/
+├── admin/
+│   ├── dashboard/
+│   │   └── index.blade.php
+│   ├── companies/
+│   ├── users/
+│   ├── folders/
+│   └── profile/
+├── accountant/
+│   ├── dashboard/
+│   │   └── index.blade.php (already correct)
+│   ├── companies/
+│   ├── users/
+│   └── profile/
+├── user/
+│   ├── dashboard/
+│   │   └── index.blade.php (needs restructuring)
+│   ├── companies/
+│   ├── invoices/
+│   ├── folders/
+│   └── profile/
+├── auth/
+├── components/
+├── layouts/
+├── onboarding/
+├── tax-calendar/
+├── emails/ (if needed)
+└── shared/ (for views used across roles)
+```
+
+### Naming Conventions
+1. **Use hyphens for file names**: `subscription-debug.blade.php`
+2. **Use snake_case for folder names if multi-word**: `tax_calendar` or preferably single words
+3. **Consistent index.blade.php for main views**
+4. **Group related partials in `partials/` subdirectories**
+
+### Action Items Before Table Component Migration
+1. **Standardize dashboard locations** - Move all to `/role/dashboard/index.blade.php`
+2. **Remove test files** from production views directory
+3. **Fix naming inconsistencies** - Choose either hyphens or underscores
+4. **Clean up duplicates** - Remove duplicate subscription debug files
+5. **Move temporary/test components** to a dedicated test directory
+
 ## Conclusion
 
 Muhasebe EU is a production-ready, enterprise-level accounting platform that combines modern web technologies with specific Estonian and EU business requirements. Its multi-tenant architecture, comprehensive feature set, and focus on tax compliance make it an ideal solution for Estonian businesses and their accountants.

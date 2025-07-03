@@ -6,15 +6,15 @@
 
             <!-- Success/Error Messages -->
             @if(session('success'))
-                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
-                    <p>{{ session('success') }}</p>
-                </div>
+                <x-ui.alert type="success" class="mb-4" dismissible>
+                    {{ session('success') }}
+                </x-ui.alert>
             @endif
 
             @if(session('error'))
-                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-                    <p>{{ session('error') }}</p>
-                </div>
+                <x-ui.alert type="error" class="mb-4" dismissible>
+                    {{ session('error') }}
+                </x-ui.alert>
             @endif
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
@@ -27,7 +27,7 @@
                                     <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
                                 </svg>
                             </div>
-                            <input type="search" id="companySearch" placeholder="Search companies.." class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                            <input type="search" id="companySearch" placeholder="Search companies..." class="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-md focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-3 py-2 placeholder-gray-400 dark:placeholder-gray-500">
                         </div>
                     </div>
 
@@ -40,67 +40,63 @@
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('Get started by creating your first company.') }}</p>
                         </div>
                     @else
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700" id="companiesTable">
-                                <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {{ __('Company') }}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {{ __('Tax Info') }}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {{ __('Country') }}
-                                        </th>
-                                        <th scope="col" class="relative px-6 py-3">
-                                            <span class="sr-only">{{ __('Actions') }}</span>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    @foreach($companies as $company)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="flex items-center">
-                                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
-                                                        <span class="text-lg font-medium text-blue-700 dark:text-blue-300">{{ substr($company->name, 0, 1) }}</span>
+                        <x-ui.table.base id="companiesTable">
+                            <x-ui.table.header>
+                                <x-ui.table.row>
+                                    <x-ui.table.head-cell>{{ __('Company') }}</x-ui.table.head-cell>
+                                    <x-ui.table.head-cell>{{ __('Tax Info') }}</x-ui.table.head-cell>
+                                    <x-ui.table.head-cell>{{ __('Country') }}</x-ui.table.head-cell>
+                                    <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
+                                </x-ui.table.row>
+                            </x-ui.table.header>
+                            <x-ui.table.body>
+                                @foreach($companies as $company)
+                                    <x-ui.table.row>
+                                        <x-ui.table.cell>
+                                            <div class="flex items-center">
+                                                <x-ui.avatar 
+                                                    size="md" 
+                                                    name="{{ $company->name }}"
+                                                    class="flex-shrink-0"
+                                                />
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                        {{ $company->name }}
                                                     </div>
-                                                    <div class="ml-4">
-                                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                            {{ $company->name }}
-                                                        </div>
-                                                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                                                            {{ $company->email }}
-                                                        </div>
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                        {{ $company->email }}
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Registry Number</div>
-                                                <div class="text-sm text-gray-900 dark:text-gray-100">{{ $company->tax_number }}</div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm text-gray-900 dark:text-gray-100">{{ $company->country->name ?? '-' }}</div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                            </div>
+                                        </x-ui.table.cell>
+                                        <x-ui.table.cell>
+                                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Registry Number</div>
+                                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ $company->tax_number }}</div>
+                                        </x-ui.table.cell>
+                                        <x-ui.table.cell>
+                                            {{ $company->country->name ?? '-' }}
+                                        </x-ui.table.cell>
+                                        <x-ui.table.action-cell>
+                                            <x-ui.tooltip text="View Details" position="left">
                                                 <a href="{{ route('user.companies.show', $company->id) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                                                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
                                                 </a>
+                                            </x-ui.tooltip>
+                                            <x-ui.tooltip text="Edit" position="left">
                                                 <a href="{{ route('user.companies.edit', $company->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                     </svg>
                                                 </a>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                                            </x-ui.tooltip>
+                                        </x-ui.table.action-cell>
+                                    </x-ui.table.row>
+                                @endforeach
+                            </x-ui.table.body>
+                        </x-ui.table.base>
                     @endif
                 </div>
             </div>

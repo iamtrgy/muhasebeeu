@@ -40,15 +40,20 @@ class AccountantDashboardController extends Controller
         $recentUsers = $accountant->assignedUsers()->latest()->take(5)->get();
         $recentCompanies = $accountant->assignedCompanies()->latest()->take(5)->get();
         
-        // Get recent files from assigned users and companies
+        // Get recent files from assigned users and companies - optimized query
         $userIds = $accountant->assignedUsers()->pluck('users.id')->toArray();
         
-        // Get files from folders created by assigned users
-        $recentFiles = File::whereHas('folder', function($query) use ($userIds) {
-                $query->whereIn('created_by', $userIds);
-            })
-            ->with(['folder.creator.companies', 'uploader'])
-            ->latest()
+        // More efficient query using joins instead of whereHas
+        $recentFiles = File::select('files.*')
+            ->join('folders', 'files.folder_id', '=', 'folders.id')
+            ->whereIn('folders.created_by', $userIds)
+            ->with([
+                'folder:id,name,created_by', 
+                'folder.creator:id,name,email',
+                'folder.creator.companies:id,name,user_id',
+                'uploader:id,name,email'
+            ])
+            ->latest('files.created_at')
             ->take(10)
             ->get();
         
