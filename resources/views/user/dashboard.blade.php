@@ -1,74 +1,114 @@
-<x-user.layout>
-    <x-unified-header />
-    
-    <!-- Include the file preview modal component -->
-    <x-folder.file-preview-modal />
+<x-user.layout 
+    title="Dashboard"
+    :breadcrumbs="[['title' => __('Dashboard'), 'first' => true]]"
+>
+    <div class="space-y-6">
+        <!-- Task Overview Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Due Today Card -->
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-orange-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Due Today') }}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $tasks->where('due_date', now()->startOfDay())->count() }}</div>
+                        </div>
+                    </div>
+                </x-ui.card.body>
+            </x-ui.card.base>
 
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Task Overview -->
-            <div class="mb-6">
-                <!-- Deadline Summary Stats -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Due Today</p>
-                        <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ $tasks->where('due_date', now()->startOfDay())->count() }}</p>
+            <!-- Upcoming Tasks Card -->
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Upcoming (7 days)') }}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $tasks->filter(function($task) { 
+                                $daysUntil = now()->startOfDay()->diffInDays($task->due_date->startOfDay(), false);
+                                return $daysUntil > 0 && $daysUntil <= 7;
+                            })->count() }}</div>
+                        </div>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Upcoming (7 days)</p>
-                        <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ $tasks->filter(function($task) { 
-                            $daysUntil = now()->startOfDay()->diffInDays($task->due_date->startOfDay(), false);
-                            return $daysUntil > 0 && $daysUntil <= 7;
-                        })->count() }}</p>
+                </x-ui.card.body>
+            </x-ui.card.base>
+
+            <!-- Overdue Tasks Card -->
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-red-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Overdue') }}</div>
+                            <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ $tasks->filter(function($task) { 
+                                return now()->startOfDay()->gt($task->due_date->startOfDay()) && $task->status !== 'completed';
+                            })->count() }}</div>
+                        </div>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Overdue</p>
-                        <p class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">{{ $tasks->filter(function($task) { 
-                            return now()->startOfDay()->gt($task->due_date->startOfDay()) && $task->status !== 'completed';
-                        })->count() }}</p>
+                </x-ui.card.body>
+            </x-ui.card.base>
+
+            <!-- Completed Tasks Card -->
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Completed') }}</div>
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ $completedTasksCount ?? 0 }}</div>
+                        </div>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
-                        <p class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">{{ $completedTasksCount ?? 0 }}</p>
-                    </div>
-                </div>
-            </div>
+                </x-ui.card.body>
+            </x-ui.card.base>
+        </div>
 
             <!-- Your Tasks -->
             <div class="mb-6">
                 <!-- Tabs for Active and Completed Tasks -->
-                <div class="border-b border-gray-200 dark:border-gray-700 mb-4">
-                    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="taskTabs" role="tablist">
-                        <li class="mr-2" role="presentation">
-                            <button class="inline-block p-4 border-b-2 rounded-t-lg border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 active" 
-                                id="active-tab" data-tabs-target="#active-tasks" type="button" role="tab" aria-controls="active-tasks" aria-selected="true">
-                                Active Tasks
-                            </button>
-                        </li>
-                        <li class="mr-2" role="presentation">
-                            <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300" 
-                                id="completed-tab" data-tabs-target="#completed-tasks" type="button" role="tab" aria-controls="completed-tasks" aria-selected="false">
-                                Completed Tasks
-                            </button>
-                        </li>
-                        <li class="ml-auto">
+                <div x-data="{ activeTab: 'active' }">
+                    <x-ui.tabs.list>
+                        <x-ui.tabs.tab name="active" x-on:click="activeTab = 'active'" :active="true">
+                            Active Tasks
+                        </x-ui.tabs.tab>
+                        <x-ui.tabs.tab name="completed" x-on:click="activeTab = 'completed'">
+                            Completed Tasks
+                        </x-ui.tabs.tab>
+                        <div class="ml-auto">
                             <a href="{{ route('user.tax-calendar.index') }}" class="inline-block p-4 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors duration-200">
                                 View All Tasks
                                 <span aria-hidden="true">&rarr;</span>
                             </a>
-                        </li>
-                    </ul>
-                </div>
+                        </div>
+                    </x-ui.tabs.list>
 
-                @if($tasks->isEmpty())
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                        <p class="text-gray-500 dark:text-gray-400 text-center">No tasks found.</p>
-                    </div>
-                @else
-                    <!-- Tab Content -->
-                    <div id="taskTabContent">
-                        <!-- Active Tasks Tab Panel -->
-                        <div class="block" id="active-tasks" role="tabpanel" aria-labelledby="active-tab">
+                    @if($tasks->isEmpty())
+                        <x-ui.card.base class="mt-4">
+                            <x-ui.card.body class="p-6">
+                                <p class="text-gray-500 dark:text-gray-400 text-center">No tasks found.</p>
+                            </x-ui.card.body>
+                        </x-ui.card.base>
+                    @else
+                        <!-- Tab Content -->
+                        <x-ui.tabs.panels>
+                            <!-- Active Tasks Tab Panel -->
+                            <x-ui.tabs.panel name="active">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 @php $hasActiveTasks = false; @endphp
                                 @foreach($tasks as $checkTask)
@@ -167,8 +207,8 @@
                                     $progressWidth = max(0, min(100, $progress)); // Ensure progress is between 0-100%
                                 @endphp
                                 
-                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border-l-4 {{ $statusColors['card'] }} {{ ($daysUntil < 0 && $task->status !== 'completed') ? 'border border-red-500 dark:border-red-700 bg-red-50 dark:bg-red-900/10' : '' }}">
-                                    <div class="p-6">
+                                <x-ui.card.base class="hover:shadow-lg transition-all duration-300 border-l-4 {{ $statusColors['card'] }} {{ ($daysUntil < 0 && $task->status !== 'completed') ? 'border border-red-500 dark:border-red-700 bg-red-50 dark:bg-red-900/10' : '' }}">
+                                    <x-ui.card.body class="p-6">
                                         <!-- Header with Status Badge -->
                                         <div class="flex justify-between items-start mb-4">
                                             <div>
@@ -267,23 +307,22 @@
                                                 <div></div> <!-- Empty div to maintain flex layout -->
                                             @endif
 
-                                            <a href="{{ route('user.tax-calendar.show', $task->id) }}" 
-                                               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                            <x-ui.button.primary href="{{ route('user.tax-calendar.show', $task->id) }}">
                                                 View Details
                                                 <svg class="ml-2 -mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                                 </svg>
-                                            </a>
+                                            </x-ui.button.primary>
                                         </div>
-                                    </div>
-                                </div>
+                                    </x-ui.card.body>
+                                </x-ui.card.base>
                                     @endif
                                 @endforeach
                             </div>
-                        </div>
+                        </x-ui.tabs.panel>
                         
                         <!-- Completed Tasks Tab Panel -->
-                        <div class="hidden" id="completed-tasks" role="tabpanel" aria-labelledby="completed-tab">
+                        <x-ui.tabs.panel name="completed">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 @php $hasCompletedTasks = false; @endphp
                                 @foreach($tasks as $checkTask)
@@ -294,9 +333,11 @@
 
                                 @if(!$hasCompletedTasks)
                                     <div class="col-span-1 md:col-span-2">
-                                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                                            <p class="text-gray-500 dark:text-gray-400 text-center">No completed tasks found.</p>
-                                        </div>
+                                        <x-ui.card.base>
+                                            <x-ui.card.body class="p-6">
+                                                <p class="text-gray-500 dark:text-gray-400 text-center">No completed tasks found.</p>
+                                            </x-ui.card.body>
+                                        </x-ui.card.base>
                                     </div>
                                 @endif
                                 
@@ -340,8 +381,8 @@
                                 @endphp
                                 
                                 <div class="col-span-1">
-                                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border-l-4 {{ $statusColors['card'] }}">
-                                        <div class="p-6">
+                                    <x-ui.card.base class="hover:shadow-lg transition-all duration-300 border-l-4 {{ $statusColors['card'] }}">
+                                        <x-ui.card.body class="p-6">
                                             <!-- Header with Status Badge -->
                                             <div class="flex justify-between items-start mb-4">
                                                 <div>
@@ -422,79 +463,58 @@
                                                     <div></div> <!-- Empty div to maintain flex layout -->
                                                 @endif
 
-                                                <a href="{{ route('user.tax-calendar.show', $task->id) }}" 
-                                                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                                <x-ui.button.primary href="{{ route('user.tax-calendar.show', $task->id) }}">
                                                     View Details
                                                     <svg class="ml-2 -mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                                     </svg>
-                                                </a>
+                                                </x-ui.button.primary>
                                             </div>
-                                        </div>
-                                    </div>
+                                        </x-ui.card.body>
+                                    </x-ui.card.base>
                                 </div>
                                     @endif
                                 @endforeach
                             </div>
-                        </div>
-                    </div>
+                        </x-ui.tabs.panel>
+                    </x-ui.tabs.panels>
+                </div>
                 @endif
                 
-                <!-- Tab Functionality Script -->
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const tabs = document.querySelectorAll('[role="tab"]');
-                        const tabPanels = document.querySelectorAll('[role="tabpanel"]');
-                        
-                        tabs.forEach(tab => {
-                            tab.addEventListener('click', function() {
-                                // Deactivate all tabs
-                                tabs.forEach(t => {
-                                    t.classList.remove('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'dark:border-indigo-400', 'active');
-                                    t.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
-                                    t.setAttribute('aria-selected', 'false');
-                                });
-                                
-                                // Activate clicked tab
-                                this.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
-                                this.classList.add('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'dark:border-indigo-400', 'active');
-                                this.setAttribute('aria-selected', 'true');
-                                
-                                // Hide all tab panels
-                                tabPanels.forEach(panel => {
-                                    panel.classList.add('hidden');
-                                    panel.classList.remove('block');
-                                });
-                                
-                                // Show the selected tab panel
-                                const targetId = this.getAttribute('data-tabs-target');
-                                const targetPanel = document.querySelector(targetId);
-                                targetPanel.classList.remove('hidden');
-                                targetPanel.classList.add('block');
-                            });
-                        });
-                    });
-                </script>
             </div>
 
             <!-- Recent Activity -->
-            <x-cards.activity-card title="Recent Activity">
-                @foreach($recentFiles as $file)
-                    <x-activity.activity-item
-                        title="{{ $file->name }}"
-                        subtitle="{{ $file->folder->name }}"
-                        timestamp="{{ $file->created_at->diffForHumans() }}"
-                    >
-                        <x-slot name="icon">
-                            <svg class="h-6 w-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </x-slot>
-                    </x-activity.activity-item>
-                @endforeach
-            </x-cards.activity-card>
-        </div>
+            <x-ui.card.base>
+                <x-ui.card.header>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Recent Activity</h3>
+                </x-ui.card.header>
+                <x-ui.card.body>
+                    @if($recentFiles->isNotEmpty())
+                        <div class="space-y-4">
+                            @foreach($recentFiles as $file)
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-6 w-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $file->name }}</p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ $file->folder->name }}</p>
+                                    </div>
+                                    <div class="flex-shrink-0 text-sm text-gray-500 dark:text-gray-400">
+                                        {{ $file->created_at->diffForHumans() }}
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-500 dark:text-gray-400">No recent activity</p>
+                    @endif
+                </x-ui.card.body>
+            </x-ui.card.base>
     </div>
+    
     <style>
         .status-badge {
             @apply inline-flex items-center transition-all duration-200 shadow-sm;
