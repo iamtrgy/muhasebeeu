@@ -60,16 +60,22 @@ $isChecked = old($name) ? old($name) == $value : $checked;
                 {{ $attributes->merge(['class' => $checkboxClasses]) }}
             />
         </div>
-        @if($label)
+        @if($label || $slot->isNotEmpty())
             <div class="ml-3">
-                <label for="{{ $id }}" class="font-medium {{ $labelSizeClasses[$size] ?? $labelSizeClasses['md'] }} text-gray-700 dark:text-gray-300">
-                    {{ $label }}
-                    @if($required)
-                        <span class="text-red-500">*</span>
+                <label for="{{ $id }}" class="{{ $labelSizeClasses[$size] ?? $labelSizeClasses['md'] }} text-gray-700 dark:text-gray-300">
+                    @if($slot->isNotEmpty())
+                        {{ $slot }}
+                    @else
+                        <span class="font-medium">
+                            {{ $label }}
+                            @if($required)
+                                <span class="text-red-500">*</span>
+                            @endif
+                        </span>
                     @endif
                 </label>
                 @if($helperText)
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $helperText }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $helperText }}</p>
                 @endif
             </div>
         @endif

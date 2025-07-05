@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-user.layout>
     <x-unified-header />
     
     <div class="py-8">
@@ -133,4 +133,4 @@
             document.getElementById('profile-tab').click();
         });
     </script>
-</x-app-layout>
+</x-user.layout>

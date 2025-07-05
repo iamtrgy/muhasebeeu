@@ -1,7 +1,7 @@
 <x-accountant.layout 
     title="{{ $company->name }}"
     :breadcrumbs="[
-        ['title' => __('Home'), 'href' => route('accountant.dashboard'), 'first' => true],
+        ['title' => __('Dashboard'), 'href' => route('accountant.dashboard'), 'first' => true],
         ['title' => __('Companies'), 'href' => route('accountant.companies.index')],
         ['title' => $company->name]
     ]"

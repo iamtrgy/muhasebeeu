@@ -70,18 +70,22 @@ $selectedValue = old($name, $value);
             <option value="">{{ $placeholder }}</option>
         @endif
         
-        @foreach($options as $option)
-            @php
-                $optionVal = is_array($option) ? $option[$optionValue] : (is_object($option) ? $option->{$optionValue} : $option);
-                $optionLabel = is_array($option) ? $option[$optionText] : (is_object($option) ? $option->{$optionText} : $option);
-            @endphp
-            <option 
-                value="{{ $optionVal }}" 
-                @selected($selectedValue == $optionVal)
-            >
-                {{ $optionLabel }}
-            </option>
-        @endforeach
+        @if($slot->isNotEmpty())
+            {{ $slot }}
+        @else
+            @foreach($options as $option)
+                @php
+                    $optionVal = is_array($option) ? $option[$optionValue] : (is_object($option) ? $option->{$optionValue} : $option);
+                    $optionLabel = is_array($option) ? $option[$optionText] : (is_object($option) ? $option->{$optionText} : $option);
+                @endphp
+                <option 
+                    value="{{ $optionVal }}" 
+                    @selected($selectedValue == $optionVal)
+                >
+                    {{ $optionLabel }}
+                </option>
+            @endforeach
+        @endif
     </select>
     
     @error($name)

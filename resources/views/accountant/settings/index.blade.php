@@ -1,7 +1,7 @@
 <x-accountant.layout 
     title="Settings" 
     :breadcrumbs="[
-        ['title' => __('Home'), 'href' => route('accountant.dashboard'), 'first' => true],
+        ['title' => __('Dashboard'), 'href' => route('accountant.dashboard'), 'first' => true],
         ['title' => __('Settings')]
     ]"
 >

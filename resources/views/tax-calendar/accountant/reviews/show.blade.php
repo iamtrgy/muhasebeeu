@@ -1,7 +1,7 @@
 <x-accountant.layout 
     title="{{ $task->taxCalendar->name }}"
     :breadcrumbs="[
-        ['title' => __('Home'), 'href' => route('accountant.dashboard'), 'first' => true],
+        ['title' => __('Dashboard'), 'href' => route('accountant.dashboard'), 'first' => true],
         ['title' => __('Reviews'), 'href' => route('accountant.tax-calendar.reviews')],
         ['title' => $task->taxCalendar->name]
     ]"

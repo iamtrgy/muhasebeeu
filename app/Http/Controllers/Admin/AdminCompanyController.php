@@ -196,7 +196,7 @@ class AdminCompanyController extends Controller
         // Get currently assigned accountants
         $assignedAccountants = $company->accountants()->pluck('users.id')->toArray();
         
-        return view('admin.companies.assign_accountants', compact(
+        return view('admin.companies.assign-accountants', compact(
             'company',
             'availableAccountants',
             'assignedAccountants'

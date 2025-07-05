@@ -245,6 +245,42 @@ This document defines the standardized UI components and patterns to be used thr
 </div>
 ```
 
+#### Dropdown Actions (For multiple secondary actions)
+```blade
+{{-- Use dropdown for additional actions to reduce clutter --}}
+<x-ui.dropdown.base align="right">
+    <x-slot name="trigger">
+        <button class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+        </button>
+    </x-slot>
+    
+    {{-- Secondary actions --}}
+    <x-ui.dropdown.item href="{{ route('...') }}">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+        Manage Subscription
+    </x-ui.dropdown.item>
+    
+    <x-ui.dropdown.divider />
+    
+    {{-- Destructive action with form --}}
+    <form action="{{ route('...') }}" method="POST" onsubmit="return confirm('Are you sure?');">
+        @csrf
+        @method('DELETE')
+        <x-ui.dropdown.item tag="button" type="submit">
+            <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span class="text-red-600">Delete</span>
+        </x-ui.dropdown.item>
+    </form>
+</x-ui.dropdown.base>
+```
+
 ### 2. Editable Table Cells
 
 For tables that need inline editing functionality (like file notes, user details, etc.):
@@ -373,24 +409,98 @@ public function updateField(Request $request, Model $record)
 
 ## Form Components
 
-### 1. Form Input Structure
+### 1. Form Structure Patterns
+
+#### Vertical Form Layout (Most Common)
 ```blade
+{{-- Use this pattern for vertical forms with proper spacing --}}
+<form method="POST" action="{{ route('...') }}" class="space-y-6">
+    @csrf
+    
+    {{-- Each input wrapped in a div for spacing --}}
+    <div>
+        <x-ui.form.input 
+            name="name" 
+            type="text" 
+            label="Full Name"
+            placeholder="Enter your name"
+            :value="old('name')"
+            required
+        />
+    </div>
+    
+    <div>
+        <x-ui.form.input 
+            name="email" 
+            type="email" 
+            label="Email Address"
+            placeholder="Enter your email"
+            :value="old('email')"
+            required
+        />
+    </div>
+    
+    <div>
+        <x-ui.form.select 
+            name="role" 
+            label="User Role"
+            :options="$roles"
+            placeholder="Select a role..."
+        />
+    </div>
+</form>
+```
+
+#### Grid Form Layout
+```blade
+{{-- Use form.group for grid layouts --}}
 <x-ui.form.group>
-    <x-ui.form.input 
-        name="email" 
-        type="email" 
-        label="Email Address"
-        placeholder="Enter your email"
-        :value="old('email')"
-        :error="$errors->first('email')"
-        required
-    />
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <x-ui.form.input 
+            name="first_name" 
+            label="First Name"
+            required
+        />
+        
+        <x-ui.form.input 
+            name="last_name" 
+            label="Last Name"
+            required
+        />
+    </div>
 </x-ui.form.group>
 ```
 
-### 2. Select Components
+### 2. Individual Input Components
 ```blade
-<x-ui.form.select name="status" label="Status" :error="$errors->first('status')">
+{{-- Basic input with all options --}}
+<x-ui.form.input 
+    name="email" 
+    type="email" 
+    label="Email Address"
+    placeholder="Enter your email"
+    :value="old('email')"
+    :error="$errors->first('email')"
+    helperText="We'll never share your email"
+    required
+    autocomplete="email"
+>
+    <x-slot name="leadingIcon">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+    </x-slot>
+</x-ui.form.input>
+```
+
+### 3. Select Components
+```blade
+<x-ui.form.select 
+    name="status" 
+    label="Status" 
+    :error="$errors->first('status')"
+    placeholder="Choose status..."
+>
     <option value="">Select Status</option>
     <option value="active">Active</option>
     <option value="inactive">Inactive</option>
@@ -697,11 +807,165 @@ npm run build
 php artisan view:clear
 ```
 
+## Detail View Patterns
+
+### 1. Detail Page Header
+Use this pattern for detail/show pages to display entity information with actions:
+
+```blade
+{{-- User/Entity Header Card --}}
+<x-ui.card.base>
+    <x-ui.card.body>
+        <div class="flex items-start justify-between">
+            <div class="flex items-start space-x-4">
+                <x-ui.avatar name="{{ $entity->name }}" size="lg" />
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                        {{ $entity->name }}
+                    </h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ $entity->subtitle }}
+                    </p>
+                    <div class="mt-2 flex items-center gap-2">
+                        {{-- Status badges --}}
+                        <x-ui.badge variant="success" size="sm">Active</x-ui.badge>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                {{-- Actions dropdown for secondary actions --}}
+                <x-ui.dropdown.base align="right">
+                    <x-slot name="trigger">
+                        <x-ui.button.secondary size="sm">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                            {{ __('Actions') }}
+                        </x-ui.button.secondary>
+                    </x-slot>
+                    {{-- Dropdown items --}}
+                </x-ui.dropdown.base>
+                
+                {{-- Primary action button --}}
+                <x-ui.button.primary size="sm" href="{{ route('...') }}">
+                    Primary Action
+                </x-ui.button.primary>
+            </div>
+        </div>
+    </x-ui.card.body>
+</x-ui.card.base>
+```
+
+### 2. Description List Pattern
+Use for displaying key-value information in detail views:
+
+```blade
+<x-ui.card.base>
+    <x-ui.card.header>
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+            {{ __('Section Title') }}
+        </h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+            {{ __('Section description.') }}
+        </p>
+    </x-ui.card.header>
+    <x-ui.card.body>
+        <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+            <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {{ __('Field Label') }}
+                </dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                    Field Value
+                </dd>
+            </div>
+            
+            {{-- Field with Badge --}}
+            <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {{ __('Status') }}
+                </dt>
+                <dd class="mt-1">
+                    <x-ui.badge variant="success">Active</x-ui.badge>
+                </dd>
+            </div>
+            
+            {{-- Field with Additional Info --}}
+            <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {{ __('Created Date') }}
+                </dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                    {{ $date->format('M d, Y') }}
+                    <span class="text-gray-500 dark:text-gray-400">
+                        ({{ $date->diffForHumans() }})
+                    </span>
+                </dd>
+            </div>
+        </dl>
+    </x-ui.card.body>
+</x-ui.card.base>
+```
+
+### 3. Detail Page Layout Pattern
+Complete structure for detail/show pages:
+
+```blade
+<x-admin.layout 
+    title="{{ $entity->name }}"
+    :breadcrumbs="[
+        ['title' => __('Dashboard'), 'href' => route('admin.dashboard'), 'first' => true],
+        ['title' => __('Entities'), 'href' => route('admin.entities.index')],
+        ['title' => $entity->name]
+    ]"
+>
+    <div class="space-y-6">
+        {{-- Header Section --}}
+        <x-ui.card.base>
+            {{-- Header content --}}
+        </x-ui.card.base>
+        
+        {{-- Tabs for Different Sections --}}
+        <x-ui.tabs.base defaultTab="details">
+            <x-ui.tabs.list>
+                <x-ui.tabs.tab name="details">Details</x-ui.tabs.tab>
+                <x-ui.tabs.tab name="related">Related Items</x-ui.tabs.tab>
+            </x-ui.tabs.list>
+            
+            <x-ui.tabs.panels>
+                <x-ui.tabs.panel name="details">
+                    {{-- Detail cards --}}
+                </x-ui.tabs.panel>
+                
+                <x-ui.tabs.panel name="related">
+                    {{-- Related items table --}}
+                </x-ui.tabs.panel>
+            </x-ui.tabs.panels>
+        </x-ui.tabs.base>
+    </div>
+</x-admin.layout>
+```
+
+### 4. Empty State in Detail Views
+For sections with no data:
+
+```blade
+<div class="text-center py-8">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {{-- Appropriate icon --}}
+    </svg>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        {{ __('No items found.') }}
+    </p>
+</div>
+```
+
 ## Examples
 
 See these files for reference implementations:
 - **Dashboard**: `/resources/views/accountant/dashboard/index.blade.php`
 - **Companies List**: `/resources/views/accountant/companies/index.blade.php`
+- **User Detail**: `/resources/views/admin/users/show.blade.php`
 - **Layout Demo**: `/resources/views/layout-demo.blade.php`
 - **Component Showcase**: `/resources/views/ui-showcase.blade.php`
 

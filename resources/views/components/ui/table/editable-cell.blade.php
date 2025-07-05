@@ -11,23 +11,23 @@
 
 <div 
     x-data="editableCell(@js($value), @js($route), @js($field), @js($file))"
-    class="relative group {{ $class }}"
+    class="relative group max-w-full {{ $class }}"
 >
     <!-- Display Mode -->
     <div 
         x-show="!editing" 
-        class="min-h-[2rem] flex items-center rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        class="min-h-[2rem] flex items-center rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors overflow-hidden"
         :class="{ 'text-gray-500 dark:text-gray-400 italic': !value }"
     >
         <span 
             @click="startEdit()"
             x-text="(value && value.length > 50) ? value.substring(0, 50) + '...' : (value || '{{ $placeholder }}')"
             :title="value && value.length > 50 && value.length <= 150 ? value : null"
-            class="cursor-pointer flex-1"
+            class="cursor-pointer truncate block"
         ></span>
         
         <!-- Show indicators for truncated notes -->
-        <div x-show="value && value.length > 50" class="flex items-center ml-2 gap-2">
+        <div x-show="value && value.length > 50" class="flex items-center ml-2 gap-2 flex-shrink-0">
             <!-- View button for all truncated notes -->
             <button 
                 @click.stop="viewFileWithNotes()"

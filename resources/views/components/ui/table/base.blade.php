@@ -13,14 +13,14 @@ $wrapperClasses = $responsive ? 'overflow-x-auto' : '';
 $roundedClasses = $rounded ? 'rounded-lg overflow-hidden' : '';
 
 $tableClasses = collect([
-    'min-w-full',
+    'w-full',
     'divide-y divide-gray-200 dark:divide-gray-700',
     $bordered ? 'border border-gray-200 dark:border-gray-700' : '',
 ])->filter()->join(' ');
 @endphp
 
 <div class="{{ $wrapperClasses }} {{ $roundedClasses }}">
-    <table 
+            <table 
         @if($id) id="{{ $id }}" @endif
         class="{{ $tableClasses }}"
         {{ $attributes }}

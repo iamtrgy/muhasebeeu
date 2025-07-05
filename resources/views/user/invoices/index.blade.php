@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-user.layout>
     <x-unified-header />
     <x-folder.file-preview-modal />
 
@@ -157,4 +157,4 @@
             </div>
         </div>
     </div>
-</x-app-layout> 
+</x-user.layout> 

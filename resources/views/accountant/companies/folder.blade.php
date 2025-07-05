@@ -246,12 +246,12 @@
                 @if($folder->files->count() > 0)
                     <x-ui.table.base>
                         <x-slot name="head">
-                            <x-ui.table.head-cell>{{ __('File Name') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell>{{ __('Size') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell>{{ __('Type') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell>{{ __('Notes') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell>{{ __('Uploaded') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="30%">{{ __('File Name') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="10%">{{ __('Size') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="10%">{{ __('Type') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="25%">{{ __('Notes') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="15%">{{ __('Uploaded') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="10%" align="right">{{ __('Actions') }}</x-ui.table.head-cell>
                         </x-slot>
                         <x-slot name="body">
                             @foreach($folder->files as $file)
@@ -317,7 +317,7 @@
                                             <x-ui.badge variant="secondary">{{ strtoupper(pathinfo($file->original_name, PATHINFO_EXTENSION)) }}</x-ui.badge>
                                         @endif
                                     </x-ui.table.cell>
-                                    <x-ui.table.cell>
+                                    <x-ui.table.cell :nowrap="false" style="max-width: 300px; width: 25%;">
                                         <x-ui.table.editable-cell 
                                             :value="$file->notes ?? ''"
                                             placeholder="Add notes..."

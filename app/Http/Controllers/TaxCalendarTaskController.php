@@ -41,10 +41,37 @@ class TaxCalendarTaskController extends Controller
         $task->load(['company', 'taxCalendar', 'user']);
         
         $user = auth()->user();
+        
+        // For admin, show both checklists
+        if ($user->is_admin) {
+            $accountantChecklist = $task->checklist ?? [];
+            $userChecklist = $task->user_checklist ?? [];
+            
+            // Calculate progress for each checklist separately
+            $accountantProgress = !empty($accountantChecklist) 
+                ? collect($accountantChecklist)->where('completed', true)->count() * 100 / count($accountantChecklist)
+                : 0;
+                
+            $userProgress = !empty($userChecklist) 
+                ? collect($userChecklist)->where('completed', true)->count() * 100 / count($userChecklist)
+                : 0;
+            
+            return view('tax-calendar.show', [
+                'task' => $task,
+                'accountantChecklist' => $accountantChecklist,
+                'userChecklist' => $userChecklist,
+                'accountantProgress' => round($accountantProgress),
+                'userProgress' => round($userProgress),
+                'progress' => round($task->progress), // Overall progress
+                'isAdmin' => true,
+            ]);
+        }
+        
+        // For non-admin users, show only their checklist
         $checklistField = $user->is_accountant ? 'checklist' : 'user_checklist';
         $checklist = $task->$checklistField ?? [];
         
-        // Calculate progress based on completed items
+        // Calculate progress for the specific checklist
         $progress = !empty($checklist) 
             ? collect($checklist)->where('completed', true)->count() * 100 / count($checklist)
             : 0;
@@ -53,6 +80,7 @@ class TaxCalendarTaskController extends Controller
             'task' => $task,
             'checklist' => $checklist,
             'progress' => round($progress),
+            'isAdmin' => false,
         ]);
     }
 
@@ -169,6 +197,39 @@ class TaxCalendarTaskController extends Controller
 
         return redirect()->route('admin.tax-calendar.show', $task)
             ->with('success', 'Tax calendar task created successfully.');
+    }
+
+    public function edit(TaxCalendarTask $task)
+    {
+        $taxCalendars = TaxCalendar::active()->get();
+        $companies = Company::all();
+        $users = User::where('is_accountant', true)->get();
+
+        return view('tax-calendar.edit', compact('task', 'taxCalendars', 'companies', 'users'));
+    }
+
+    public function update(Request $request, TaxCalendarTask $task)
+    {
+        $request->validate([
+            'tax_calendar_id' => 'required|exists:tax_calendars,id',
+            'company_id' => 'required|exists:companies,id',
+            'user_id' => 'required|exists:users,id',
+            'due_date' => 'required|date',
+            'notes' => 'nullable|string'
+        ]);
+
+        $task->update($request->only(['tax_calendar_id', 'company_id', 'user_id', 'due_date', 'notes']));
+
+        return redirect()->route('admin.tax-calendar.show', $task)
+            ->with('success', 'Tax calendar task updated successfully.');
+    }
+
+    public function destroy(TaxCalendarTask $task)
+    {
+        $task->delete();
+
+        return redirect()->route('admin.tax-calendar.index')
+            ->with('success', 'Tax calendar task deleted successfully.');
     }
 
     public function userIndex(Request $request)

@@ -146,12 +146,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/users/{user}/subscription', [AdminUserController::class, 'updateSubscription'])->name('users.subscription.update');
     Route::get('/users/{user}/subscription/create', [AdminUserController::class, 'manageSubscription'])->name('users.subscription.create');
     
-    // Subscription Debugging
-    Route::get('/users/{user}/subscription/debug', [AdminUserController::class, 'debugSubscription'])->name('users.subscription.debug');
     
     // Admin File Management
     Route::get('files/{file}/download', [AdminFileController::class, 'download'])->name('files.download');
     Route::get('files/{file}/preview', [AdminFileController::class, 'preview'])->name('files.preview');
+    Route::patch('files/{file}/notes', [AdminFileController::class, 'updateNotes'])->name('files.update-notes');
     Route::delete('files/{file}', [AdminFileController::class, 'destroy'])->name('files.destroy');
     Route::post('folders/{folder}/files', [AdminFileController::class, 'store'])->name('folders.files.store');
 
@@ -184,10 +183,21 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/tax-calendar/create', [TaxCalendarTaskController::class, 'create'])->name('tax-calendar.create');
     Route::post('/tax-calendar', [TaxCalendarTaskController::class, 'store'])->name('tax-calendar.store');
     Route::get('/tax-calendar/{task}', [TaxCalendarTaskController::class, 'show'])->name('tax-calendar.show');
+    Route::get('/tax-calendar/{task}/edit', [TaxCalendarTaskController::class, 'edit'])->name('tax-calendar.edit');
+    Route::patch('/tax-calendar/{task}', [TaxCalendarTaskController::class, 'update'])->name('tax-calendar.update');
+    Route::delete('/tax-calendar/{task}', [TaxCalendarTaskController::class, 'destroy'])->name('tax-calendar.destroy');
     Route::patch('/tax-calendar/{task}/checklist', [TaxCalendarTaskController::class, 'updateChecklist'])->name('tax-calendar.update-checklist');
     Route::patch('/tax-calendar/{task}/notes', [TaxCalendarTaskController::class, 'updateNotes'])->name('tax-calendar.update-notes');
     Route::patch('/tax-calendar/{task}/complete', [TaxCalendarTaskController::class, 'complete'])->name('tax-calendar.complete');
     Route::patch('/tax-calendar/{task}/reopen', [TaxCalendarTaskController::class, 'reopen'])->name('tax-calendar.reopen');
+    
+    // Tax Calendar Template Management
+    Route::get('/tax-calendar-templates', [\App\Http\Controllers\Admin\TaxCalendarController::class, 'index'])->name('tax-calendar-templates.index');
+    Route::get('/tax-calendar-templates/create', [\App\Http\Controllers\Admin\TaxCalendarController::class, 'create'])->name('tax-calendar-templates.create');
+    Route::post('/tax-calendar-templates', [\App\Http\Controllers\Admin\TaxCalendarController::class, 'store'])->name('tax-calendar-templates.store');
+    Route::get('/tax-calendar-templates/{taxCalendar}/edit', [\App\Http\Controllers\Admin\TaxCalendarController::class, 'edit'])->name('tax-calendar-templates.edit');
+    Route::patch('/tax-calendar-templates/{taxCalendar}', [\App\Http\Controllers\Admin\TaxCalendarController::class, 'update'])->name('tax-calendar-templates.update');
+    Route::delete('/tax-calendar-templates/{taxCalendar}', [\App\Http\Controllers\Admin\TaxCalendarController::class, 'destroy'])->name('tax-calendar-templates.destroy');
 });
 
 // Accountant Routes

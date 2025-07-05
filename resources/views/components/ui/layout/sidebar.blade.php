@@ -31,7 +31,7 @@
         '-translate-x-full': !sidebarOpen,
         'lg:translate-x-0': true
     }"
-    class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 shadow-xl lg:shadow-lg transition-transform duration-300 transform lg:relative lg:transform-none"
+    class="fixed inset-y-0 left-0 z-50 w-64 flex-shrink-0 bg-white dark:bg-gray-900 shadow-xl lg:shadow-lg transition-transform duration-300 transform lg:relative lg:transform-none"
 >
         <div class="flex flex-col h-full">
             <!-- Sidebar Header -->

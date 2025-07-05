@@ -1,317 +1,670 @@
-<x-admin-layout>
-    <x-slot name="header">
-        <x-admin.page-title title="{{ $folder->name }}"></x-admin.page-title>
-    </x-slot>
+@php
+    // Build folder breadcrumbs for internal navigation (separate from header breadcrumbs)
+    $folderBreadcrumbs = collect([]);
+    $current = $folder;
+    
+    // Build the breadcrumb path
+    while ($current) {
+        $folderBreadcrumbs->push($current);
+        $current = $current->parent;
+    }
+    
+    // Reverse to get the correct order
+    $folderBreadcrumbs = $folderBreadcrumbs->reverse();
+@endphp
 
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto">
-            <!-- Folder Quick Info -->
-            <div class="mb-6 bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-4">
-                            <div class="flex-shrink-0">
-                                <x-icons name="folder" class="h-8 w-8 text-yellow-500" />
+<x-admin.layout 
+    title="{{ $folder->name }}" 
+    :breadcrumbs="[
+        ['title' => __('Dashboard'), 'href' => route('admin.dashboard'), 'first' => true],
+        ['title' => __('File Manager'), 'href' => route('admin.folders.index')],
+        ['title' => $folder->name]
+    ]"
+>
+    <div class="space-y-6">
+        <!-- Folder Overview -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Folder Info Card -->
+            <x-ui.card.base class="lg:col-span-2">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-yellow-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $folder->name }}</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Admin File Manager') }}</p>
+                            <div class="mt-2 flex items-center gap-4">
+                                @if($folder->is_public)
+                                    <x-ui.badge variant="success">{{ __('Public') }}</x-ui.badge>
+                                @else
+                                    <x-ui.badge variant="secondary">{{ __('Private') }}</x-ui.badge>
+                                @endif
+                                @if($folder->allow_uploads)
+                                    <x-ui.badge variant="primary">{{ __('Uploads Allowed') }}</x-ui.badge>
+                                @endif
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $folder->totalSize() ?? 'N/A' }}</span>
                             </div>
-                            <div>
-                                <div class="text-xl font-semibold text-gray-900">{{ $folder->name }}</div>
-                                <div class="mt-1 text-sm text-gray-600">
-                                    Created by <span class="font-medium">{{ $folder->creator->name }}</span> on {{ $folder->created_at->format('M d, Y') }}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            @if($folder->allow_uploads)
-                                <form action="{{ route('admin.folders.files.store', $folder) }}" method="POST" enctype="multipart/form-data" class="inline" id="uploadForm">
-                                    @csrf
-                                    <input type="file" name="files[]" id="files" multiple class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
-                                    <button type="button" onclick="document.getElementById('files').click()" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                        <x-icons name="upload" class="w-4 h-4 mr-2" />
-                                        UPLOAD FILES
-                                    </button>
-                                </form>
-                            @endif
-                            <a href="{{ route('admin.folders.create.in', $folder) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                <x-icons name="add" class="w-4 h-4 mr-2" />
-                                CREATE SUBFOLDER
-                            </a>
-
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-center justify-between">
-                        <div class="flex items-center space-x-4">
-                            <span class="px-3 py-1 text-sm rounded-full {{ $folder->is_public ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
-                                {{ $folder->is_public ? 'Public' : 'Private' }}
-                            </span>
-                            <span class="px-3 py-1 text-sm rounded-full {{ $folder->allow_uploads ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
-                                {{ $folder->allow_uploads ? 'Uploads Allowed' : 'Uploads Disabled' }}
-                            </span>
-                            @if($folder->templateFolder)
-                                <span class="px-3 py-1 text-sm rounded-full bg-purple-100 text-purple-800">Template Copy</span>
-                            @endif
-                            @if($folder->derivedFolders()->exists())
-                                <span class="px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-800">Template</span>
-                            @endif
-                        </div>
-                        <div class="flex items-center">
-                            <span class="text-sm text-gray-600 mr-2">Assigned to:</span>
-                            @if($folder->users->isNotEmpty())
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach($folder->users->take(3) as $user)
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                            {{ $user->name }}
-                                        </span>
-                                    @endforeach
-                                    @if($folder->users->count() > 3)
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                            +{{ $folder->users->count() - 3 }} more
-                                        </span>
-                                    @endif
-                                </div>
-                            @else
-                                <span class="text-sm text-gray-500">No users assigned</span>
-                            @endif
                         </div>
                     </div>
                     @if($folder->description)
-                        <div class="mt-4 text-sm text-gray-600">
-                            <span class="font-medium">Description:</span> {{ $folder->description }}
+                        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <p class="text-sm text-gray-600 dark:text-gray-300">{{ $folder->description }}</p>
+                        </div>
+                    @endif
+                </x-ui.card.body>
+            </x-ui.card.base>
+
+            <!-- Sub-folders Stat -->
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Sub-folders') }}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $folder->children->count() }}</div>
+                        </div>
+                    </div>
+                </x-ui.card.body>
+            </x-ui.card.base>
+
+            <!-- Files Stat -->
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-emerald-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Files') }}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $folder->files->count() }}</div>
+                        </div>
+                    </div>
+                </x-ui.card.body>
+            </x-ui.card.base>
+        </div>
+
+        <!-- Child Folders Section -->
+        @if($folder->children->count() > 0)
+            <x-ui.card.base>
+                <x-ui.card.header>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{{ __('Sub-folders') }}</h3>
+                            <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">{{ __('Folders inside this directory') }}</p>
+                        </div>
+                        <x-ui.badge variant="secondary">{{ $folder->children->count() }} {{ __('folders') }}</x-ui.badge>
+                    </div>
+                </x-ui.card.header>
+                <x-ui.card.body>
+                    <!-- Folder Path Breadcrumb -->
+                    <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center space-x-2 text-sm">
+                            <a href="{{ route('admin.folders.index') }}" class="flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                </svg>
+                                {{ __('Root') }}
+                            </a>
+                            @foreach($folderBreadcrumbs as $index => $breadcrumb)
+                                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                                @if($breadcrumb->id === $folder->id)
+                                    <span class="font-medium text-gray-900 dark:text-gray-100">{{ $breadcrumb->name }}</span>
+                                @else
+                                    <a href="{{ route('admin.folders.show', $breadcrumb) }}" 
+                                       class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                        {{ $breadcrumb->name }}
+                                    </a>
+                                @endif
+                            @endforeach
+                            <span class="text-gray-400 ml-2">{{ __('(Sub-folders)') }}</span>
+                        </div>
+                    </div>
+                    <x-ui.table.base>
+                        <x-slot name="head">
+                            <x-ui.table.head-cell>{{ __('Folder Name') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell>{{ __('Files') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell>{{ __('Size') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell>{{ __('Last Modified') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell>{{ __('Status') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
+                        </x-slot>
+                        <x-slot name="body">
+                            @foreach($folder->children as $childFolder)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    <x-ui.table.cell>
+                                        <a href="{{ route('admin.folders.show', $childFolder) }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 group">
+                                            <div class="flex-shrink-0">
+                                                <svg class="h-5 w-5 text-yellow-500 group-hover:text-yellow-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $childFolder->name }}</div>
+                                                @if($childFolder->description)
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $childFolder->description }}</div>
+                                                @endif
+                                            </div>
+                                        </a>
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>
+                                        <div class="flex items-center">
+                                            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $childFolder->files->count() }}</span>
+                                            <svg class="h-4 w-4 ml-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                        </div>
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>{{ $childFolder->totalSize() ?? 'N/A' }}</x-ui.table.cell>
+                                    <x-ui.table.cell>
+                                        @if($childFolder->lastModified())
+                                            <span class="text-sm text-gray-500 dark:text-gray-400" title="{{ $childFolder->lastModified()->format('F j, Y H:i') }}">{{ $childFolder->lastModified()->diffForHumans() }}</span>
+                                        @else
+                                            <span class="text-sm text-gray-400">-</span>
+                                        @endif
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>
+                                        @if($childFolder->is_public)
+                                            <x-ui.badge variant="success">{{ __('Public') }}</x-ui.badge>
+                                        @else
+                                            <x-ui.badge variant="secondary">{{ __('Private') }}</x-ui.badge>
+                                        @endif
+                                    </x-ui.table.cell>
+                                    <x-ui.table.action-cell>
+                                        <a href="{{ route('admin.folders.show', $childFolder) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="{{ __('View folder') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </a>
+                                        <a href="{{ route('admin.folders.edit', $childFolder) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="{{ __('Edit folder') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </a>
+                                        <form method="POST" action="{{ route('admin.folders.destroy', $childFolder) }}" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" 
+                                                    class="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                    title="{{ __('Delete folder') }}"
+                                                    onclick="return confirm('{{ __('Are you sure you want to delete this folder?') }}')">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                        @if($childFolder->files->count() > 0)
+                                            <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full ml-2">{{ $childFolder->files->count() }} {{ __('files') }}</span>
+                                        @endif
+                                    </x-ui.table.action-cell>
+                                </tr>
+                            @endforeach
+                        </x-slot>
+                    </x-ui.table.base>
+                </x-ui.card.body>
+            </x-ui.card.base>
+        @endif
+
+        <!-- Files Section -->
+        <x-ui.card.base>
+            <x-ui.card.header>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{{ __('Files') }}</h3>
+                        <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">{{ __('Documents stored in this folder') }}</p>
+                    </div>
+                    @if($folder->files->count() > 0)
+                        <div class="flex items-center gap-3">
+                            <x-ui.badge variant="secondary">{{ $folder->files->count() }} {{ __('files') }}</x-ui.badge>
+                            <x-ui.button.secondary size="sm" href="{{ route('admin.folders.index') }}">
+                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                {{ __('Back to Files') }}
+                            </x-ui.button.secondary>
                         </div>
                     @endif
                 </div>
+            </x-ui.card.header>
+            <x-ui.card.body>
+                <!-- Folder Path Breadcrumb -->
+                @if($folderBreadcrumbs->count() >= 1)
+                    <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center space-x-2 text-sm">
+                            <a href="{{ route('admin.folders.index') }}" class="flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                </svg>
+                                {{ __('Root') }}
+                            </a>
+                            @foreach($folderBreadcrumbs as $index => $breadcrumb)
+                                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                                @if($breadcrumb->id === $folder->id)
+                                    <span class="font-medium text-gray-900 dark:text-gray-100">{{ $breadcrumb->name }}</span>
+                                @else
+                                    <a href="{{ route('admin.folders.show', $breadcrumb) }}" 
+                                       class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                        {{ $breadcrumb->name }}
+                                    </a>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+                
+                @if($folder->files->count() > 0)
+                    <x-ui.table.base>
+                        <x-slot name="head">
+                            <x-ui.table.head-cell width="30%">{{ __('File Name') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="10%">{{ __('Size') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="10%">{{ __('Type') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="25%">{{ __('Notes') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="15%">{{ __('Uploaded') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell width="10%" align="right">{{ __('Actions') }}</x-ui.table.head-cell>
+                        </x-slot>
+                        <x-slot name="body">
+                            @foreach($folder->files as $file)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-file-id="{{ $file->id }}">
+                                    <x-ui.table.cell>
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0">
+                                                @if(in_array($file->mime_type ?? 'unknown', ['image/jpeg', 'image/png', 'image/gif']))
+                                                    <svg class="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                @elseif($file->mime_type === 'application/pdf')
+                                                    <svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                    </svg>
+                                                @else
+                                                    <svg class="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                @endif
+                                            </div>
+                                            <div class="ml-4">
+                                                @if(in_array($file->mime_type ?? 'unknown', ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'text/plain']))
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer group" 
+                                                         x-on:click="
+                                                             $dispatch('file-preview-data', {
+                                                                 id: {{ $file->id }},
+                                                                 name: '{{ $file->filename ?? $file->original_name }}',
+                                                                 type: '{{ $file->mime_type ?? 'unknown' }}',
+                                                                 previewUrl: '{{ route('admin.files.preview', $file) }}',
+                                                                 downloadUrl: '{{ route('admin.files.download', $file) }}',
+                                                                 updateNotesUrl: '{{ route('admin.files.update-notes', $file->id) }}',
+                                                                 notes: @js($file->notes ?? '')
+                                                             });
+                                                             $dispatch('open-modal', 'file-preview')
+                                                         ">
+                                                        {{ $file->filename ?? $file->original_name }}
+                                                        <svg class="inline h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                    </div>
+                                                @else
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                        {{ $file->filename ?? $file->original_name }}
+                                                    </div>
+                                                @endif
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $file->uploader ? $file->uploader->name : 'System' }}</div>
+                                            </div>
+                                        </div>
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>
+                                        <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $file->human_readable_size ?? ($file->size ? number_format($file->size / 1024, 1) . ' KB' : 'N/A') }}</span>
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>
+                                        @if($file->mime_type === 'application/pdf')
+                                            <x-ui.badge variant="danger">PDF</x-ui.badge>
+                                        @elseif(str_starts_with($file->mime_type ?? '', 'image/'))
+                                            <x-ui.badge variant="success">Image</x-ui.badge>
+                                        @elseif($file->mime_type === 'text/plain')
+                                            <x-ui.badge variant="secondary">Text</x-ui.badge>
+                                        @else
+                                            <x-ui.badge variant="secondary">{{ strtoupper(pathinfo($file->filename ?? $file->original_name, PATHINFO_EXTENSION)) }}</x-ui.badge>
+                                        @endif
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell :nowrap="false" style="max-width: 300px; width: 25%;">
+                                        @if(method_exists('App\View\Components\Ui\Table\EditableCell', '__construct'))
+                                            <x-ui.table.editable-cell 
+                                                :value="$file->notes ?? ''"
+                                                placeholder="Add notes..."
+                                                :route="route('admin.files.update-notes', $file->id)"
+                                                field="notes"
+                                                type="textarea"
+                                                :maxLength="1000"
+                                                class="editable-note-cell"
+                                                :file="[
+                                                    'id' => $file->id,
+                                                    'original_name' => $file->filename ?? $file->original_name,
+                                                    'mime_type' => $file->mime_type ?? 'unknown',
+                                                    'preview_url' => route('admin.files.preview', $file),
+                                                    'download_url' => route('admin.files.download', $file)
+                                                ]"
+                                            />
+                                        @else
+                                            <div class="text-sm text-gray-700 dark:text-gray-300">
+                                                {{ $file->notes ? Str::limit($file->notes, 50) : __('No notes') }}
+                                            </div>
+                                        @endif
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>
+                                        <div class="text-sm text-gray-900 dark:text-gray-100">{{ $file->created_at->format('M d, Y') }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $file->created_at->diffForHumans() }}</div>
+                                    </x-ui.table.cell>
+                                    <x-ui.table.action-cell>
+                                        @if(in_array($file->mime_type ?? 'unknown', ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'text/plain']))
+                                            <button type="button" 
+                                                 class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                 title="{{ __('Preview') }}"
+                                                 x-on:click="
+                                                     $dispatch('file-preview-data', {
+                                                         id: {{ $file->id }},
+                                                         name: '{{ $file->filename ?? $file->original_name }}',
+                                                         type: '{{ $file->mime_type ?? 'unknown' }}',
+                                                         previewUrl: '{{ route('admin.files.preview', $file) }}',
+                                                         downloadUrl: '{{ route('admin.files.download', $file) }}',
+                                                         updateNotesUrl: '{{ route('admin.files.update-notes', $file->id) }}',
+                                                         notes: @js($file->notes ?? '')
+                                                     });
+                                                     $dispatch('open-modal', 'file-preview')
+                                                 ">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </button>
+                                        @endif
+                                        <a href="{{ route('admin.files.download', $file) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="{{ __('Download') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                        </a>
+                                    </x-ui.table.action-cell>
+                                </tr>
+                            @endforeach
+                        </x-slot>
+                    </x-ui.table.base>
+                @else
+                    <x-ui.table.empty-state>
+                        <x-slot name="icon">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </x-slot>
+                        <x-slot name="title">{{ __('No Files') }}</x-slot>
+                        <x-slot name="description">{{ __('This folder does not contain any files yet.') }}</x-slot>
+                        <x-slot name="action">
+                            <x-ui.button.secondary href="{{ route('admin.folders.index') }}">
+                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                {{ __('Back to Files') }}
+                            </x-ui.button.secondary>
+                        </x-slot>
+                    </x-ui.table.empty-state>
+                @endif
+            </x-ui.card.body>
+        </x-ui.card.base>
+    </div>
+    
+    <!-- File Preview Modal -->
+    <x-ui.modal.base name="file-preview" maxWidth="4xl">
+        <div class="text-center" 
+             x-data="{ 
+                 currentFile: null,
+                 editingNote: false, 
+                 noteValue: '', 
+                 originalNote: '',
+                 saving: false,
+                 error: null,
+                 
+                 startEdit() {
+                     this.editingNote = true;
+                     this.noteValue = this.currentFile?.notes || '';
+                     this.originalNote = this.noteValue;
+                     this.$nextTick(() => {
+                         if (this.$refs.noteTextarea) {
+                             this.$refs.noteTextarea.focus();
+                         }
+                     });
+                 },
+                 
+                 cancelEdit() {
+                     this.editingNote = false;
+                     this.noteValue = this.originalNote;
+                     this.error = null;
+                 },
+                 
+                 async saveNote() {
+                     if (this.noteValue === this.originalNote) {
+                         this.editingNote = false;
+                         return;
+                     }
+                     
+                     this.saving = true;
+                     this.error = null;
+                     
+                     try {
+                         if (!this.currentFile || !this.currentFile.id) {
+                             throw new Error('No file selected');
+                         }
+                         
+                         const response = await fetch(this.currentFile.updateNotesUrl, {
+                             method: 'PATCH',
+                             headers: {
+                                 'Content-Type': 'application/json',
+                                 'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content,
+                                 'Accept': 'application/json',
+                                 'X-Requested-With': 'XMLHttpRequest'
+                             },
+                             body: JSON.stringify({
+                                 notes: this.noteValue
+                             })
+                         });
+                         
+                         const data = await response.json();
+                         
+                         if (response.ok && data.success) {
+                             // Update the current file data
+                             this.currentFile.notes = this.noteValue;
+                             this.originalNote = this.noteValue;
+                             this.editingNote = false;
+                             
+                             // Show success feedback
+                             if (typeof toastr !== 'undefined') {
+                                 toastr.success(data.message || 'Notes updated successfully');
+                             }
+                         } else {
+                             throw new Error(data.message || 'Update failed');
+                         }
+                     } catch (err) {
+                         this.error = err.message;
+                         if (typeof toastr !== 'undefined') {
+                             toastr.error(this.error);
+                         }
+                     } finally {
+                         this.saving = false;
+                     }
+                 }
+             }" 
+             x-on:file-preview-data.window="currentFile = $event.detail; console.log('File preview data received:', $event.detail)">
+                <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100" x-text="currentFile?.name || 'File Preview'"></h3>
+            
+            {{-- Image Preview --}}
+            <div x-show="currentFile && ['image/jpeg', 'image/png', 'image/gif'].includes(currentFile.type)">
+                <div class="max-w-full max-h-96 overflow-auto">
+                    <img x-bind:src="currentFile?.previewUrl" x-bind:alt="currentFile?.name" class="max-w-full h-auto rounded-lg">
+                </div>
             </div>
 
-            <!-- Rest of the content -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <!-- Subfolders -->
-                    <div class="mb-6">
-                        <div class="mb-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                            <h3 class="text-lg font-medium">Subfolders</h3>
-                            <div class="flex-1 relative">
-                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                    <x-icons name="search" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                </div>
-                                <input type="search" id="subfolderSearch" placeholder="{{ __('Search subfolders...') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                            </div>
-                        </div>
-                        @if($folder->children->isEmpty())
-                            <p class="text-gray-600 text-sm">No subfolders found.</p>
-                        @else
-                            <div class="overflow-x-auto">
-                                <p id="noSubfoldersMessage" class="text-gray-600 text-sm hidden">No matching subfolders found.</p>
-                                <x-admin.table id="subfolderTableBody">
-                                    <x-slot name="header">
-                                        <x-admin.table.tr>
-                                            <x-admin.table.th>{{ __('Name') }}</x-admin.table.th>
-                                            <x-admin.table.th>{{ __('Status') }}</x-admin.table.th>
-                                            <x-admin.table.th>{{ __('Files') }}</x-admin.table.th>
-                                            <x-admin.table.th>{{ __('Created') }}</x-admin.table.th>
-                                            <x-admin.table.th class="relative">
-                                                <span class="sr-only">{{ __('Actions') }}</span>
-                                            </x-admin.table.th>
-                                        </x-admin.table.tr>
-                                    </x-slot>
-                                        @foreach($folder->children as $subfolder)
-                                            <x-admin.table.tr class="subfolder-row" data-name="{{ strtolower($subfolder->name) }}">
-                                                <x-admin.table.td>
-                                                    <div class="flex items-center">
-                                                        <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center">
-                                                            <x-icons name="folder" class="h-8 w-8 text-yellow-500" />
-                                                        </div>
-                                                        <div class="ml-4">
-                                                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                                <a href="{{ route('admin.folders.show', $subfolder) }}" class="hover:text-blue-600 dark:hover:text-blue-400">
-                                                                    {{ $subfolder->name }}
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </x-admin.table.td>
-                                                <x-admin.table.td>
-                                                    <div class="flex flex-wrap gap-1.5">
-                                                        <span class="px-2 py-1 inline-flex items-center text-xs font-medium rounded-md {{ $subfolder->is_public ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-400 ring-1 ring-green-600/20 dark:ring-green-500/40' : 'bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300 ring-1 ring-gray-500/20 dark:ring-gray-600/40' }}">
-                                                            <span class="mr-1 w-1.5 h-1.5 rounded-full {{ $subfolder->is_public ? 'bg-green-500' : 'bg-gray-500' }}"></span>
-                                                            {{ $subfolder->is_public ? __('Public') : __('Private') }}
-                                                        </span>
-                                                    </div>
-                                                </x-admin.table.td>
-                                                <x-admin.table.td>
-                                                    <div class="text-sm text-gray-700 dark:text-gray-300">{{ $subfolder->files_count }} {{ Str::plural('file', $subfolder->files_count) }}</div>
-                                                </x-admin.table.td>
-                                                <x-admin.table.td>
-                                                    <div class="text-sm text-gray-700 dark:text-gray-300">{{ $subfolder->created_at->format('M d, Y H:i') }}</div>
-                                                </x-admin.table.td>
-                                                <x-admin.table.td>
-                                                    <div class="flex justify-end space-x-2">
-                                                        <a href="{{ route('admin.folders.show', $subfolder) }}" class="inline-flex items-center justify-center w-9 h-9 bg-gray-50 dark:bg-gray-800 rounded-md text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150" title="{{ __('View') }}">
-                                                            <x-icons name="view" class="w-5 h-5" />
-                                                        </a>
-                                                        <a href="{{ route('admin.folders.edit', $subfolder) }}" class="inline-flex items-center justify-center w-9 h-9 bg-blue-50 dark:bg-blue-900/30 rounded-md text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors duration-150" title="{{ __('Edit') }}">
-                                                            <x-icons name="edit" class="w-5 h-5" />
-                                                        </a>
-                                                        <form method="POST" action="{{ route('admin.folders.destroy', $subfolder) }}" class="inline-block">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="inline-flex items-center justify-center w-9 h-9 bg-red-50 dark:bg-red-900/30 rounded-md text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-800/50 transition-colors duration-150" title="{{ __('Delete') }}" onclick="return confirm('{{ __('Are you sure you want to delete this folder?') }}')">
-                                                                <x-icons name="delete" class="w-5 h-5" />
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </x-admin.table.td>
-                                            </x-admin.table.tr>
-                                        @endforeach
-                                </x-admin.table>
-                            </div>
-                        @endif
-                    </div>
+            {{-- PDF Preview --}}
+            <div x-show="currentFile && currentFile.type === 'application/pdf'">
+                <div class="w-full h-96">
+                    <iframe x-bind:src="currentFile?.previewUrl" class="w-full h-full border-0 rounded-lg"></iframe>
+                </div>
+            </div>
 
-                    <!-- Files -->
-                    <div>
-                        <div class="mb-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                            <h3 class="text-lg font-medium">Files</h3>
-                            <div class="flex-1 relative">
-                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                    <x-icons name="search" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                </div>
-                                <input type="search" id="fileSearch" placeholder="{{ __('Search files...') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+            {{-- Text Preview --}}
+            <div x-show="currentFile && currentFile.type === 'text/plain'">
+                <div class="max-w-full max-h-96 overflow-auto bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                    <iframe x-bind:src="currentFile?.previewUrl" class="w-full h-64 border border-gray-200 rounded-lg"></iframe>
+                </div>
+            </div>
+            
+            {{-- Notes Section --}}
+            <div x-show="currentFile" class="mt-1 border-t border-gray-200 dark:border-gray-700 pt-1">
+                <div class="text-left">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                            <div class="flex items-center justify-center w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-full mr-2">
+                                <svg class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            Important Notes
+                        </h4>
+                        <div class="flex items-center gap-2">
+                            <div x-show="currentFile?.notes && !editingNote" class="flex items-center">
+                                <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-xs text-green-600 dark:text-green-400 font-medium">Has Notes</span>
+                            </div>
+                            <button x-show="currentFile && !editingNote" 
+                                    @click="startEdit()"
+                                    class="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70 rounded-md transition-colors">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                <span x-text="currentFile?.notes ? 'Edit Note' : 'Add Note'"></span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Note Editing Mode -->
+                    <div x-show="editingNote" class="space-y-3">
+                        <div>
+                            <textarea x-ref="noteTextarea"
+                                      x-model="noteValue"
+                                      @keydown.escape="cancelEdit()"
+                                      @keydown.ctrl.enter="saveNote()"
+                                      placeholder="Add notes for this file..."
+                                      rows="4"
+                                      maxlength="1000"
+                                      :disabled="saving"
+                                      class="w-full px-3 py-2 text-sm border border-amber-300 dark:border-amber-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-gray-100 resize-none"></textarea>
+                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <span x-text="noteValue.length"></span>/1000 characters • Ctrl+Enter to save
                             </div>
                         </div>
-                        @if($folder->files->isEmpty())
-                            <p class="text-gray-600 text-sm">No files found.</p>
-                        @else
-                            <div class="overflow-x-auto">
-                                <p id="noFilesMessage" class="text-gray-600 text-sm hidden">No matching files found.</p>
-                                <x-admin.table id="fileTableBody">
-                                    <x-slot name="header">
-                                        <x-admin.table.tr>
-                                            <x-admin.table.th>{{ __('Name') }}</x-admin.table.th>
-                                            <x-admin.table.th>{{ __('Size') }}</x-admin.table.th>
-                                            <x-admin.table.th>{{ __('Uploaded By') }}</x-admin.table.th>
-                                            <x-admin.table.th>{{ __('Uploaded At') }}</x-admin.table.th>
-                                            <x-admin.table.th class="relative">
-                                                <span class="sr-only">{{ __('Actions') }}</span>
-                                            </x-admin.table.th>
-                                        </x-admin.table.tr>
-                                    </x-slot>
-                                        @foreach($folder->files as $file)
-                                            <x-admin.table.tr class="file-row" data-name="{{ strtolower($file->name) }}">
-                                                <x-admin.table.td>
-                                                    <div class="flex items-center">
-                                                        <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center">
-                                                            <svg class="h-8 w-8 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                                                            </svg>
-                                                        </div>
-                                                        <div class="ml-4">
-                                                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $file->name }}</div>
-                                                        </div>
-                                                    </div>
-                                                </x-admin.table.td>
-                                                <x-admin.table.td>
-                                                    <div class="text-sm text-gray-700 dark:text-gray-300">{{ number_format($file->size / 1024, 2) }} KB</div>
-                                                </x-admin.table.td>
-                                                <x-admin.table.td>
-                                                    <div class="text-sm text-gray-700 dark:text-gray-300">{{ $file->uploader->name }}</div>
-                                                </x-admin.table.td>
-                                                <x-admin.table.td>
-                                                    <div class="text-sm text-gray-700 dark:text-gray-300">{{ $file->created_at->format('M d, Y H:i') }}</div>
-                                                </x-admin.table.td>
-                                                <x-admin.table.td>
-                                                    <div class="flex justify-end space-x-2">
-                                                        <a href="{{ route('admin.files.download', $file) }}" class="inline-flex items-center justify-center w-9 h-9 bg-blue-50 dark:bg-blue-900/30 rounded-md text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors duration-150" title="{{ __('Download') }}">
-                                                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                                            </svg>
-                                                        </a>
-                                                        <form method="POST" action="{{ route('admin.files.destroy', $file) }}" class="inline-block">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="inline-flex items-center justify-center w-9 h-9 bg-red-50 dark:bg-red-900/30 rounded-md text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-800/50 transition-colors duration-150" title="{{ __('Delete') }}" onclick="return confirm('{{ __('Are you sure you want to delete this file?') }}')">
-                                                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                                </svg>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </x-admin.table.td>
-                                            </x-admin.table.tr>
-                                        @endforeach
-                                </x-admin.table>
+                        
+                        <div class="flex items-center justify-between">
+                            <div x-show="error" class="text-xs text-red-500" x-text="error"></div>
+                            <div class="flex items-center gap-2 ml-auto">
+                                <button @click="cancelEdit()" 
+                                        :disabled="saving"
+                                        class="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors disabled:opacity-50">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Cancel
+                                </button>
+                                <button @click="saveNote()" 
+                                        :disabled="saving"
+                                        class="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors disabled:opacity-50">
+                                    <svg x-show="!saving" class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <svg x-show="saving" class="w-3 h-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span x-text="saving ? 'Saving...' : 'Save'"></span>
+                                </button>
                             </div>
-                        @endif
+                        </div>
+                    </div>
+                    
+                    <!-- Note Display Mode -->
+                    <div x-show="!editingNote">
+                        <!-- Notes exist -->
+                        <div x-show="currentFile?.notes" 
+                             x-data="{ expanded: false }"
+                             class="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 break-words">
+                            
+                            <!-- Truncated view -->
+                            <div x-show="!expanded && currentFile?.notes && currentFile.notes.length > 150">
+                                <p x-text="currentFile.notes.substring(0, 150) + '...'" class="leading-normal"></p>
+                                <button @click="expanded = true" 
+                                        class="inline-flex items-center mt-2 text-xs text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 font-medium">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                    View More
+                                </button>
+                            </div>
+                            
+                            <!-- Full view -->
+                            <div x-show="expanded || (currentFile?.notes && currentFile.notes.length <= 150)">
+                                <p x-text="currentFile?.notes" class="leading-normal"></p>
+                                <button x-show="expanded" 
+                                        @click="expanded = false" 
+                                        class="inline-flex items-center mt-2 text-xs text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 font-medium">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                    </svg>
+                                    View Less
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- No notes -->
+                        <div x-show="!currentFile?.notes" 
+                             class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400 italic text-center flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            No notes available for this file
+                        </div>
                     </div>
                 </div>
             </div>
+            
+            <div class="mt-6 flex justify-center gap-3">
+                <x-ui.button.primary x-bind:href="currentFile?.downloadUrl" 
+                                    x-show="currentFile?.downloadUrl"
+                                    download>
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {{ __('Download') }}
+                </x-ui.button.primary>
+                <x-ui.button.secondary x-on:click="$dispatch('close-modal', 'file-preview')">
+                    {{ __('Close') }}
+                </x-ui.button.secondary>
+            </div>
         </div>
-        </div>
-    </div>
-
-    @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // File search functionality
-            const fileSearch = document.getElementById('fileSearch');
-            const fileRows = document.querySelectorAll('#fileTableBody tbody tr');
-            const noFilesMessage = document.querySelector('#noFilesMessage');
-
-            if (fileSearch) {
-                fileSearch.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    let visibleCount = 0;
-                    
-                    fileRows.forEach(row => {
-                        const text = row.textContent.toLowerCase();
-                        const isVisible = text.includes(searchTerm);
-                        
-                        row.style.display = isVisible ? '' : 'none';
-                        if (isVisible) visibleCount++;
-                    });
-                    
-                    // Toggle no files message if it exists
-                    if (noFilesMessage) {
-                        noFilesMessage.style.display = visibleCount > 0 ? 'none' : '';
-                    }
-                });
-            }
-
-            // Subfolder search functionality
-            const subfolderSearch = document.getElementById('subfolderSearch');
-            const subfolderRows = document.querySelectorAll('#subfolderTableBody tbody tr');
-            const noSubfoldersMessage = document.querySelector('#noSubfoldersMessage');
-
-            if (subfolderSearch) {
-                subfolderSearch.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    let visibleCount = 0;
-                    
-                    subfolderRows.forEach(row => {
-                        const text = row.textContent.toLowerCase();
-                        const isVisible = text.includes(searchTerm);
-                        
-                        row.style.display = isVisible ? '' : 'none';
-                        if (isVisible) visibleCount++;
-                    });
-                    
-                    // Toggle no subfolders message if it exists
-                    if (noSubfoldersMessage) {
-                        noSubfoldersMessage.style.display = visibleCount > 0 ? 'none' : '';
-                    }
-                });
-            }
-
-            // File upload functionality
-            const fileInput = document.getElementById('files');
-            const uploadForm = document.getElementById('uploadForm');
-
-            if (fileInput && uploadForm) {
-                fileInput.addEventListener('change', function() {
-                    if (this.files.length > 0) {
-                        uploadForm.submit();
-                    }
-                });
-            }
-        });
-    </script>
-    @endpush
-</x-admin-layout> 
+    </x-ui.modal.base>
+</x-admin.layout>

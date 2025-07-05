@@ -1,131 +1,212 @@
-<x-app-layout>
-    <x-unified-header>
-        <x-slot name="title">Tax Calendar Tasks</x-slot>
-        <x-slot name="description">Manage and track your tax calendar tasks</x-slot>
-    </x-unified-header>
-
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Filters -->
-            <div class="mb-6">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
-                    <div class="p-6">
-                        <form action="{{ route('user.tax-calendar.tasks.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                                <select name="status" id="status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                    <option value="">All Status</option>
-                                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                                    <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                                    <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
-                                    <option value="under_review" {{ request('status') === 'under_review' ? 'selected' : '' }}>Under Review</option>
-                                    <option value="changes_requested" {{ request('status') === 'changes_requested' ? 'selected' : '' }}>Changes Requested</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="month" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Month</label>
-                                <select name="month" id="month" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                    <option value="">All Months</option>
-                                    @foreach(range(1, 12) as $month)
-                                        <option value="{{ $month }}" {{ request('month') == $month ? 'selected' : '' }}>
-                                            {{ \Carbon\Carbon::create()->month($month)->format('F') }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="flex items-end">
-                                <button type="submit" class="w-full bg-blue-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                    Apply Filters
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+<x-admin.layout 
+    title="{{ __('Tax Calendar') }}"
+    :breadcrumbs="[
+        ['title' => __('Dashboard'), 'href' => route('admin.dashboard'), 'first' => true],
+        ['title' => __('Tax Calendar')]
+    ]"
+>
+    <div class="space-y-6">
+        <!-- Page Header with Actions -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ __('Manage and track tax calendar tasks for all companies') }}
+                </p>
             </div>
-
-            <!-- Tasks List -->
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
-                <div class="p-6">
-                    @if($tasks->isEmpty())
-                        <p class="text-gray-500 dark:text-gray-400 text-center py-4">No tasks found.</p>
-                    @else
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead>
-                                    <tr class="bg-gray-50 dark:bg-gray-800/50">
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Task</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Due Date</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Progress</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    @foreach($tasks as $task)
-                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $task->taxCalendar->name }}</div>
-                                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $task->taxCalendar->form_code }}</div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm text-gray-900 dark:text-white">{{ $task->due_date->format('M d, Y') }}</div>
-                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $task->due_date->diffForHumans() }}</div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <span class="status-badge {{ $task->status }} px-2.5 py-0.5 rounded-full text-xs font-medium">
-                                                    {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                                                </span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $task->progress }}%"></div>
-                                                </div>
-                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    {{ $task->progress }}% Complete
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('user.tax-calendar.tasks.show', $task->id) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">View Details</a>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                        @if($tasks->hasPages())
-                            <div class="mt-4">
-                                {{ $tasks->links() }}
-                            </div>
-                        @endif
-                    @endif
-                </div>
+            <div class="flex gap-3">
+                <x-ui.button.secondary href="{{ route('admin.tax-calendar-templates.index') }}">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {{ __('Manage Templates') }}
+                </x-ui.button.secondary>
+                <x-ui.button.primary href="{{ route('admin.tax-calendar.create') }}">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    {{ __('Add Task') }}
+                </x-ui.button.primary>
             </div>
         </div>
-    </div>
 
-    <style>
-        .status-badge {
-            @apply inline-flex items-center transition-all duration-200 shadow-sm;
-        }
-        .status-badge.pending {
-            @apply bg-gradient-to-r from-yellow-500/10 to-yellow-500/20 text-yellow-700 ring-1 ring-yellow-500/20;
-            @apply dark:from-yellow-400/10 dark:to-yellow-400/20 dark:text-yellow-400 dark:ring-yellow-400/30;
-        }
-        .status-badge.changes_requested {
-            @apply bg-gradient-to-r from-orange-500/10 to-orange-500/20 text-orange-700 ring-1 ring-orange-500/20;
-            @apply dark:from-orange-400/10 dark:to-orange-400/20 dark:text-orange-400 dark:ring-orange-400/30;
-        }
-        .status-badge.rejected {
-            @apply bg-gradient-to-r from-red-500/10 to-red-500/20 text-red-700 ring-1 ring-red-500/20;
-            @apply dark:from-red-400/10 dark:to-red-400/20 dark:text-red-400 dark:ring-red-400/30;
-        }
-        .status-badge.in_progress {
-            @apply bg-gradient-to-r from-blue-500/10 to-blue-500/20 text-blue-700 ring-1 ring-blue-500/20;
-            @apply dark:from-blue-400/10 dark:to-blue-400/20 dark:text-blue-400 dark:ring-blue-400/30;
-        }
-        .status-badge.completed {
-            @apply bg-gradient-to-r from-emerald-500/10 to-emerald-500/20 text-emerald-700 ring-1 ring-emerald-500/20;
-            @apply dark:from-emerald-400/10 dark:to-emerald-400/20 dark:text-emerald-400 dark:ring-emerald-400/30;
-        }
-    </style>
-</x-app-layout>
+        <!-- Filters Card -->
+        <x-ui.card.base>
+            <x-ui.card.body>
+                <form action="{{ route('admin.tax-calendar.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <x-ui.form.select name="status" id="status" label="{{ __('Status') }}" value="{{ request('status') }}">
+                            <option value="">{{ __('All Status') }}</option>
+                            <option value="pending">{{ __('Pending') }}</option>
+                            <option value="in_progress">{{ __('In Progress') }}</option>
+                            <option value="completed">{{ __('Completed') }}</option>
+                            <option value="under_review">{{ __('Under Review') }}</option>
+                            <option value="changes_requested">{{ __('Changes Requested') }}</option>
+                        </x-ui.form.select>
+                    </div>
+                    <div>
+                        <x-ui.form.select name="month" id="month" label="{{ __('Month') }}" value="{{ request('month') }}">
+                            <option value="">{{ __('All Months') }}</option>
+                            @foreach(range(1, 12) as $month)
+                                <option value="{{ $month }}">
+                                    {{ \Carbon\Carbon::create()->month($month)->format('F') }}
+                                </option>
+                            @endforeach
+                        </x-ui.form.select>
+                    </div>
+                    <div class="flex items-end">
+                        <x-ui.button.primary type="submit" class="w-full">
+                            {{ __('Apply Filters') }}
+                        </x-ui.button.primary>
+                    </div>
+                </form>
+            </x-ui.card.body>
+        </x-ui.card.base>
+
+        <!-- Tasks Table -->
+        <x-ui.card.base>
+            <x-ui.card.body>
+                <x-ui.table.base>
+                    <x-slot name="head">
+                        <x-ui.table.head-cell>{{ __('Task') }}</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>{{ __('Company') }}</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>{{ __('Due Date') }}</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>{{ __('Status') }}</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>{{ __('Progress') }}</x-ui.table.head-cell>
+                        <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
+                    </x-slot>
+                    <x-slot name="body">
+                        @forelse($tasks as $task)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <x-ui.table.cell>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {{ $task->taxCalendar->name }}
+                                    </div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ $task->taxCalendar->form_code }}
+                                    </div>
+                                </x-ui.table.cell>
+                                <x-ui.table.cell>
+                                    @if($task->company)
+                                        <div class="text-sm text-gray-900 dark:text-gray-100">{{ $task->company->name }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $task->user->name }}</div>
+                                    @else
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">{{ __('N/A') }}</span>
+                                    @endif
+                                </x-ui.table.cell>
+                                <x-ui.table.cell>
+                                    <div class="text-sm text-gray-900 dark:text-gray-100">
+                                        {{ $task->due_date->format('M d, Y') }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ $task->due_date->diffForHumans() }}
+                                    </div>
+                                </x-ui.table.cell>
+                                <x-ui.table.cell>
+                                    @php
+                                        $statusVariant = 'secondary';
+                                        switch($task->status) {
+                                            case 'pending':
+                                                $statusVariant = 'warning';
+                                                break;
+                                            case 'in_progress':
+                                                $statusVariant = 'primary';
+                                                break;
+                                            case 'completed':
+                                                $statusVariant = 'success';
+                                                break;
+                                            case 'under_review':
+                                                $statusVariant = 'secondary';
+                                                break;
+                                            case 'changes_requested':
+                                                $statusVariant = 'warning';
+                                                break;
+                                            case 'rejected':
+                                                $statusVariant = 'danger';
+                                                break;
+                                        }
+                                    @endphp
+                                    <x-ui.badge :variant="$statusVariant" size="sm">
+                                        {{ ucfirst(str_replace('_', ' ', $task->status)) }}
+                                    </x-ui.badge>
+                                </x-ui.table.cell>
+                                <x-ui.table.cell>
+                                    @if(auth()->user()->is_admin)
+                                        @php
+                                            // Calculate progress for each checklist separately
+                                            $accountantChecklist = $task->checklist ?? [];
+                                            $userChecklist = $task->user_checklist ?? [];
+                                            
+                                            $accountantProgress = !empty($accountantChecklist) 
+                                                ? round(collect($accountantChecklist)->where('completed', true)->count() * 100 / count($accountantChecklist))
+                                                : 0;
+                                                
+                                            $userProgress = !empty($userChecklist) 
+                                                ? round(collect($userChecklist)->where('completed', true)->count() * 100 / count($userChecklist))
+                                                : 0;
+                                        @endphp
+                                        <div class="space-y-2">
+                                            <!-- Accountant Progress -->
+                                            <div>
+                                                <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">{{ __('Accountant') }}</div>
+                                                <x-ui.progress :value="$accountantProgress" :max="100" size="sm" />
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    {{ $accountantProgress }}%
+                                                </div>
+                                            </div>
+                                            <!-- User Progress -->
+                                            <div>
+                                                <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">{{ __('User') }}</div>
+                                                <x-ui.progress :value="$userProgress" :max="100" size="sm" color="success" />
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    {{ $userProgress }}%
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        @php
+                                            $progress = round($task->progress ?? 0);
+                                        @endphp
+                                        <x-ui.progress :value="$progress" :max="100" size="sm" />
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            {{ $progress }}% {{ __('Complete') }}
+                                        </div>
+                                    @endif
+                                </x-ui.table.cell>
+                                <x-ui.table.action-cell>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{{ route('admin.tax-calendar.show', $task->id) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="{{ __('View details') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </a>
+                                        <a href="{{ route('admin.tax-calendar.edit', $task->id) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="{{ __('Edit') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </a>
+                                    </div>
+                                </x-ui.table.action-cell>
+                            </tr>
+                        @empty
+                            <x-ui.table.empty-state 
+                                colspan="6"
+                                message="{{ __('No tasks found. Try adjusting your filters or create a new task.') }}"
+                            />
+                        @endforelse
+                    </x-slot>
+                </x-ui.table.base>
+                
+                @if($tasks->hasPages())
+                    <div class="mt-4">
+                        {{ $tasks->links() }}
+                    </div>
+                @endif
+            </x-ui.card.body>
+        </x-ui.card.base>
+    </div>
+</x-admin.layout>

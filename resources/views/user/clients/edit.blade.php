@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-user.layout>
     <x-unified-header />
     
     <div class="py-8">
@@ -111,4 +111,4 @@
             </div>
         </div>
     </div>
-</x-app-layout> 
+</x-user.layout> 

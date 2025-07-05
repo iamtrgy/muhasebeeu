@@ -13,13 +13,19 @@ class FileController extends Controller
 {
     public function download(File $file)
     {
-        // Download the file from Bunny storage
-        $fileContent = Storage::disk('bunny')->read($file->path);
-        
-        // Return the file as a download response
-        return response($fileContent)
-            ->header('Content-Type', $file->mime_type)
-            ->header('Content-Disposition', 'attachment; filename="' . $file->original_name . '"');
+        try {
+            // Try to get the file content from Bunny storage
+            $fileContent = Storage::disk('bunny')->get($file->path);
+            
+            // Return the file as a download response
+            return response($fileContent)
+                ->header('Content-Type', $file->mime_type)
+                ->header('Content-Disposition', 'attachment; filename="' . $file->original_name . '"')
+                ->header('Content-Length', strlen($fileContent));
+        } catch (\Exception $e) {
+            // If storage fails, redirect to the download URL
+            return redirect($file->downloadUrl);
+        }
     }
 
     public function destroy(File $file)
@@ -35,36 +41,31 @@ class FileController extends Controller
     
     public function preview(File $file)
     {
-        // Check if file exists in Bunny storage
-        if (!Storage::disk('bunny')->fileExists($file->path)) {
-            abort(404, 'File not found.');
-        }
-        
-        // Get the file contents from Bunny storage
-        $contents = Storage::disk('bunny')->read($file->path);
-        
-        // For PDFs and images, we can display them in the browser
+        // Check if the file type is previewable
         $previewableTypes = [
             'application/pdf',
             'image/jpeg',
             'image/png',
             'image/gif',
-            'image/svg+xml'
+            'text/plain'
         ];
-        
-        if (in_array($file->mime_type, $previewableTypes)) {
-            // Create response with file contents for inline display
-            return response($contents)
-                ->header('Content-Type', $file->mime_type)
-                ->header('Content-Disposition', 'inline; filename="' . $file->original_name . '"')
-                ->header('Content-Length', $file->size);
+
+        if (!in_array($file->mime_type, $previewableTypes)) {
+            abort(400, 'This file type cannot be previewed');
         }
-        
-        // For non-previewable files, download them
-        return response($contents)
-            ->header('Content-Type', $file->mime_type)
-            ->header('Content-Disposition', 'attachment; filename="' . $file->original_name . '"')
-            ->header('Content-Length', $file->size);
+
+        // For text files, return the contents
+        if ($file->mime_type === 'text/plain') {
+            try {
+                $contents = Storage::disk('bunny')->get($file->path);
+                return response($contents)->header('Content-Type', 'text/plain');
+            } catch (\Exception $e) {
+                abort(404, 'File not found');
+            }
+        }
+
+        // For images and PDFs, redirect to the direct file URL
+        return redirect($file->url);
     }
 
     /**
@@ -128,5 +129,25 @@ class FileController extends Controller
         }
 
         return back()->with('success', $deletedCount . ' files have been deleted successfully.');
+    }
+
+    /**
+     * Update the notes for the specified file.
+     */
+    public function updateNotes(Request $request, File $file)
+    {
+        $request->validate([
+            'notes' => ['nullable', 'string', 'max:1000']
+        ]);
+
+        $file->update([
+            'notes' => $request->notes
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notes updated successfully.',
+            'notes' => $file->notes
+        ]);
     }
 } 

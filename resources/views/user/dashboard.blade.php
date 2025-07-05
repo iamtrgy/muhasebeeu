@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-user.layout>
     <x-unified-header />
     
     <!-- Include the file preview modal component -->
@@ -520,4 +520,4 @@
             @apply dark:from-emerald-400/10 dark:to-emerald-400/20 dark:text-emerald-400 dark:ring-emerald-400/30;
         }
     </style>
-</x-app-layout>
+</x-user.layout>

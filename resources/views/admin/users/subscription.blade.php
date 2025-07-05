@@ -1,39 +1,33 @@
-<x-admin-layout>
-    <x-slot name="header">
-        <x-admin.page-title title="{{ __('Manage Subscription') }}"></x-admin.page-title>
-    </x-slot>
-
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto">
+<x-admin.layout 
+    title="{{ __('Manage Subscription') }} - {{ $user->name }}"
+    :breadcrumbs="[
+        ['title' => __('Dashboard'), 'href' => route('admin.dashboard'), 'first' => true],
+        ['title' => __('Users'), 'href' => route('admin.users.index')],
+        ['title' => $user->name, 'href' => route('admin.users.show', $user)],
+        ['title' => __('Subscription')]
+    ]"
+>
+    <div class="space-y-6">
         <!-- User Profile Header -->
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
-                                <span class="text-xl font-bold text-blue-700 dark:text-blue-300">{{ substr($user->name, 0, 1) }}</span>
-                            </div>
-                            <div>
-                                <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $user->name }}</h1>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
-                            </div>
-                        </div>
-                        <div>
-                            <a href="{{ route('admin.users.subscription.debug', $user) }}" class="inline-flex items-center px-4 py-2 bg-orange-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-700 focus:bg-orange-700 active:bg-orange-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                <svg class="h-5 w-5 mr-2 text-orange-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                                </svg>
-                                {{ __('Debug Subscription') }}
-                            </a>
-                        </div>
+        <x-ui.card.base>
+            <x-ui.card.body>
+                <div class="flex items-center space-x-4">
+                    <x-ui.avatar name="{{ $user->name }}" size="md" />
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $user->name }}</h1>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
                     </div>
                 </div>
-            </div>
+            </x-ui.card.body>
+        </x-ui.card.base>
 
-            <!-- Current Subscription Status -->
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6">
-                    <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Current Subscription') }}</h2>
+        <!-- Current Subscription Status -->
+        <x-ui.card.base>
+            <x-ui.card.header>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{{ __('Current Subscription') }}</h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">{{ __('Manage the user\'s subscription status and billing information.') }}</p>
+            </x-ui.card.header>
+            <x-ui.card.body>
                     
                     @if($user->subscription('default'))
                         @php
@@ -54,25 +48,21 @@
                                         : 'Active'));
                         @endphp
                         
-                        <div class="flex items-center mb-6">
+                        <div class="flex items-center gap-2 mb-6">
                             @php
-                                $statusClasses = match($status) {
-                                    'Active' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-                                    'Trial' => 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-                                    'Grace Period' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-                                    default => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                $statusVariant = match($status) {
+                                    'Active' => 'success',
+                                    'Trial' => 'primary', 
+                                    'Grace Period' => 'warning',
+                                    default => 'danger',
                                 };
                             @endphp
-                            <span class="px-3 py-1 inline-flex text-sm font-semibold rounded-full {{ $statusClasses }}">
-                                {{ $status }}
-                            </span>
-                            <span class="ml-2 px-3 py-1 inline-flex text-sm font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                                {{ $planName }} Plan
-                            </span>
+                            <x-ui.badge variant="{{ $statusVariant }}">{{ $status }}</x-ui.badge>
+                            <x-ui.badge variant="secondary">{{ $planName }} Plan</x-ui.badge>
                         </div>
                         
-                        <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                        <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+                            <div>
                                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Started') }}</dt>
                                 <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
                                     {{ $subscription->created_at->format('M d, Y') }}
@@ -80,7 +70,7 @@
                             </div>
                             
                             @if($subscription->onTrial())
-                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                            <div>
                                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Trial Ends') }}</dt>
                                 <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
                                     @if($subscription->trial_ends_at)
@@ -93,7 +83,7 @@
                             @endif
                             
                             @if($subscription->canceled())
-                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                            <div>
                                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Cancellation Date') }}</dt>
                                 <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
                                     @if($subscription->canceled_at)
@@ -104,7 +94,7 @@
                                     @endif
                                 </dd>
                             </div>
-                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                            <div>
                                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Access Until') }}</dt>
                                 <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
                                     @if($subscription->ends_at)
@@ -115,7 +105,7 @@
                                 </dd>
                             </div>
                             @elseif(!$subscription->onTrial())
-                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                            <div>
                                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Next Billing Date') }}</dt>
                                 <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
                                     {{ $user->nextBillingDate() ? $user->nextBillingDate()->format('M d, Y') : 'N/A' }}
@@ -123,14 +113,14 @@
                             </div>
                             @endif
                             
-                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                            <div>
                                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Stripe Subscription ID') }}</dt>
                                 <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100 font-mono">
                                     {{ $subscription->stripe_id }}
                                 </dd>
                             </div>
                             
-                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                            <div>
                                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Stripe Customer ID') }}</dt>
                                 <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100 font-mono">
                                     {{ $user->stripe_id }}
@@ -218,17 +208,17 @@
                                 <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST">
                                     @csrf
                                     <input type="hidden" name="action" value="resume">
-                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    <x-ui.button.primary type="submit" class="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500">
                                         {{ __('Resume Subscription') }}
-                                    </button>
+                                    </x-ui.button.primary>
                                 </form>
                             @elseif(!$subscription->canceled())
                                 <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST">
                                     @csrf
                                     <input type="hidden" name="action" value="cancel">
-                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:bg-red-700 active:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    <x-ui.button.danger type="submit">
                                         {{ __('Cancel Subscription') }}
-                                    </button>
+                                    </x-ui.button.danger>
                                 </form>
                             @endif
                             
@@ -236,28 +226,30 @@
                                 <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST">
                                     @csrf
                                     <input type="hidden" name="action" value="delete_incomplete">
-                                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 dark:focus:ring-offset-gray-800">
+                                    <x-ui.button.secondary type="submit" class="bg-amber-600 hover:bg-amber-700 focus:ring-amber-500 text-white">
                                         {{ __('Delete Incomplete Subscription') }}
-                                    </button>
+                                    </x-ui.button.secondary>
                                 </form>
                             @endif
                         </div>
                     @else
-                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                            <svg class="h-12 w-12 text-gray-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                             </svg>
                             <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No Active Subscription') }}</h3>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('This user does not have an active subscription.') }}</p>
                         </div>
 
-                        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 mt-6">{{ __('Change Subscription Plan') }}</h2>
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                            <h4 class="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Available Plans') }}</h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             @foreach($plans as $planId => $planData)
                                 @php
                                     $planKey = str_replace('price_', '', $planId);
                                 @endphp
-                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700 flex flex-col">
+                                <x-ui.card.base class="flex flex-col h-full">
+                                    <x-ui.card.body class="flex flex-col h-full">
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">{{ $planData['name'] }}</h3>
                                         <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -278,27 +270,31 @@
                                         <input type="hidden" name="plan" value="{{ $planKey }}">
 
                                         <div class="mb-4">
-                                            <label for="trial_days_{{ $planKey }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Trial Period (Days)</label>
-                                            <select id="trial_days_{{ $planKey }}" name="trial_days" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200">
+                                            <x-ui.form.select
+                                                name="trial_days"
+                                                id="trial_days_{{ $planKey }}"
+                                                label="Trial Period (Days)"
+                                                value="30"
+                                            >
                                                 <option value="7">7 days</option>
                                                 <option value="14">14 days</option>
-                                                <option value="30" selected>30 days</option>
+                                                <option value="30">30 days</option>
                                                 <option value="60">60 days</option>
                                                 <option value="90">90 days</option>
-                                            </select>
+                                            </x-ui.form.select>
                                         </div>
 
-                                        <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                        <x-ui.button.primary type="submit" fullWidth>
                                             {{ __('Start Trial') }}
-                                        </button>
+                                        </x-ui.button.primary>
                                     </form>
-                                </div>
+                                    </x-ui.card.body>
+                                </x-ui.card.base>
                             @endforeach
                         </div>
+                        </div>
                     @endif
-                </div>
-            </div>
-        </div>
-        </div>
+            </x-ui.card.body>
+        </x-ui.card.base>
     </div>
-</x-admin-layout> 
+</x-admin.layout> 

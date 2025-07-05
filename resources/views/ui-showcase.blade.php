@@ -125,6 +125,203 @@
                             <p class="text-gray-600 dark:text-gray-400">This card has no rounded corners.</p>
                         </x-ui.card.base>
                     </div>
+                    
+                    {{-- Dashboard Stat Cards --}}
+                    <div class="mt-8">
+                        <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Dashboard Stat Cards</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {{-- Users Stat Card --}}
+                            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                                <x-ui.card.body class="p-6">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 bg-indigo-500 rounded-lg p-3">
+                                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-5 flex-1">
+                                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                Total Users
+                                            </div>
+                                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                                1,234
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <x-ui.button.primary size="sm" class="w-full">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
+                                            Manage Users
+                                        </x-ui.button.primary>
+                                    </div>
+                                </x-ui.card.body>
+                            </x-ui.card.base>
+                            
+                            {{-- Companies Stat Card --}}
+                            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                                <x-ui.card.body class="p-6">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 bg-emerald-500 rounded-lg p-3">
+                                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-5 flex-1">
+                                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                Total Companies
+                                            </div>
+                                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                                567
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <x-ui.button.secondary size="sm" class="w-full">
+                                            View All
+                                        </x-ui.button.secondary>
+                                    </div>
+                                </x-ui.card.body>
+                            </x-ui.card.base>
+                            
+                            {{-- Files Stat Card --}}
+                            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                                <x-ui.card.body class="p-6">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 bg-amber-500 rounded-lg p-3">
+                                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-5 flex-1">
+                                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                Total Files
+                                            </div>
+                                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                                8,901
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <x-ui.button.primary size="sm" class="w-full">
+                                            File Manager
+                                        </x-ui.button.primary>
+                                    </div>
+                                </x-ui.card.body>
+                            </x-ui.card.base>
+                        </div>
+                        
+                        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                            These stat cards follow the pattern used in the admin dashboard: icon + stats + action button.
+                        </p>
+                        
+                        {{-- Business & Subscription Stat Cards --}}
+                        <div class="mt-8">
+                            <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Subscription Analytics Cards</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {{-- Active Subscriptions --}}
+                                <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                                    <x-ui.card.body class="p-6">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 bg-emerald-500 rounded-lg p-3">
+                                                <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ml-5 flex-1">
+                                                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                    Active Subscriptions
+                                                </div>
+                                                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                                    87
+                                                </div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    73.1% conversion rate
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </x-ui.card.body>
+                                </x-ui.card.base>
+
+                                {{-- Monthly Revenue --}}
+                                <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                                    <x-ui.card.body class="p-6">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 bg-indigo-500 rounded-lg p-3">
+                                                <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                                </svg>
+                                            </div>
+                                            <div class="ml-5 flex-1">
+                                                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                    Monthly Revenue
+                                                </div>
+                                                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                                    $2,607.13
+                                                </div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    $29.97 avg per user
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </x-ui.card.body>
+                                </x-ui.card.base>
+
+                                {{-- Trial Users --}}
+                                <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                                    <x-ui.card.body class="p-6">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 bg-amber-500 rounded-lg p-3">
+                                                <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ml-5 flex-1">
+                                                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                    Trial Users
+                                                </div>
+                                                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                                    23
+                                                </div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    4 expiring soon
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </x-ui.card.body>
+                                </x-ui.card.base>
+
+                                {{-- Total Platform Stats --}}
+                                <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                                    <x-ui.card.body class="p-6">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 bg-gray-500 rounded-lg p-3">
+                                                <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ml-5 flex-1">
+                                                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                    Total Users
+                                                </div>
+                                                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                                    119
+                                                </div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    45 companies, 2.1k files
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </x-ui.card.body>
+                                </x-ui.card.base>
+                            </div>
+                            
+                            <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                                Enhanced stat cards with subscription metrics for SaaS admin dashboards. Features sub-metrics and business KPIs.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -453,6 +650,214 @@
                                     </div>
                                 </x-slot>
                             </x-ui.dropdown.base>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Dropdown Actions (Table Row Actions) --}}
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Dropdown Actions (Table Row Actions)</h3>
+                    
+                    <div class="space-y-6">
+                        {{-- Basic Table Action Dropdown --}}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Basic Table Action Dropdown</h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                Use this pattern for table row actions. The trigger is styled as an icon button that fits well in table cells.
+                            </p>
+                            
+                            <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                                <x-ui.table.base>
+                                    <x-slot name="head">
+                                        <x-ui.table.head-cell>Name</x-ui.table.head-cell>
+                                        <x-ui.table.head-cell>Email</x-ui.table.head-cell>
+                                        <x-ui.table.head-cell align="right">Actions</x-ui.table.head-cell>
+                                    </x-slot>
+                                    <x-slot name="body">
+                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                            <x-ui.table.cell>John Doe</x-ui.table.cell>
+                                            <x-ui.table.cell>john@example.com</x-ui.table.cell>
+                                            <x-ui.table.action-cell>
+                                                <x-ui.dropdown.base align="right">
+                                                    <x-slot name="trigger">
+                                                        <button class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                                            </svg>
+                                                        </button>
+                                                    </x-slot>
+                                                    
+                                                    <x-ui.dropdown.item href="#">
+                                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                        View Details
+                                                    </x-ui.dropdown.item>
+                                                    
+                                                    <x-ui.dropdown.item href="#">
+                                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                        Edit
+                                                    </x-ui.dropdown.item>
+                                                    
+                                                    <x-ui.dropdown.divider />
+                                                    
+                                                    <form action="#" method="POST" onsubmit="return confirm('Are you sure?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <x-ui.dropdown.item tag="button" type="submit">
+                                                            <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                            <span class="text-red-600">Delete</span>
+                                                        </x-ui.dropdown.item>
+                                                    </form>
+                                                </x-ui.dropdown.base>
+                                            </x-ui.table.action-cell>
+                                        </tr>
+                                    </x-slot>
+                                </x-ui.table.base>
+                            </div>
+                        </div>
+
+                        {{-- Complete Action Pattern with Quick Actions --}}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Complete Action Pattern with Quick Actions</h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                Combines quick action buttons for common operations with a dropdown for secondary actions.
+                            </p>
+                            
+                            <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                                <x-ui.table.base>
+                                    <x-slot name="head">
+                                        <x-ui.table.head-cell>User</x-ui.table.head-cell>
+                                        <x-ui.table.head-cell>Status</x-ui.table.head-cell>
+                                        <x-ui.table.head-cell align="right">Actions</x-ui.table.head-cell>
+                                    </x-slot>
+                                    <x-slot name="body">
+                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                            <x-ui.table.cell>
+                                                <div class="flex items-center">
+                                                    <x-ui.avatar name="Jane Smith" size="sm" />
+                                                    <div class="ml-3">
+                                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Jane Smith</div>
+                                                        <div class="text-sm text-gray-500 dark:text-gray-400">jane@example.com</div>
+                                                    </div>
+                                                </div>
+                                            </x-ui.table.cell>
+                                            <x-ui.table.cell>
+                                                <x-ui.badge variant="success" size="sm">Active</x-ui.badge>
+                                            </x-ui.table.cell>
+                                            <x-ui.table.action-cell>
+                                                <div class="flex items-center justify-end gap-2">
+                                                    {{-- Quick action buttons --}}
+                                                    <a href="#" 
+                                                       class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                       title="View details">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                    </a>
+                                                    <a href="#" 
+                                                       class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                       title="Edit">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </a>
+                                                    
+                                                    {{-- Dropdown for secondary actions --}}
+                                                    <x-ui.dropdown.base align="right">
+                                                        <x-slot name="trigger">
+                                                            <button class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                                                </svg>
+                                                            </button>
+                                                        </x-slot>
+                                                        
+                                                        <x-ui.dropdown.item href="#">
+                                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                            </svg>
+                                                            Manage Subscription
+                                                        </x-ui.dropdown.item>
+                                                        
+                                                        <x-ui.dropdown.item href="#">
+                                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                                            </svg>
+                                                            Change Role
+                                                        </x-ui.dropdown.item>
+                                                        
+                                                        <x-ui.dropdown.divider />
+                                                        
+                                                        <form action="#" method="POST" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <x-ui.dropdown.item tag="button" type="submit">
+                                                                <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                </svg>
+                                                                <span class="text-red-600">Delete User</span>
+                                                            </x-ui.dropdown.item>
+                                                        </form>
+                                                    </x-ui.dropdown.base>
+                                                </div>
+                                            </x-ui.table.action-cell>
+                                        </tr>
+                                    </x-slot>
+                                </x-ui.table.base>
+                            </div>
+                        </div>
+
+                        {{-- Code Example --}}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Implementation Guide</h4>
+                            <div class="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 overflow-x-auto">
+                                <pre class="text-sm text-gray-100"><code>{{-- Inside table row --}}
+&lt;x-ui.table.action-cell&gt;
+    &lt;div class="flex items-center justify-end gap-2"&gt;
+        {{-- Quick actions (optional) --}}
+        &lt;a href="@{{ route('resource.show', $item) }}" 
+           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+           title="View details"&gt;
+            {{-- View icon --}}
+        &lt;/a&gt;
+        
+        {{-- Dropdown menu --}}
+        &lt;x-ui.dropdown.base align="right"&gt;
+            &lt;x-slot name="trigger"&gt;
+                &lt;button class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"&gt;
+                    {{-- Three dots icon --}}
+                &lt;/button&gt;
+            &lt;/x-slot&gt;
+            
+            {{-- Regular actions --}}
+            &lt;x-ui.dropdown.item href="@{{ route('resource.edit', $item) }}"&gt;
+                {{-- Icon and text --}}
+            &lt;/x-ui.dropdown.item&gt;
+            
+            &lt;x-ui.dropdown.divider /&gt;
+            
+            {{-- Destructive action with form --}}
+            &lt;form action="@{{ route('resource.destroy', $item) }}" method="POST" 
+                  onsubmit="return confirm('Are you sure?');"&gt;
+                @@csrf
+                @@method('DELETE')
+                &lt;x-ui.dropdown.item tag="button" type="submit"&gt;
+                    &lt;span class="text-red-600"&gt;Delete&lt;/span&gt;
+                &lt;/x-ui.dropdown.item&gt;
+            &lt;/form&gt;
+        &lt;/x-ui.dropdown.base&gt;
+    &lt;/div&gt;
+&lt;/x-ui.table.action-cell&gt;</code></pre>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1352,6 +1757,258 @@ $users = User::paginate(15);
                     </form>
                 </div>
             </div>
+            
+            {{-- Vertical Form Layout Example --}}
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Vertical Form Layout Pattern</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                        Standard pattern for vertical forms with proper spacing between fields. Each input is wrapped in a div, with space-y-6 on the form.
+                    </p>
+                    
+                    <div class="max-w-2xl">
+                        <form class="space-y-6">
+                            @csrf
+                            
+                            <div>
+                                <x-ui.form.input
+                                    label="Full Name"
+                                    name="name"
+                                    type="text"
+                                    placeholder="John Doe"
+                                    helperText="Enter your full name as it will appear in the system"
+                                    required
+                                >
+                                    <x-slot name="leadingIcon">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </x-slot>
+                                </x-ui.form.input>
+                            </div>
+                            
+                            <div>
+                                <x-ui.form.input
+                                    label="Email Address"
+                                    name="email"
+                                    type="email"
+                                    placeholder="john@example.com"
+                                    helperText="We'll use this to send you important notifications"
+                                    required
+                                >
+                                    <x-slot name="leadingIcon">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </x-slot>
+                                </x-ui.form.input>
+                            </div>
+                            
+                            <div>
+                                <x-ui.form.select
+                                    name="department"
+                                    label="Department"
+                                    placeholder="Select department..."
+                                    helperText="Choose the department this user belongs to"
+                                >
+                                    <option value="">Select Department</option>
+                                    <option value="sales">Sales</option>
+                                    <option value="marketing">Marketing</option>
+                                    <option value="engineering">Engineering</option>
+                                    <option value="hr">Human Resources</option>
+                                </x-ui.form.select>
+                            </div>
+                            
+                            <div>
+                                <x-ui.form.textarea
+                                    name="bio"
+                                    label="Bio"
+                                    rows="3"
+                                    placeholder="Tell us about yourself..."
+                                    helperText="Brief description for your profile (max 500 characters)"
+                                />
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Preferences</h4>
+                                <div class="space-y-3">
+                                    <x-ui.form.checkbox
+                                        name="notifications"
+                                        id="notifications"
+                                        label="Email Notifications"
+                                        helperText="Receive email updates about your account"
+                                        checked
+                                    />
+                                    
+                                    <x-ui.form.checkbox
+                                        name="newsletter"
+                                        id="newsletter"
+                                        label="Newsletter"
+                                        helperText="Get our monthly newsletter with tips and updates"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                <x-ui.button.secondary>
+                                    Cancel
+                                </x-ui.button.secondary>
+                                <x-ui.button.primary type="submit">
+                                    Save Changes
+                                </x-ui.button.primary>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            {{-- Detail View Pattern --}}
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Detail View Pattern</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                        Standard pattern for detail/show pages with header, description lists, and tabbed content.
+                    </p>
+                    
+                    <div class="space-y-6">
+                        {{-- Detail Page Header Example --}}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Detail Page Header</h4>
+                            <x-ui.card.base>
+                                <x-ui.card.body>
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex items-start space-x-4">
+                                            <x-ui.avatar name="John Doe" size="lg" />
+                                            <div>
+                                                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                                                    John Doe
+                                                </h2>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                    john.doe@example.com
+                                                </p>
+                                                <div class="mt-2 flex items-center gap-2">
+                                                    <x-ui.badge variant="success" size="sm">Active</x-ui.badge>
+                                                    <x-ui.badge variant="secondary" size="sm">Admin</x-ui.badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <x-ui.dropdown.base align="right">
+                                                <x-slot name="trigger">
+                                                    <x-ui.button.secondary size="sm">
+                                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                        Actions
+                                                    </x-ui.button.secondary>
+                                                </x-slot>
+                                                
+                                                <x-ui.dropdown.item href="#">
+                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                    Edit
+                                                </x-ui.dropdown.item>
+                                                
+                                                <x-ui.dropdown.divider />
+                                                
+                                                <x-ui.dropdown.item href="#">
+                                                    <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                    <span class="text-red-600">Delete</span>
+                                                </x-ui.dropdown.item>
+                                            </x-ui.dropdown.base>
+                                            
+                                            <x-ui.button.primary size="sm">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                                Send Email
+                                            </x-ui.button.primary>
+                                        </div>
+                                    </div>
+                                </x-ui.card.body>
+                            </x-ui.card.base>
+                        </div>
+                        
+                        {{-- Description List Example --}}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Description List</h4>
+                            <x-ui.card.base>
+                                <x-ui.card.header>
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+                                        User Information
+                                    </h3>
+                                    <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                                        Personal details and application status.
+                                    </p>
+                                </x-ui.card.header>
+                                <x-ui.card.body>
+                                    <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                Full Name
+                                            </dt>
+                                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                                                John Doe
+                                            </dd>
+                                        </div>
+                                        
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                Email Address
+                                            </dt>
+                                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                                                john.doe@example.com
+                                            </dd>
+                                        </div>
+                                        
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                Status
+                                            </dt>
+                                            <dd class="mt-1">
+                                                <x-ui.badge variant="success">Active</x-ui.badge>
+                                            </dd>
+                                        </div>
+                                        
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                Member Since
+                                            </dt>
+                                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                                                Jan 15, 2024
+                                                <span class="text-gray-500 dark:text-gray-400">
+                                                    (2 months ago)
+                                                </span>
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </x-ui.card.body>
+                            </x-ui.card.base>
+                        </div>
+                        
+                        {{-- Empty State for Detail Views --}}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Empty State in Detail Views</h4>
+                            <x-ui.card.base>
+                                <x-ui.card.body>
+                                    <div class="text-center py-8">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                            No documents found for this user.
+                                        </p>
+                                    </div>
+                                </x-ui.card.body>
+                            </x-ui.card.base>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             {{-- Advanced Components Section --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
@@ -1543,6 +2200,120 @@ $users = User::paginate(15);
                                     <x-ui.avatar size="lg" />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {{-- Detail View Patterns --}}
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Detail View Patterns</h3>
+                    
+                    <div class="space-y-8">
+                        {{-- Detail Page Header --}}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Detail Page Header</h4>
+                            <x-ui.card.base>
+                                <x-ui.card.body>
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex items-start space-x-4">
+                                            <x-ui.avatar name="John Doe" size="lg" />
+                                            <div>
+                                                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                                                    John Doe
+                                                </h2>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                    john.doe@example.com
+                                                </p>
+                                                <div class="mt-2 flex items-center gap-2">
+                                                    <x-ui.badge variant="success" size="sm">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        Active
+                                                    </x-ui.badge>
+                                                    <x-ui.badge variant="secondary" size="sm">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                        </svg>
+                                                        User
+                                                    </x-ui.badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <x-ui.button.secondary size="sm">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                                Edit
+                                            </x-ui.button.secondary>
+                                            <x-ui.button.primary size="sm">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                                Send Email
+                                            </x-ui.button.primary>
+                                        </div>
+                                    </div>
+                                </x-ui.card.body>
+                            </x-ui.card.base>
+                        </div>
+                        
+                        {{-- Description List Pattern --}}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Description List</h4>
+                            <x-ui.card.base>
+                                <x-ui.card.header>
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">User Information</h3>
+                                </x-ui.card.header>
+                                <x-ui.card.body>
+                                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Full name</dt>
+                                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">John Doe</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Email address</dt>
+                                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">john.doe@example.com</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Phone number</dt>
+                                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">+1 (555) 123-4567</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Registration date</dt>
+                                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">January 1, 2024</dd>
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">About</dt>
+                                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                                                Experienced software developer with a passion for creating elegant solutions to complex problems.
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </x-ui.card.body>
+                            </x-ui.card.base>
+                        </div>
+                        
+                        {{-- Empty State in Detail Views --}}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Empty State</h4>
+                            <x-ui.card.base>
+                                <x-ui.card.header>
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Recent Activity</h3>
+                                </x-ui.card.header>
+                                <x-ui.card.body>
+                                    <div class="text-center py-8">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No activity</h3>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">This user hasn't performed any actions yet.</p>
+                                    </div>
+                                </x-ui.card.body>
+                            </x-ui.card.base>
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-<x-admin-layout>
+<x-admin.layout>
     <x-slot name="header">
         <x-admin.page-title title="{{ __('Edit Folder:') }} {{ $folder->name }}"></x-admin.page-title>
     </x-slot>
@@ -345,4 +345,4 @@
         });
     </script>
     @endpush
-</x-admin-layout>
+</x-admin.layout>

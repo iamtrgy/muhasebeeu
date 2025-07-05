@@ -69,7 +69,7 @@ $inputClasses = implode(' ', [
         @if($leadingIcon)
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <span class="text-gray-400 dark:text-gray-500">
-                    {{ $leadingIcon }}
+                    {!! $leadingIcon !!}
                 </span>
             </div>
         @endif
@@ -91,7 +91,7 @@ $inputClasses = implode(' ', [
         @if($trailingIcon)
             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                 <span class="text-gray-400 dark:text-gray-500">
-                    {{ $trailingIcon }}
+                    {!! $trailingIcon !!}
                 </span>
             </div>
         @endif

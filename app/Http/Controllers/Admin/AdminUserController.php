@@ -58,6 +58,7 @@ class AdminUserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'is_admin' => 'boolean',
+            'is_accountant' => 'boolean',
         ]);
 
         $user = User::create([
@@ -65,6 +66,7 @@ class AdminUserController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'is_admin' => $request->is_admin ?? false,
+            'is_accountant' => $request->is_accountant ?? false,
         ]);
 
         return redirect()->route('admin.users.show', $user)->with('success', 'User created successfully.');
@@ -328,47 +330,6 @@ class AdminUserController extends Controller
         return redirect()->back()->with($type, $result['message']);
     }
 
-    /**
-     * Debug a user's subscription.
-     */
-    public function debugSubscription(User $user)
-    {
-        $subscriptionInfo = [];
-        
-        // Get subscription from database
-        $subscription = $user->subscription('default');
-        
-        if ($subscription) {
-            $subscriptionInfo['id'] = $subscription->id;
-            $subscriptionInfo['stripe_id'] = $subscription->stripe_id;
-            $subscriptionInfo['stripe_price'] = $subscription->stripe_price;
-            $subscriptionInfo['quantity'] = $subscription->quantity;
-            $subscriptionInfo['created_at'] = $subscription->created_at->format('Y-m-d H:i:s');
-            $subscriptionInfo['ends_at'] = $subscription->ends_at ? $subscription->ends_at->format('Y-m-d H:i:s') : null;
-            
-            // Check various subscription statuses
-            $subscriptionInfo['cashier_check'] = $user->subscribed('default');
-            $subscriptionInfo['manual_check'] = $user->hasActiveSubscription('default');
-            $subscriptionInfo['on_trial'] = $subscription->onTrial();
-            $subscriptionInfo['canceled'] = $subscription->canceled();
-            $subscriptionInfo['on_grace_period'] = $subscription->onGracePeriod();
-            $subscriptionInfo['ended'] = $subscription->ended();
-            
-            // Try to get stripe subscription
-            try {
-                if ($user->stripe_id) {
-                    $stripe = new \Stripe\StripeClient(config('cashier.secret'));
-                    $stripeSubscription = $stripe->subscriptions->retrieve($subscription->stripe_id);
-                    $subscriptionInfo['stripe_status'] = $stripeSubscription->status;
-                    $subscriptionInfo['stripe_current_period_end'] = date('Y-m-d H:i:s', $stripeSubscription->current_period_end);
-                }
-            } catch (\Exception $e) {
-                $subscriptionInfo['stripe_error'] = $e->getMessage();
-            }
-        }
-        
-        return view('admin.users.subscription_debug', compact('user', 'subscriptionInfo'));
-    }
 
     /**
      * Show the form for assigning users to accountant

@@ -1,87 +1,130 @@
-<x-admin-layout>
-    <x-slot name="header">
-        <x-admin.page-title title="{{ __('Users Management') }}">
-            <!-- Add actions if needed -->
-        </x-admin.page-title>
-    </x-slot>
+<x-admin.layout 
+    title="Users Management"
+    :breadcrumbs="[
+        ['title' => __('Dashboard'), 'href' => route('admin.dashboard'), 'first' => true],
+        ['title' => __('Users')]
+    ]"
+>
+    <div class="space-y-6">
+        <!-- Page Header with Actions -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Manage user accounts, subscriptions, and permissions.
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <x-ui.button.secondary href="{{ route('admin.users.create') }}">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add User
+                </x-ui.button.secondary>
+                <x-ui.button.primary>
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                    </svg>
+                    Export
+                </x-ui.button.primary>
+            </div>
+        </div>
 
-    <div class="py-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-4 sm:p-6 text-gray-900 dark:text-gray-100">
-                    <!-- Search and Filter Controls -->
-                    <div class="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-                        <div class="flex-1 relative">
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <x-icons name="search" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                            </div>
-                            <input type="search" id="userSearch" placeholder="{{ __('Search users...') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <select id="statusFilter" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                <option value="all">{{ __('All Users') }}</option>
-                                <option value="subscribed">{{ __('Subscribed') }}</option>
-                                <option value="unsubscribed">{{ __('Not Subscribed') }}</option>
-                                <option value="admin">{{ __('Admins') }}</option>
-                            </select>
-                        </div>
+        <!-- Search and Filters Card -->
+        <x-ui.card.base>
+            <x-ui.card.body>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <x-ui.form.input
+                            type="search"
+                            name="userSearch"
+                            id="userSearch"
+                            placeholder="Search by name or email..."
+                            leadingIcon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>'
+                        />
                     </div>
+                    <div class="flex gap-2">
+                        <x-ui.form.select name="statusFilter" id="statusFilter" placeholder="" value="all">
+                            <option value="all">All Users</option>
+                            <option value="subscribed">Subscribed</option>
+                            <option value="unsubscribed">Not Subscribed</option>
+                            <option value="admin">Admins</option>
+                            <option value="accountant">Accountants</option>
+                        </x-ui.form.select>
+                        <x-ui.form.select name="verifiedFilter" id="verifiedFilter" placeholder="" value="all">
+                            <option value="all">All Status</option>
+                            <option value="verified">Verified</option>
+                            <option value="unverified">Unverified</option>
+                        </x-ui.form.select>
+                    </div>
+                </div>
+            </x-ui.card.body>
+        </x-ui.card.base>
 
-                    <!-- Users Table -->
-                    <x-admin.table id="usersTable">
-                        <x-slot name="header">
-                            <x-admin.table.tr>
-                                <x-admin.table.th>{{ __('User') }}</x-admin.table.th>
-                                <x-admin.table.th>{{ __('Email / Status') }}</x-admin.table.th>
-                                <x-admin.table.th>{{ __('Subscription') }}</x-admin.table.th>
-                                <x-admin.table.th>{{ __('Created') }}</x-admin.table.th>
-                                <x-admin.table.th class="relative">
-                                    <span class="sr-only">{{ __('Actions') }}</span>
-                                </x-admin.table.th>
-                            </x-admin.table.tr>
-                        </x-slot>
-
-                        @foreach($users as $user)
-                            <x-admin.table.tr
-                                class="user-row"
+        <!-- Users Table -->
+        <x-ui.card.base>
+            <x-ui.card.body>
+                <x-ui.table.base id="usersTable">
+                    <x-slot name="head">
+                        <x-ui.table.head-cell>User</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>Role</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>Subscription</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>Companies</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>Joined</x-ui.table.head-cell>
+                        <x-ui.table.head-cell align="right">Actions</x-ui.table.head-cell>
+                    </x-slot>
+                    <x-slot name="body">
+                        @forelse($users as $user)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors user-row"
                                 data-name="{{ strtolower($user->name) }}"
                                 data-email="{{ strtolower($user->email) }}"
                                 data-is-admin="{{ $user->is_admin ? 'admin' : 'user' }}"
+                                data-is-accountant="{{ $user->is_accountant ? 'accountant' : 'user' }}"
+                                data-is-verified="{{ $user->email_verified_at ? 'verified' : 'unverified' }}"
                                 data-is-subscribed="{{ $user->subscription('default') ? 'subscribed' : 'unsubscribed' }}">
-
-                                <x-admin.table.td>
+                                
+                                <x-ui.table.cell>
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
-                                            <span class="text-lg font-medium text-blue-700 dark:text-blue-300">{{ substr($user->name, 0, 1) }}</span>
-                                        </div>
+                                        <x-ui.avatar name="{{ $user->name }}" size="sm" />
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100 user-name">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                                 {{ $user->name }}
                                             </div>
-                                            @if($user->is_admin)
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 user-admin-badge">
-                                                    {{ __('Admin') }}
-                                                </span>
-                                            @endif
+                                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                {{ $user->email }}
+                                            </div>
                                         </div>
                                     </div>
-                                </x-admin.table.td>
-                                <x-admin.table.td>
-                                    <div class="text-sm text-gray-900 dark:text-gray-100 user-email">{{ $user->email }}</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                </x-ui.table.cell>
+                                
+                                <x-ui.table.cell>
+                                    <div class="flex flex-col gap-1">
+                                        @if($user->is_admin)
+                                            <x-ui.badge variant="danger" size="sm">Admin</x-ui.badge>
+                                        @elseif($user->is_accountant)
+                                            <x-ui.badge variant="warning" size="sm">Accountant</x-ui.badge>
+                                        @else
+                                            <x-ui.badge variant="secondary" size="sm">User</x-ui.badge>
+                                        @endif
+                                        
                                         @if($user->email_verified_at)
-                                                    <span class="inline-flex items-center">
-                                                        <svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                                                        {{ __('Verified') }}
-                                                    </span>
-                                                @else
-                                                    <span class="inline-flex items-center">
-                                                        <svg class="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                                                        {{ __('Not Verified') }}
-                                                    </span>
-                                                @endif
-                                            </div>
-                                </x-admin.table.td>
-                                <x-admin.table.td>
+                                            <span class="inline-flex items-center text-xs text-green-600 dark:text-green-400">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Verified
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center text-xs text-amber-600 dark:text-amber-400">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Unverified
+                                            </span>
+                                        @endif
+                                    </div>
+                                </x-ui.table.cell>
+                                
+                                <x-ui.table.cell>
                                     @if($user->subscription('default'))
                                         @php
                                             $subscription = $user->subscription('default');
@@ -93,247 +136,192 @@
                                                 default => 'Unknown'
                                             };
                                         @endphp
-                                        <div>
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 user-subscription-badge">
-                                                {{ $planName }}
-                                            </span>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <div class="flex flex-col gap-1">
+                                            <x-ui.badge variant="success" size="sm">{{ $planName }}</x-ui.badge>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">
                                                 @if($subscription->onTrial())
-                                                    {{ __('Trial ends') }}: 
-                                                    @if($subscription->trial_ends_at)
-                                                        {{ $subscription->trial_ends_at->format('M d, Y') }}
-                                                    @else
-                                                        {{ __('Unknown') }}
-                                                    @endif
+                                                    Trial ends {{ $subscription->trial_ends_at ? $subscription->trial_ends_at->diffForHumans() : 'Unknown' }}
                                                 @elseif($subscription->canceled())
-                                                    {{ __('Ends') }}: 
-                                                    @if($subscription->ends_at)
-                                                        {{ $subscription->ends_at->format('M d, Y') }}
-                                                    @else
-                                                        {{ __('Unknown') }}
-                                                    @endif
+                                                    Ends {{ $subscription->ends_at ? $subscription->ends_at->diffForHumans() : 'Unknown' }}
                                                 @else
-                                                    {{ __('Next billing') }}: {{ $user->nextBillingDate() ? $user->nextBillingDate()->format('M d, Y') : 'N/A' }}
+                                                    Renews {{ $user->nextBillingDate() ? $user->nextBillingDate()->diffForHumans() : 'N/A' }}
                                                 @endif
-                                            </div>
+                                            </span>
                                         </div>
                                     @else
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                            {{ __('No Active Subscription') }}
-                                        </span>
+                                        <x-ui.badge variant="secondary" size="sm">No Subscription</x-ui.badge>
                                     @endif
-                                </x-admin.table.td>
-                                <x-admin.table.td>
-                                    {{ $user->created_at->format('M d, Y') }}
-                                    <div class="text-xs">{{ $user->created_at->diffForHumans() }}</div>
-                                </x-admin.table.td>
-                                <x-admin.table.td class="text-right">
-                                    <div class="flex justify-end items-center space-x-3">
-                                        <a href="{{ route('admin.users.show', $user) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                                            <x-icons name="view" class="h-5 w-5" />
-                                        </a>
-                                        <a href="{{ route('admin.users.edit', $user) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                            <x-icons name="edit" class="h-5 w-5" />
-                                        </a>
-                                        <button onclick="openUserActionsMenu('{{ $user->id }}')" class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 focus:outline-none">
-                                            <x-icons name="more" class="h-5 w-5" />
-                                        </button>
+                                </x-ui.table.cell>
+                                
+                                <x-ui.table.cell>
+                                    @php
+                                        $companiesCount = $user->companies()->count();
+                                    @endphp
+                                    @if($companiesCount > 0)
+                                        <span class="text-sm text-gray-900 dark:text-gray-100">{{ $companiesCount }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                                            {{ Str::plural('company', $companiesCount) }}
+                                        </span>
+                                    @else
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">None</span>
+                                    @endif
+                                </x-ui.table.cell>
+                                
+                                <x-ui.table.cell>
+                                    <div class="text-sm text-gray-900 dark:text-gray-100">
+                                        {{ $user->created_at->format('M d, Y') }}
                                     </div>
-                                </x-admin.table.td>
-                            </x-admin.table.tr>
-                        @endforeach
-                    </x-admin.table>
-
-                        <!-- Empty State -->
-                        <div id="noUsersFound" class="hidden py-8 text-center">
-                            <x-icons name="user" class="mx-auto h-12 w-12 text-gray-400" />
-                            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No users found') }}</h3>
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('Try adjusting your search or filter to find what you\'re looking for.') }}</p>
-                        </div>
-
-                        @if($users instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                            <div class="mt-4">
-                                {{ $users->links() }}
-                            </div>
-                        @endif
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ $user->created_at->diffForHumans() }}
+                                    </div>
+                                </x-ui.table.cell>
+                                
+                                <x-ui.table.action-cell>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{{ route('admin.users.show', $user) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="View details">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </a>
+                                        <a href="{{ route('admin.users.edit', $user) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="Edit">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </a>
+                                        <x-ui.dropdown.base align="right">
+                                            <x-slot name="trigger">
+                                                <button class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                                    </svg>
+                                                </button>
+                                            </x-slot>
+                                            
+                                            <x-slot name="content">
+                                                <x-ui.dropdown.item href="{{ route('admin.users.subscription.manage', $user) }}">
+                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                    </svg>
+                                                    Manage Subscription
+                                                </x-ui.dropdown.item>
+                                                
+                                                <x-ui.dropdown.divider />
+                                                
+                                                <form action="{{ route('admin.users.destroy', $user) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <x-ui.dropdown.item tag="button" type="submit">
+                                                        <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        <span class="text-red-600">Delete User</span>
+                                                    </x-ui.dropdown.item>
+                                                </form>
+                                            </x-slot>
+                                        </x-ui.dropdown.base>
+                                    </div>
+                                </x-ui.table.action-cell>
+                            </tr>
+                        @empty
+                            <x-ui.table.empty-state 
+                                colspan="6"
+                                message="No users found. Try adjusting your search or filter to find what you're looking for."
+                            />
+                        @endforelse
+                    </x-slot>
+                </x-ui.table.base>
+                
+                <!-- Pagination -->
+                @if($users instanceof \Illuminate\Pagination\LengthAwarePaginator && $users->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                        {{ $users->links() }}
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- User Actions Menu (hidden by default) -->
-    <div id="userActionsMenu" class="hidden fixed inset-0 z-30" x-data="{ open: false }" x-show="open" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <div class="fixed inset-0 bg-black/30 backdrop-blur-sm" @click="open = false"></div>
-        <div class="fixed bottom-0 inset-x-0 pb-2 sm:pb-5">
-            <div class="mx-auto max-w-md px-2 sm:px-4">
-                <div class="rounded-lg bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden">
-                    <div class="p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="ml-3 w-0 flex-1">
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ __('User Actions') }}</p>
-                            </div>
-                            <div class="ml-4 flex-shrink-0 flex">
-                                <button @click="open = false" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                    <span class="sr-only">{{ __('Close') }}</span>
-                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <a href="#" id="viewUserDetailsLink" class="rounded-md bg-white dark:bg-gray-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                {{ __('View Details') }}
-                            </a>
-                            <a href="#" id="manageSubscriptionLink" class="rounded-md bg-blue-50 dark:bg-blue-900 px-4 py-3 text-sm font-medium text-blue-700 dark:text-blue-200 shadow-sm hover:bg-blue-100 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                {{ __('Manage Subscription') }}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                @endif
+            </x-ui.card.body>
+        </x-ui.card.base>
     </div>
 
     @push('scripts')
     <script>
-        // Simplified user search that works with any structure
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Initializing user search...');
+            const searchInput = document.getElementById('userSearch');
+            const statusFilter = document.getElementById('statusFilter');
+            const verifiedFilter = document.getElementById('verifiedFilter');
+            const userTable = document.getElementById('usersTable');
+            const userRows = userTable ? userTable.querySelectorAll('tbody tr.user-row') : [];
+            const allRows = userTable ? userTable.querySelectorAll('tbody tr') : [];
+            let emptyStateRow = null;
             
-            // Store references to key elements
-            let searchInput = null;
-            let statusFilter = null;
-            let userTable = null;
-            let emptyStateMessage = null;
-            let userRows = [];
-            
-            // 1. Find search input and status filter
-            searchInput = document.querySelector('input[type="search"]') || 
-                         document.querySelector('input[placeholder*="Search"]') ||
-                         document.getElementById('userSearch');
-                         
-            statusFilter = document.getElementById('statusFilter');
-            
-            // 2. Find the users table
-            userTable = document.getElementById('usersTable') ||
-                       document.querySelector('table');
-            
-            // 3. Find all data rows
-            if (userTable) {
-                // Skip header row if it exists
-                const allRows = userTable.querySelectorAll('tr');
-                if (allRows.length > 0) {
-                    // Check if first row is a header
-                    const firstRow = allRows[0];
-                    if (firstRow.querySelector('th')) {
-                        // Skip header row
-                        userRows = Array.from(allRows).slice(1);
-                    } else {
-                        userRows = Array.from(allRows);
-                    }
+            // Find the empty state row (the one that's not a user-row)
+            allRows.forEach(row => {
+                if (!row.classList.contains('user-row')) {
+                    emptyStateRow = row;
                 }
-            }
+            });
             
-            // 4. Find empty state message
-            emptyStateMessage = document.querySelector('[id*="NoUsers"], [id*="noUsers"], .empty-state') ||
-                               Array.from(document.querySelectorAll('div')).find(el => {
-                                 const text = el.textContent.trim();
-                                 return text === 'No users found' || text.includes('No users found');
-                               });
+            if (!searchInput && !statusFilter && !verifiedFilter) return;
             
-            // Log what we found for debugging
-            console.log('Search input found:', !!searchInput);
-            console.log('Status filter found:', !!statusFilter);
-            console.log('User table found:', !!userTable);
-            console.log('User rows found:', userRows.length);
-            console.log('Empty state found:', !!emptyStateMessage);
-            
-            // Hide empty state initially
-            if (emptyStateMessage) {
-                emptyStateMessage.style.display = 'none';
-            }
-            
-            // Set up search functionality if we have both input and rows
-            if ((searchInput || statusFilter) && userRows.length > 0) {
-                // Add event listeners
-                if (searchInput) {
-                    ['input', 'search', 'keyup'].forEach(event => {
-                        searchInput.addEventListener(event, doSearch);
-                    });
-                }
+            function filterUsers() {
+                const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+                const statusValue = statusFilter ? statusFilter.value : 'all';
+                const verifiedValue = verifiedFilter ? verifiedFilter.value : 'all';
+                let visibleCount = 0;
                 
-                if (statusFilter) {
-                    statusFilter.addEventListener('change', doSearch);
-                }
-                
-                // Search function
-                function doSearch() {
-                    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-                    const statusValue = statusFilter ? statusFilter.value : 'all';
-                    let visibleCount = 0;
+                userRows.forEach(row => {
+                    const name = row.getAttribute('data-name') || '';
+                    const email = row.getAttribute('data-email') || '';
+                    const isAdmin = row.getAttribute('data-is-admin') === 'admin';
+                    const isAccountant = row.getAttribute('data-is-accountant') === 'accountant';
+                    const isVerified = row.getAttribute('data-is-verified') === 'verified';
+                    const isSubscribed = row.getAttribute('data-is-subscribed') === 'subscribed';
                     
-                    // Don't log every row, just the search term
-                    console.log('Searching for:', searchTerm || '(empty)', 'Filter:', statusValue);
+                    // Check search match
+                    const matchesSearch = !searchTerm || 
+                        name.includes(searchTerm) || 
+                        email.includes(searchTerm);
                     
-                    // Loop through rows and filter
-                    userRows.forEach(row => {
-                        const rowText = row.textContent.toLowerCase();
-                        
-                        // Check if matches search
-                        const matchesSearch = !searchInput || searchTerm === '' || rowText.includes(searchTerm);
-                        
-                        // Check if matches status filter
-                        let matchesFilter = true;
-                        if (statusFilter && statusValue !== 'all') {
-                            const isAdmin = row.querySelector('[class*="admin-badge"]') !== null;
-                            const hasSubscription = row.querySelector('[class*="subscription-badge"]') !== null;
-                            
-                            if (statusValue === 'admin') {
-                                matchesFilter = isAdmin;
-                            } else if (statusValue === 'subscribed') {
-                                matchesFilter = hasSubscription;
-                            } else if (statusValue === 'unsubscribed') {
-                                matchesFilter = !hasSubscription;
-                            }
-                        }
-                        
-                        // Show/hide row based on both conditions
-                        const visible = matchesSearch && matchesFilter;
-                        row.style.display = visible ? '' : 'none';
-                        
-                        // Count visible rows
-                        if (visible) visibleCount++;
-                    });
-                    
-                    // Show/hide empty state message
-                    if (emptyStateMessage) {
-                        emptyStateMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+                    // Check status filter
+                    let matchesStatus = statusValue === 'all';
+                    if (!matchesStatus) {
+                        if (statusValue === 'admin') matchesStatus = isAdmin;
+                        else if (statusValue === 'accountant') matchesStatus = isAccountant;
+                        else if (statusValue === 'subscribed') matchesStatus = isSubscribed;
+                        else if (statusValue === 'unsubscribed') matchesStatus = !isSubscribed;
                     }
                     
-                    console.log('Search complete. Visible users:', visibleCount);
-                }
+                    // Check verified filter
+                    let matchesVerified = verifiedValue === 'all';
+                    if (!matchesVerified) {
+                        if (verifiedValue === 'verified') matchesVerified = isVerified;
+                        else if (verifiedValue === 'unverified') matchesVerified = !isVerified;
+                    }
+                    
+                    // Show/hide row
+                    const visible = matchesSearch && matchesStatus && matchesVerified;
+                    row.style.display = visible ? '' : 'none';
+                    if (visible) visibleCount++;
+                });
                 
-                // Initial search (in case there's text already in input)
-                doSearch();
+                // Show empty state if no results
+                if (emptyStateRow) {
+                    emptyStateRow.style.display = visibleCount === 0 ? '' : 'none';
+                }
             }
+            
+            // Add event listeners
+            if (searchInput) searchInput.addEventListener('input', filterUsers);
+            if (statusFilter) statusFilter.addEventListener('change', filterUsers);
+            if (verifiedFilter) verifiedFilter.addEventListener('change', filterUsers);
+            
+            // Initial filter
+            filterUsers();
         });
-    </script>
-    <script>
-        // User actions menu functionality
-        function openUserActionsMenu(userId) {
-            const menu = document.getElementById('userActionsMenu');
-            const viewDetailsLink = document.getElementById('viewUserDetailsLink');
-            const manageSubscriptionLink = document.getElementById('manageSubscriptionLink');
-            
-            if (menu && viewDetailsLink && manageSubscriptionLink) {
-                viewDetailsLink.href = `/admin/users/${userId}`;
-                manageSubscriptionLink.href = `/admin/users/${userId}/subscription`;
-                menu.__x.$data.open = true;
-            }
-        }
-    </script>
     </script>
 @endpush
 
-</x-admin-layout> 
+</x-admin.layout> 

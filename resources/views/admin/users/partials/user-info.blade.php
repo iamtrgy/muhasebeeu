@@ -1,5 +1,9 @@
 <!-- User Info Card -->
-<x-cards.info-card title="{{ __('User Information') }}">
+<x-ui.card.base class="mb-6">
+    <x-ui.card.header>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ __('User Information') }}</h3>
+    </x-ui.card.header>
+    <x-ui.card.body>
     <!-- User Role Actions -->
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
         <form method="POST" action="{{ route('admin.users.update', $user) }}" class="space-y-4">
@@ -11,29 +15,35 @@
                 <div class="flex items-center">
                     <input type="checkbox" name="is_accountant" id="is_accountant" 
                         {{ $user->is_accountant ? 'checked' : '' }}
-                        class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600"
                     >
                     <label for="is_accountant" class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ __('Accountant Role') }}</label>
                 </div>
-                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <x-ui.button.primary type="submit" size="sm">
                     {{ __('Save Role') }}
-                </button>
+                </x-ui.button.primary>
             </div>
         </form>
 
         @if($user->is_accountant)
             <!-- Assign Users Button -->
             <div class="mt-4">
-                <a href="{{ route('admin.users.assign', $user) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
+                <x-ui.button.primary 
+                    href="{{ route('admin.users.assign', $user) }}" 
+                    class="w-full justify-center bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+                >
                     {{ __('Assign Users to Accountant') }}
-                </a>
+                </x-ui.button.primary>
             </div>
             
             <!-- Assign Companies Button -->
             <div class="mt-3">
-                <a href="{{ route('admin.users.assign-companies', $user) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 w-full justify-center">
+                <x-ui.button.primary 
+                    href="{{ route('admin.users.assign-companies', $user) }}" 
+                    class="w-full justify-center"
+                >
                     {{ __('Assign Companies to Accountant') }}
-                </a>
+                </x-ui.button.primary>
             </div>
         @endif
     </div>
@@ -75,4 +85,5 @@
         </div>
         @endif
     </dl>
-</x-cards.info-card>
+    </x-ui.card.body>
+</x-ui.card.base>

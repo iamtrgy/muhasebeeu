@@ -1,27 +1,23 @@
-<x-admin-layout>
-    <x-slot name="header">
-        <x-admin.page-title title="{{ __('User Details') }}"></x-admin.page-title>
-        </x-slot>
+<x-admin.layout 
+    title="{{ $user->name }}"
+    :breadcrumbs="[
+        ['title' => __('Dashboard'), 'href' => route('admin.dashboard'), 'first' => true],
+        ['title' => __('Users'), 'href' => route('admin.users.index')],
+        ['title' => $user->name]
+    ]"
+>
+    <div class="space-y-6">
+        @include('admin.users.partials.profile-header', ['user' => $user])
 
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto">
-            @include('admin.users.partials.profile-header', ['user' => $user])
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                <!-- Left column for user info -->
-                <div class="lg:col-span-1">
-                    @include('admin.users.partials.user-info', ['user' => $user])
-                </div>
-                
-                <!-- Right column for tabs -->
-                <div class="lg:col-span-2">
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6">
-                                <!-- Tab Navigation -->
-                            @include('admin.users.partials.tabs', ['user' => $user])
-                        </div>
-                    </div>
-                </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left column for user info -->
+            <div class="lg:col-span-1">
+                @include('admin.users.partials.user-info', ['user' => $user])
+            </div>
+            
+            <!-- Right column for tabs -->
+            <div class="lg:col-span-2">
+                @include('admin.users.partials.tabs', ['user' => $user])
             </div>
         </div>
     </div>
@@ -66,4 +62,4 @@
         });
     </script>
     @endpush
-</x-admin-layout>
+</x-admin.layout>

@@ -1,4 +1,4 @@
-<x-admin-layout>
+<x-admin.layout title="Edit User">
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
@@ -8,65 +8,85 @@
                         @method('PUT')
 
                         <!-- Name -->
-                        <div class="mb-4">
-                            <x-input-label for="name" :value="__('Name')" />
-                            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name', $user->name)" required autofocus />
-                            <x-input-error :messages="$errors->get('name')" class="mt-2" />
-                        </div>
+                        <x-ui.form.group>
+                            <x-ui.form.input 
+                                id="name" 
+                                name="name" 
+                                type="text" 
+                                label="Name" 
+                                :value="old('name', $user->name)" 
+                                :error="$errors->get('name')" 
+                                required 
+                                autofocus 
+                            />
+                        </x-ui.form.group>
 
                         <!-- Email Address -->
-                        <div class="mb-4">
-                            <x-input-label for="email" :value="__('Email')" />
-                            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $user->email)" required />
-                            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                        </div>
+                        <x-ui.form.group>
+                            <x-ui.form.input 
+                                id="email" 
+                                name="email" 
+                                type="email" 
+                                label="Email" 
+                                :value="old('email', $user->email)" 
+                                :error="$errors->get('email')" 
+                                required 
+                            />
+                        </x-ui.form.group>
 
                         <!-- User Roles -->
-                        <div class="mb-4">
-                            <x-input-label :value="__('User Roles')" />
-                            <div class="mt-2 space-y-3">
-                                <div class="flex items-center">
-                                    <input id="is_admin" name="is_admin" type="checkbox" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" {{ $user->is_admin ? 'checked' : '' }}>
-                                    <label for="is_admin" class="ml-2 block text-sm text-gray-900 dark:text-gray-100">
-                                        {{ __('Administrator') }}
-                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('(Full system access)') }}</span>
-                                    </label>
-                                </div>
+                        <x-ui.form.group>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">User Roles</label>
+                            <div class="space-y-3">
+                                <x-ui.form.checkbox 
+                                    id="is_admin" 
+                                    name="is_admin" 
+                                    :checked="$user->is_admin" 
+                                    label="Administrator" 
+                                    description="Full system access" 
+                                />
                                 
-                                <div class="flex items-center">
-                                    <input id="is_accountant" name="is_accountant" type="checkbox" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" {{ $user->is_accountant ? 'checked' : '' }}>
-                                    <label for="is_accountant" class="ml-2 block text-sm text-gray-900 dark:text-gray-100">
-                                        {{ __('Accountant') }}
-                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('(Can access assigned users and companies)') }}</span>
-                                    </label>
-                                </div>
+                                <x-ui.form.checkbox 
+                                    id="is_accountant" 
+                                    name="is_accountant" 
+                                    :checked="$user->is_accountant" 
+                                    label="Accountant" 
+                                    description="Can access assigned users and companies" 
+                                />
                             </div>
-                        </div>
+                        </x-ui.form.group>
 
                         <!-- Password -->
-                        <div class="mb-4">
-                            <x-input-label for="password" :value="__('Password')" />
-                            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" />
-                            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                {{ __('Leave blank to keep the current password') }}
-                            </p>
-                        </div>
+                        <x-ui.form.group>
+                            <x-ui.form.input 
+                                id="password" 
+                                name="password" 
+                                type="password" 
+                                label="Password" 
+                                :error="$errors->get('password')" 
+                                help="Leave blank to keep the current password" 
+                            />
+                        </x-ui.form.group>
 
                         <!-- Confirm Password -->
-                        <div class="mb-4">
-                            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-                            <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" />
-                            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-                        </div>
+                        <x-ui.form.group>
+                            <x-ui.form.input 
+                                id="password_confirmation" 
+                                name="password_confirmation" 
+                                type="password" 
+                                label="Confirm Password" 
+                                :error="$errors->get('password_confirmation')" 
+                            />
+                        </x-ui.form.group>
 
-                        <div class="flex items-center justify-end mt-6">
-                            <a href="{{ route('admin.users.show', $user) }}" class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-800 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-500 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150 mr-3">
+                        <div class="flex items-center justify-end gap-3 mt-6">
+                            <x-ui.button.secondary :href="route('admin.users.show', $user)">
                                 {{ __('Cancel') }}
-                            </a>
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                            </x-ui.button.secondary>
+                            
+                            <x-ui.button.primary type="submit">
                                 {{ __('Update User') }}
-                            </button>
+                            </x-ui.button.primary>
                         </div>
                     </form>
                 </div>
@@ -93,4 +113,4 @@
         });
     </script>
     @endpush
-</x-admin-layout>
+</x-admin.layout>

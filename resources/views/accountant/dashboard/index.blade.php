@@ -1,6 +1,6 @@
 <x-accountant.layout 
     title="Dashboard"
-    :breadcrumbs="[['title' => __('Home'), 'first' => true]]"
+    :breadcrumbs="[['title' => __('Dashboard'), 'first' => true]]"
 >
 <div x-data="{ fileData: null }">
     <div class="space-y-6">
@@ -319,7 +319,7 @@
     </div>
     
     {{-- Single File Preview Modal --}}
-    <x-ui.modal.base name="file-preview" maxWidth="lg">
+    <x-ui.modal.base name="file-preview" maxWidth="4xl">
         <div class="text-center" x-data="{ currentFile: null }" 
              x-on:file-preview-data.window="currentFile = $event.detail">
             <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100" x-text="currentFile?.name || 'File Preview'"></h3>

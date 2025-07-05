@@ -1,77 +1,85 @@
-<x-admin-layout>
-    <x-slot name="header">
-        <x-admin.page-title title="{{ __('Companies') }}">
-        </x-admin.page-title>
-    </x-slot>
+<x-admin.layout 
+    title="{{ __('Companies') }}"
+    :breadcrumbs="[
+        ['title' => __('Dashboard'), 'href' => route('admin.dashboard'), 'first' => true],
+        ['title' => __('Companies')]
+    ]"
+>
+    <div class="space-y-6">
 
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto">
+        <!-- Success/Error Messages -->
+        @if(session('success'))
+            <x-ui.alert variant="success">
+                {{ session('success') }}
+            </x-ui.alert>
+        @endif
 
-            <!-- Success/Error Messages -->
-            @if(session('success'))
-                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
-                    <p>{{ session('success') }}</p>
-                </div>
-            @endif
-
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <!-- Search Controls -->
-                    <div class="mb-6 flex flex-col sm:flex-row gap-4 items-center">
-                        <div class="relative flex-1">
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <x-icons name="search" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                            </div>
-                            <input type="search" id="companySearch" placeholder="Search companies.." class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                        </div>
-                        <div class="flex gap-3">
-                            <a href="{{ route('admin.companies.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                <x-icons name="add" class="w-4 h-4 mr-2" />
-                                ADD NEW COMPANY
-                            </a>
-                            <a href="{{ route('admin.companies.duplicates') }}" class="inline-flex items-center px-4 py-2 bg-yellow-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700 focus:bg-yellow-700 active:bg-yellow-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                <x-icons name="company" class="w-4 h-4 mr-2" />
-                                VIEW DUPLICATES
-                            </a>
-                        </div>
+        <x-ui.card.base>
+            <x-ui.card.body>
+                <!-- Search Controls -->
+                <div class="mb-6 flex flex-col lg:flex-row gap-4 lg:items-center">
+                    <div class="flex-1">
+                        <x-ui.form.input
+                            type="search"
+                            id="companySearch"
+                            name="companySearch"
+                            placeholder="{{ __('Search companies...') }}"
+                            class="w-full"
+                        >
+                            <x-slot name="leadingIcon">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </x-slot>
+                        </x-ui.form.input>
                     </div>
-                    <x-admin.table id="companiesTable">
-                        <x-slot name="header">
-                            <x-admin.table.tr>
-                                <x-admin.table.th>{{ __('Company') }}</x-admin.table.th>
-                                <x-admin.table.th>{{ __('Owner / Country') }}</x-admin.table.th>
-                                <x-admin.table.th>{{ __('Tax Info') }}</x-admin.table.th>
-                                <x-admin.table.th>{{ __('Created') }}</x-admin.table.th>
-                                <x-admin.table.th class="relative">
-                                    <span class="sr-only">{{ __('Actions') }}</span>
-                                </x-admin.table.th>
-                            </x-admin.table.tr>
-                        </x-slot>
+                    <div class="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
+                        <x-ui.button.primary href="{{ route('admin.companies.create') }}" class="w-full sm:w-auto">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            {{ __('Add Company') }}
+                        </x-ui.button.primary>
+                        <a href="{{ route('admin.companies.duplicates') }}" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 shadow-sm transition ease-in-out duration-150 w-full sm:w-auto">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            {{ __('View Duplicates') }}
+                        </a>
+                    </div>
+                </div>
+                <x-ui.table.base id="companiesTable">
+                    <x-slot name="head">
+                        <x-ui.table.head-cell>{{ __('Company') }}</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>{{ __('Owner / Country') }}</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>{{ __('Tax Info') }}</x-ui.table.head-cell>
+                        <x-ui.table.head-cell>{{ __('Created') }}</x-ui.table.head-cell>
+                        <x-ui.table.head-cell class="text-right">{{ __('Actions') }}</x-ui.table.head-cell>
+                    </x-slot>
+                    <x-slot name="body">
 
                         @foreach($companies as $company)
-                            <x-admin.table.tr>
-                                <x-admin.table.td>
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <x-ui.table.cell>
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
-                                            <span class="text-lg font-medium text-blue-700 dark:text-blue-300">{{ substr($company->name, 0, 1) }}</span>
-                                        </div>
+                                        <x-ui.avatar name="{{ $company->name }}" size="sm" />
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900 dark:text-gray-100 company-name">
                                                 {{ $company->name }}
                                             </div>
                                         </div>
                                     </div>
-                                </x-admin.table.td>
-                                <x-admin.table.td>
+                                </x-ui.table.cell>
+                                <x-ui.table.cell>
                                     <div class="text-sm text-gray-900 dark:text-gray-100 owner-name">{{ $company->user->name }}</div>
                                     <div class="text-sm text-gray-500 dark:text-gray-400 country-name">
                                         {{ $company->country->name }}
                                     </div>
-                                </x-admin.table.td>
-                                <x-admin.table.td>
+                                </x-ui.table.cell>
+                                <x-ui.table.cell>
                                     <div>
                                         @if($company->tax_number)
-                                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ __('Registry Number:') }} {{ $company->tax_number }}</div>
+                                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ __('Registry:') }} {{ $company->tax_number }}</div>
                                         @endif
                                         @if($company->vat_number)
                                             <div class="text-sm text-gray-500 dark:text-gray-400">{{ __('VAT:') }} {{ $company->vat_number }}</div>
@@ -80,36 +88,42 @@
                                             <span class="text-sm text-gray-500 dark:text-gray-400">{{ __('No tax info') }}</span>
                                         @endif
                                     </div>
-                                </x-admin.table.td>
-                                <x-admin.table.td>
+                                </x-ui.table.cell>
+                                <x-ui.table.cell>
                                     {{ $company->created_at->format('M d, Y') }}
                                     <div class="text-xs text-gray-500 dark:text-gray-400">{{ $company->created_at->diffForHumans() }}</div>
-                                </x-admin.table.td>
-                                <x-admin.table.td class="text-right">
-                                    <div class="flex justify-end items-center space-x-3">
-                                        <a href="{{ route('admin.companies.show', $company) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                                            <x-icons name="view" class="h-5 w-5" />
+                                </x-ui.table.cell>
+                                <x-ui.table.action-cell>
+                                    <div class="flex items-center justify-end">
+                                        <a href="{{ route('admin.companies.show', $company) }}" 
+                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                           title="{{ __('View details') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
                                         </a>
                                     </div>
-                                </x-admin.table.td>
-                            </x-admin.table.tr>
+                                </x-ui.table.action-cell>
+                            </tr>
                         @endforeach
-                    </x-admin.table>
+                    </x-slot>
+                </x-ui.table.base>
 
-                    <!-- Empty State -->
-                    <div id="noCompaniesFound" class="hidden py-8 text-center">
-                        <x-icons name="company" class="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No companies found') }}</h3>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('Try adjusting your search to find what you\'re looking for.') }}</p>
-                    </div>
-
-                    <div class="mt-4">
-                        {{ $companies->links() }}
-                    </div>
+                <!-- Empty State -->
+                <div id="noCompaniesFound" class="hidden text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No companies found') }}</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('Try adjusting your search to find what you\'re looking for.') }}</p>
                 </div>
-            </div>
-        </div>
-        </div>
+
+                <div class="mt-4">
+                    {{ $companies->links() }}
+                </div>
+            </x-ui.card.body>
+        </x-ui.card.base>
     </div>
 
     @push('scripts')
@@ -207,4 +221,4 @@
         });
     </script>
     @endpush
-</x-admin-layout>
+</x-admin.layout>

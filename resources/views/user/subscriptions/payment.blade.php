@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-user.layout>
     <x-unified-header />
     
     <div class="py-8">
@@ -284,4 +284,4 @@
         });
     </script>
     @endpush
-</x-app-layout>
+</x-user.layout>

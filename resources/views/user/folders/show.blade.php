@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-user.layout>
     <x-unified-header />
     <x-folder.file-preview-modal />
 
@@ -378,4 +378,4 @@
     });
     </script>
     @endpush
-</x-app-layout>
+</x-user.layout>

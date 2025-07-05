@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-user.layout>
     <x-unified-header />
     <x-folder.file-preview-modal />
 
@@ -482,4 +482,4 @@
             }
         });
     </script>
-</x-app-layout> 
+</x-user.layout> 
