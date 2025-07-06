@@ -32,7 +32,7 @@
         <!-- Filters Card -->
         <x-ui.card.base>
             <x-ui.card.body>
-                <form action="{{ route('admin.tax-calendar.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <form action="{{ route('admin.user.tax-calendar.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <x-ui.form.select name="status" id="status" label="{{ __('Status') }}" value="{{ request('status') }}">
                             <option value="">{{ __('All Status') }}</option>

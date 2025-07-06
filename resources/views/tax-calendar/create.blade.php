@@ -2,7 +2,7 @@
     title="{{ __('Create Tax Calendar Task') }}"
     :breadcrumbs="[
         ['title' => __('Dashboard'), 'href' => route('admin.dashboard'), 'first' => true],
-        ['title' => __('Tax Calendar'), 'href' => route('admin.tax-calendar.index')],
+        ['title' => __('Tax Calendar'), 'href' => route('admin.user.tax-calendar.index')],
         ['title' => __('Create')]
     ]"
 >
@@ -150,7 +150,7 @@
                 </x-ui.card.body>
 
                 <div class="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-right sm:px-6 border-t border-gray-200 dark:border-gray-700">
-                    <x-ui.button.secondary href="{{ route('admin.tax-calendar.index') }}">
+                    <x-ui.button.secondary href="{{ route('admin.user.tax-calendar.index') }}">
                         {{ __('Cancel') }}
                     </x-ui.button.secondary>
                     <x-ui.button.primary type="submit" class="ml-3">

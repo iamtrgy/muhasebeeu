@@ -1,51 +1,126 @@
-<x-app-layout>
-    <x-unified-header />
-    
-    <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header with statistics only -->
-            <div class="mb-6">
-                <!-- Deadline Summary Stats -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Due Today</p>
-                        <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ $deadlines->where('days_until', 0)->count() }}</p>
+<x-user.layout 
+    title="{{ __('Tax Calendar') }}" 
+    :breadcrumbs="[
+        ['title' => __('Home'), 'href' => route('user.dashboard'), 'first' => true],
+        ['title' => __('Tax Calendar')]
+    ]"
+>
+    <div class="space-y-6">
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-indigo-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 flex-1">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                {{ __('Due Today') }}
+                            </div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                                {{ $deadlines->where('days_until', 0)->count() }}
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Upcoming (7 days)</p>
-                        <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ $deadlines->where('days_until', '>', 0)->where('days_until', '<=', 7)->count() }}</p>
+                </x-ui.card.body>
+            </x-ui.card.base>
+
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-amber-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 flex-1">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                {{ __('Upcoming (7 days)') }}
+                            </div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                                {{ $deadlines->where('days_until', '>', 0)->where('days_until', '<=', 7)->count() }}
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Overdue</p>
-                        <p class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">{{ $deadlines->where('days_until', '<', 0)->where('status', '!=', 'completed')->count() }}</p>
+                </x-ui.card.body>
+            </x-ui.card.base>
+
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-red-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 flex-1">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                {{ __('Overdue') }}
+                            </div>
+                            <div class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
+                                {{ $deadlines->where('days_until', '<', 0)->where('status', '!=', 'completed')->count() }}
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
-                        <p class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">{{ $deadlines->where('status', 'completed')->count() }}</p>
+                </x-ui.card.body>
+            </x-ui.card.base>
+
+            <x-ui.card.base class="hover:shadow-lg transition-shadow">
+                <x-ui.card.body class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-emerald-500 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 flex-1">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                {{ __('Completed') }}
+                            </div>
+                            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                                {{ $deadlines->where('status', 'completed')->count() }}
+                            </div>
+                        </div>
+                    </div>
+                </x-ui.card.body>
+            </x-ui.card.base>
+        </div>
+        
+        <!-- Debug Info -->
+        @if($deadlines->where('days_until', '<', 0)->where('status', '!=', 'completed')->count() > 0)
+            <x-ui.alert variant="warning">
+                <strong>{{ __('Overdue Task Details:') }}</strong>
+                <ul class="mt-2 list-disc list-inside">
+                @foreach($deadlines->where('days_until', '<', 0)->where('status', '!=', 'completed') as $overdue)
+                    <li>
+                        <strong>{{ $overdue['name'] }}</strong> - 
+                        Days until: {{ $overdue['days_until'] }}, 
+                        Status: {{ $overdue['status'] }}
+                    </li>
+                @endforeach
+                </ul>
+            </x-ui.alert>
+        @endif
+
+        <!-- Tax Calendar Tasks -->
+        <x-ui.card.base>
+            <x-ui.card.header>
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-indigo-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ __('Tax Deadlines') }}</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Track your tax obligations and deadlines') }}</p>
                     </div>
                 </div>
-                
-                <!-- Debug Info -->
-                @if($deadlines->where('days_until', '<', 0)->where('status', '!=', 'completed')->count() > 0)
-                <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h3 class="font-medium text-yellow-800">Overdue Task Details:</h3>
-                    <ul class="mt-2 list-disc list-inside">
-                    @foreach($deadlines->where('days_until', '<', 0)->where('status', '!=', 'completed') as $overdue)
-                        <li>
-                            <strong>{{ $overdue['name'] }}</strong> - 
-                            Days until: {{ $overdue['days_until'] }}, 
-                            Status: {{ $overdue['status'] }}
-                        </li>
-                    @endforeach
-                    </ul>
-                </div>
-                @endif
-            </div>
+            </x-ui.card.header>
+            <x-ui.card.body>
 
-            <div class="overflow-hidden">
-                <div class="p-0">
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         @php
                             // Sort deadlines to show overdue items first
                             $sortedDeadlines = $deadlines->sortBy(function($deadline) {
@@ -246,17 +321,16 @@
                                     </div>
                                 </div>
                             </div>
-                        @endforeach
-                    </div>
-
-                    @if(isset($deadlines) && method_exists($deadlines, 'links'))
-                        <div class="mt-6">
-                            {{ $deadlines->links() }}
-                        </div>
-                    @endif
+                @endforeach
                 </div>
-            </div>
-        </div>
+                
+                @if(isset($deadlines) && method_exists($deadlines, 'links'))
+                    <div class="mt-6">
+                        {{ $deadlines->links() }}
+                    </div>
+                @endif
+            </x-ui.card.body>
+        </x-ui.card.base>
     </div>
 
     @push('scripts')
@@ -288,4 +362,4 @@
         }
     </script>
     @endpush
-</x-app-layout> 
+</x-user.layout> 

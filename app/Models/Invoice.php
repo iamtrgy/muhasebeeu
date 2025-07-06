@@ -26,6 +26,7 @@ class Invoice extends Model
         'currency',
         'language_code',
         'notes',
+        'payment_url',
         'status',
         'pdf_path',
         'folder_id',

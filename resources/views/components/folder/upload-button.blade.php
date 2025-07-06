@@ -7,13 +7,13 @@
             this.showModal = false;
         }
     }">
-        <!-- Simple Upload Button -->
-        <button @click="showModal = true" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        <!-- Upload Button with UI Standards -->
+        <x-ui.button.primary @click="showModal = true" size="sm" class="w-full">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
             </svg>
-            <span>Upload Files</span>
-        </button>
+            {{ __('Upload Files') }}
+        </x-ui.button.primary>
 
         <!-- Simplified Upload Modal -->
         <div x-show="showModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>

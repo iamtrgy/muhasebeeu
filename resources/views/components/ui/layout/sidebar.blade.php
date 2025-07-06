@@ -64,7 +64,7 @@
 
             <!-- Sidebar Content -->
             <div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-800">
-                <nav class="px-3 py-6 space-y-2">
+                <nav class="px-3 py-4 space-y-1">
                     {{ $slot }}
                 </nav>
             </div>

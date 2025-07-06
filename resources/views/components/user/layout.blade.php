@@ -21,7 +21,7 @@
         <!-- Sidebar -->
         <x-ui.layout.sidebar>
             <!-- Main Navigation -->
-            <x-ui.layout.sidebar-group label="Main" :open="true">
+            <x-ui.layout.sidebar-group label="Dashboard" :open="true">
                 <x-ui.layout.sidebar-item 
                     :href="route('user.dashboard')" 
                     :active="request()->routeIs('user.dashboard')"
@@ -47,6 +47,14 @@
                 </x-ui.layout.sidebar-item>
 
                 <x-ui.layout.sidebar-item 
+                    :href="route('user.clients.index')" 
+                    :active="request()->routeIs('user.clients.*')"
+                    icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>'
+                >
+                    {{ __('Clients') }}
+                </x-ui.layout.sidebar-item>
+
+                <x-ui.layout.sidebar-item 
                     :href="route('user.tax-calendar.index')" 
                     :active="request()->routeIs('user.tax-calendar.*')"
                     icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>'
@@ -55,41 +63,22 @@
                 </x-ui.layout.sidebar-item>
             </x-ui.layout.sidebar-group>
 
-            <!-- Additional -->
-            <x-ui.layout.sidebar-group label="Additional">
+            <!-- Company -->
+            <x-ui.layout.sidebar-group label="Company">
+                @php
+                    $companies = auth()->user()->companies;
+                    $companyCount = $companies->count();
+                @endphp
                 <x-ui.layout.sidebar-item 
-                    :href="route('user.clients.index')" 
-                    :active="request()->routeIs('user.clients.*')"
-                    icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>'
-                >
-                    {{ __('Clients') }}
-                </x-ui.layout.sidebar-item>
-            </x-ui.layout.sidebar-group>
-
-            <!-- Company & Settings -->
-            <x-ui.layout.sidebar-group label="Account">
-                <x-ui.layout.sidebar-item 
-                    :href="route('user.companies.index')" 
+                    :href="$companyCount === 1 ? route('user.companies.show', $companies->first()->id) : route('user.companies.index')" 
                     :active="request()->routeIs('user.companies.*')"
                     icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>'
                 >
-                    @php
-                        $companies = auth()->user()->companies;
-                        $companyCount = $companies->count();
-                    @endphp
                     @if($companyCount === 1)
                         {{ $companies->first()->name }}
                     @else
                         {{ $companyCount > 0 ? $companyCount . ' Companies' : 'Companies' }}
                     @endif
-                </x-ui.layout.sidebar-item>
-
-                <x-ui.layout.sidebar-item 
-                    :href="route('user.profile.edit')" 
-                    :active="request()->routeIs('user.profile.*')"
-                    icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>'
-                >
-                    {{ __('Settings') }}
                 </x-ui.layout.sidebar-item>
             </x-ui.layout.sidebar-group>
         </x-ui.layout.sidebar>

@@ -20,6 +20,10 @@ class Company extends Model
         'address',
         'phone',
         'email',
+        'bank_name',
+        'bank_account',
+        'bank_iban',
+        'bank_swift',
         'is_own_company',
         'foundation_date'
     ];
@@ -59,6 +63,14 @@ class Company extends Model
     public function folders(): HasMany
     {
         return $this->hasMany(Folder::class);
+    }
+
+    /**
+     * Get the invoices associated with the company.
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     /**

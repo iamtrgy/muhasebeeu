@@ -5,36 +5,42 @@
     $progress = $totalItems > 0 ? ($completedItems / $totalItems) * 100 : 0;
 @endphp
 
-<x-app-layout>
-    <x-unified-header />
-    
-    <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
-                <div class="p-6">
-                    <!-- Header -->
-                    <div class="flex justify-between items-start mb-6">
+<x-user.layout 
+    title="{{ $task->taxCalendar->name }}" 
+    :breadcrumbs="[
+        ['title' => __('Home'), 'href' => route('user.dashboard'), 'first' => true],
+        ['title' => __('Tax Calendar'), 'href' => route('user.user.tax-calendar.index')],
+        ['title' => $task->taxCalendar->name]
+    ]"
+>
+    <div class="space-y-6">
+        <!-- Task Header -->
+        <x-ui.card.base>
+            <x-ui.card.header>
+                <div class="flex justify-between items-start">
+                    <div class="flex items-start">
+                        <svg class="h-6 w-6 text-indigo-500 mr-3 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                         <div>
-                            <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $task->taxCalendar->name }}</h2>
-                            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ $task->taxCalendar->description }}</p>
+                            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ $task->taxCalendar->name }}</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $task->taxCalendar->description }}</p>
                             @if($task->taxCalendar->emta_link)
                                 <a href="{{ $task->taxCalendar->emta_link }}" target="_blank" rel="noopener noreferrer" 
-                                   class="inline-flex items-center mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                                    EMTA Guide
-                                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                   class="inline-flex items-center mt-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                     </svg>
+                                    {{ __('EMTA Guide') }}
                                 </a>
                             @endif
                         </div>
-                        <div class="flex items-start space-x-4">
-                            <div class="text-right">
-                                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Due Date</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $task->due_date->format('M d, Y') }}</div>
-                            </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('Due Date') }}</div>
+                            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $task->due_date->format('M d, Y') }}</div>
+                        </div>
                             
                             @php
                                 $statusClass = match($task->status) {
@@ -62,100 +68,121 @@
                                 };
                             @endphp
 
-                            <div class="flex items-center space-x-3">
-                                <div class="flex items-center px-3 py-1.5 border rounded-lg {{ $statusClass }}">
-                                    {!! $statusIcon !!}
-                                    <span class="font-medium">{{ $statusText }}</span>
-                                </div>
+                        <div class="flex items-center space-x-3">
+                            @php
+                                $badgeVariant = match($task->status) {
+                                    'completed' => 'success',
+                                    'under_review' => 'primary',
+                                    'changes_requested' => 'warning',
+                                    'overdue' => 'danger',
+                                    default => 'secondary'
+                                };
+                            @endphp
+                            <x-ui.badge :variant="$badgeVariant">
+                                {!! $statusIcon !!}
+                                {{ $statusText }}
+                            </x-ui.badge>
 
-                                @if($task->status === 'changes_requested')
-                                    <div class="flex-1">
-                                        <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mt-4">
-                                            <div class="flex">
-                                                <div class="flex-shrink-0">
-                                                    <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                    </svg>
-                                                </div>
-                                                <div class="ml-3">
-                                                    <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Changes Requested</h3>
-                                                    <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                                        <p>{{ $task->review_feedback }}</p>
-                                                    </div>
-                                                    @if($task->review_feedback_date)
-                                                        <div class="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
-                                                            Requested on {{ $task->review_feedback_date->format('M d, Y H:i') }}
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endif
 
-                                @if($task->status === 'pending' || $task->status === 'changes_requested')
-                                    <form action="{{ route('user.tax-calendar.submit-for-review', $task->id) }}" method="POST" class="flex-shrink-0" id="complete-task-form">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" 
-                                            id="complete-task-button"
-                                            class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            {{ $completedItems === $totalItems ? '' : 'disabled' }}>
-                                            <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
-                                            {{ $task->status === 'changes_requested' ? 'Send Updated for Review' : 'Send for Review' }}
-                                        </button>
-                                    </form>
-                                @elseif($task->status === 'under_review')
-                                    <div class="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-300">
-                                        <svg class="w-5 h-5 mr-1.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            @if($task->status === 'pending' || $task->status === 'changes_requested')
+                                <form action="{{ route('user.tax-calendar.submit-for-review', $task->id) }}" method="POST" id="complete-task-form">
+                                    @csrf
+                                    @method('PATCH')
+                                    <x-ui.button.primary type="submit" id="complete-task-button" size="sm" :disabled="$completedItems !== $totalItems">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
-                                        Waiting for Review
-                                    </div>
-                                @endif
-                            </div>
+                                        {{ $task->status === 'changes_requested' ? __('Send Updated for Review') : __('Send for Review') }}
+                                    </x-ui.button.primary>
+                                </form>
+                            @elseif($task->status === 'under_review')
+                                <x-ui.badge variant="primary">
+                                    <svg class="w-4 h-4 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                    </svg>
+                                    {{ __('Waiting for Review') }}
+                                </x-ui.badge>
+                            @endif
                         </div>
                     </div>
+                </div>
+            </x-ui.card.header>
+        </x-ui.card.base>
 
-                    <!-- Progress Bar -->
-                    <div class="mb-6">
-                        <div class="flex items-center">
-                            <div class="flex-1">
-                                <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                                    <div class="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-in-out" style="width: {{ $progress }}%"></div>
-                                </div>
-                            </div>
-                            <div class="ml-4 min-w-[120px] text-sm font-medium text-gray-700 dark:text-gray-300">
-                                <span class="completed-count">{{ $completedItems }}</span> of <span class="total-count">{{ $totalItems }}</span> completed
-                            </div>
-                        </div>
+        <!-- Changes Requested Alert -->
+        @if($task->status === 'changes_requested')
+            <x-ui.alert variant="warning">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
                     </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Instructions Section -->
-                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center mb-4">
-                                <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                </svg>
-                                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Instructions</h2>
-                            </div>
-                            <div class="prose prose-sm max-w-none dark:prose-invert bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                                {!! nl2br(e($task->taxCalendar->user_instructions)) !!}
-                            </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">{{ __('Changes Requested') }}</h3>
+                        <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                            <p>{{ $task->review_feedback }}</p>
                         </div>
-
-                        <!-- Checklist Section -->
-                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center mb-4">
-                                <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12l2 2 4-4" />
-                                </svg>
-                                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Checklist</h2>
+                        @if($task->review_feedback_date)
+                            <div class="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
+                                {{ __('Requested on') }} {{ $task->review_feedback_date->format('M d, Y H:i') }}
                             </div>
-                            @if($task->user_checklist)
+                        @endif
+                    </div>
+                </div>
+            </x-ui.alert>
+        @endif
+
+        <!-- Progress Card -->
+        <x-ui.card.base>
+            <x-ui.card.header>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ __('Progress') }}</h3>
+                    </div>
+                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <span class="completed-count">{{ $completedItems }}</span> of <span class="total-count">{{ $totalItems }}</span> completed
+                    </div>
+                </div>
+            </x-ui.card.header>
+            <x-ui.card.body>
+                <x-ui.progress :value="$progress" size="lg" />
+            </x-ui.card.body>
+        </x-ui.card.base>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Instructions Section -->
+            <x-ui.card.base>
+                <x-ui.card.header>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ __('Instructions') }}</h2>
+                    </div>
+                </x-ui.card.header>
+                <x-ui.card.body>
+                    <div class="prose prose-sm max-w-none dark:prose-invert bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                        {!! nl2br(e($task->taxCalendar->user_instructions)) !!}
+                    </div>
+                </x-ui.card.body>
+            </x-ui.card.base>
+
+            <!-- Checklist Section -->
+            <x-ui.card.base>
+                <x-ui.card.header>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-emerald-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12l2 2 4-4" />
+                        </svg>
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ __('Checklist') }}</h2>
+                    </div>
+                </x-ui.card.header>
+                <x-ui.card.body>
+                    @if($task->user_checklist)
                                 <div id="checklist-container" data-task-id="{{ $task->id }}" class="space-y-2">
                                     @foreach($task->user_checklist as $index => $item)
                                     <div class="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700/50 p-3 rounded-lg transition-all duration-200"
@@ -185,27 +212,31 @@
                                     </div>
                                     @endforeach
                                 </div>
-                            @else
-                                <div class="text-center py-8">
-                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                    </svg>
-                                    <p class="mt-4 text-gray-500 dark:text-gray-400">No checklist items available.</p>
-                                </div>
-                            @endif
+                    @else
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <p class="mt-4 text-gray-500 dark:text-gray-400">{{ __('No checklist items available.') }}</p>
                         </div>
+                    @endif
+                </x-ui.card.body>
+            </x-ui.card.base>
 
-                        <!-- Notes Section -->
-                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center mb-4">
-                                <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                </svg>
-                                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Chat with {{ auth()->user()->is_accountant ? 'Client' : 'Accountant' }}</h2>
-                            </div>
+            <!-- Chat Section -->
+            <x-ui.card.base class="lg:col-span-2">
+                <x-ui.card.header>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ __('Chat with') }} {{ auth()->user()->is_accountant ? __('Client') : __('Accountant') }}</h2>
+                    </div>
+                </x-ui.card.header>
+                <x-ui.card.body>
 
-                            <!-- Chat Messages Container -->
-                            <div id="chat-messages" class="space-y-4 mb-4 h-64 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <!-- Chat Messages Container -->
+                    <div id="chat-messages" class="space-y-4 mb-4 h-64 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                                 @foreach($task->messages ?? [] as $message)
                                     <div class="flex {{ $message->user_id === auth()->id() ? 'justify-end' : 'justify-start' }}">
                                         <div class="max-w-[70%] {{ $message->user_id === auth()->id() ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' }} rounded-lg px-4 py-2 shadow-sm">
@@ -216,44 +247,33 @@
                                         </div>
                                     </div>
                                 @endforeach
-                            </div>
-
-                            <!-- Message Input Form -->
-                            <form id="chat-form" class="mt-4">
-                                @csrf
-                                <div class="flex space-x-2">
-                                    <div class="flex-1">
-                                        <textarea 
-                                            id="message-input"
-                                            rows="1"
-                                            class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-lg resize-none"
-                                            placeholder="Type your message..."
-                                        ></textarea>
-                                    </div>
-                                    <button 
-                                        type="submit"
-                                        class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
                     </div>
 
-                    <!-- Task Actions -->
-                    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <div class="flex justify-between items-center">
-                            <div class="flex space-x-4">
-                                <!-- Empty div to maintain spacing, old buttons removed -->
+                    <!-- Message Input Form -->
+                    <form id="chat-form" class="mt-4">
+                        @csrf
+                        <div class="flex space-x-2">
+                            <div class="flex-1">
+                                <x-ui.form.textarea 
+                                    name="message"
+                                    id="message-input"
+                                    rows="1"
+                                    placeholder="{{ __('Type your message...') }}"
+                                    class="resize-none"
+                                />
                             </div>
+                            <x-ui.button.primary type="submit">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                            </x-ui.button.primary>
                         </div>
-                    </div>
-                </div>
-            </div>
+                    </form>
+                </x-ui.card.body>
+            </x-ui.card.base>
         </div>
     </div>
+
 
     @push('scripts')
     <script>
@@ -455,4 +475,4 @@
     });
     </script>
 @endpush
-</x-app-layout> 
+</x-user.layout> 

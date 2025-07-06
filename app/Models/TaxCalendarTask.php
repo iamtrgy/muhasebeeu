@@ -17,87 +17,73 @@ class TaxCalendarTask extends Model
         'company_id',
         'user_id',
         'due_date',
-        'completed_at',
         'checklist',
-        'user_checklist',
         'notes',
-        'status',
-        'reminder_sent_at'
+        'user_notes',
+        'is_completed'
     ];
 
     protected $casts = [
         'due_date' => 'datetime',
-        'completed_at' => 'datetime',
-        'reminder_sent_at' => 'datetime',
-        'submitted_at' => 'datetime',
-        'reviewed_at' => 'datetime',
         'checklist' => 'array',
-        'user_checklist' => 'array'
+        'is_completed' => 'boolean'
     ];
 
     protected static function booted()
     {
         static::creating(function ($task) {
-            // Load the tax calendar relationship if it's not already loaded
-            if (!$task->relationLoaded('taxCalendar')) {
-                $task->load('taxCalendar');
-            }
-
-            // Set the accountant checklist
+            // Set default checklist if empty
             if (empty($task->checklist) && $task->taxCalendar && $task->taxCalendar->default_checklist) {
                 $task->checklist = $task->taxCalendar->default_checklist;
             }
-
-            // Set the user checklist with user-specific items
-            if (empty($task->user_checklist) && $task->taxCalendar) {
-                $task->user_checklist = $task->taxCalendar->getDefaultUserChecklist();
+            
+            // If no checklist at all, create a simple default
+            if (empty($task->checklist)) {
+                $task->checklist = [
+                    ['title' => 'Complete this task', 'completed' => false, 'notes' => null]
+                ];
             }
         });
     }
 
-    // Get the appropriate checklist based on user type
-    public function getActiveChecklist()
-    {
-        if (auth()->user()->is_admin || auth()->user()->is_accountant) {
-            return $this->checklist;
-        }
-        return $this->user_checklist;
-    }
-
-    // Update the appropriate checklist based on user type
-    public function updateActiveChecklist(array $checklist)
-    {
-        if (auth()->user()->is_admin || auth()->user()->is_accountant) {
-            $this->update(['checklist' => $checklist]);
-        } else {
-            $this->update(['user_checklist' => $checklist]);
-        }
-    }
-
-    // Calculate overall progress considering both checklists
+    // Simple progress calculation
     public function getProgressAttribute()
     {
-        $accountantProgress = $this->getChecklistProgress($this->checklist);
-        $userProgress = $this->getChecklistProgress($this->user_checklist);
+        if (!$this->checklist) return 0;
         
-        // If both checklists exist, return average progress
-        if ($this->checklist && $this->user_checklist) {
-            return ($accountantProgress + $userProgress) / 2;
-        }
-        
-        // If only one checklist exists, return its progress
-        return $this->checklist ? $accountantProgress : $userProgress;
-    }
-
-    private function getChecklistProgress($checklist)
-    {
-        if (!$checklist) return 0;
-        
-        $total = count($checklist);
+        $total = count($this->checklist);
         if ($total === 0) return 0;
         
-        $completed = collect($checklist)->filter(fn($item) => $item['completed'])->count();
+        $completed = collect($this->checklist)->filter(fn($item) => $item['completed'])->count();
         return ($completed / $total) * 100;
+    }
+
+    // Get completed checklist items count
+    public function getCompletedItemsAttribute()
+    {
+        if (!$this->checklist) return 0;
+        return collect($this->checklist)->filter(fn($item) => $item['completed'])->count();
+    }
+
+    // Get total checklist items count
+    public function getTotalItemsAttribute()
+    {
+        if (!$this->checklist) return 0;
+        return count($this->checklist);
+    }
+
+    // Update checklist
+    public function updateChecklist(array $checklist)
+    {
+        $this->update(['checklist' => $checklist]);
+        
+        // Auto-complete task if all items are completed
+        $allCompleted = collect($checklist)->every(fn($item) => $item['completed'] === true);
+        if ($allCompleted && !$this->is_completed) {
+            $this->update(['is_completed' => true]);
+        } elseif (!$allCompleted && $this->is_completed) {
+            $this->update(['is_completed' => false]);
+        }
     }
 
     // Relationships
@@ -121,26 +107,26 @@ class TaxCalendarTask extends Model
         return $this->hasMany(TaskMessage::class, 'tax_calendar_task_id')->orderBy('created_at', 'asc');
     }
 
-    // Scopes
+    // Simple scopes
     public function scopePending($query)
     {
-        return $query->where('status', 'pending');
+        return $query->where('is_completed', false);
     }
 
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'completed');
+        return $query->where('is_completed', true);
     }
 
     public function scopeOverdue($query)
     {
-        return $query->where('status', 'pending')
+        return $query->where('is_completed', false)
             ->where('due_date', '<', now());
     }
 
     public function scopeUpcoming($query, $days = 30)
     {
-        return $query->where('status', 'pending')
+        return $query->where('is_completed', false)
             ->whereBetween('due_date', [now(), now()->addDays($days)]);
     }
 
@@ -149,48 +135,10 @@ class TaxCalendarTask extends Model
         return $query->where('company_id', $companyId);
     }
 
-    public function scopeNeedsReminder($query)
-    {
-        return $query->where('status', 'pending')
-            ->whereNull('reminder_sent_at')
-            ->whereHas('taxCalendar', function ($q) {
-                $q->where('auto_create_tasks', true);
-            });
-    }
-
-    // Attributes
+    // Simple attributes
     public function getIsOverdueAttribute()
     {
-        return !$this->completed_at && $this->due_date->isPast();
-    }
-
-    public function getIsCompletedAttribute()
-    {
-        return $this->status === 'completed';
-    }
-
-    // Methods
-    public function complete()
-    {
-        $this->update([
-            'status' => 'completed',
-            'completed_at' => now()
-        ]);
-    }
-
-    public function reopen()
-    {
-        $this->update([
-            'status' => 'pending',
-            'completed_at' => null
-        ]);
-    }
-
-    public function markReminderSent()
-    {
-        $this->update([
-            'reminder_sent_at' => now()
-        ]);
+        return !$this->is_completed && $this->due_date->isPast();
     }
 
     public function getDaysUntilDueAttribute()
@@ -200,10 +148,21 @@ class TaxCalendarTask extends Model
 
     public function getUrgencyLevelAttribute()
     {
-        if ($this->status === 'completed') return 'completed';
+        if ($this->is_completed) return 'completed';
         if ($this->is_overdue) return 'overdue';
         if ($this->days_until_due <= 3) return 'urgent';
         if ($this->days_until_due <= 7) return 'warning';
         return 'normal';
+    }
+
+    // Simple methods
+    public function complete()
+    {
+        $this->update(['is_completed' => true]);
+    }
+
+    public function reopen()
+    {
+        $this->update(['is_completed' => false]);
     }
 } 

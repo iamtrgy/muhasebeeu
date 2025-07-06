@@ -92,6 +92,10 @@ class CompanyController extends Controller
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'foundation_date' => 'nullable|date',
+            'bank_name' => 'nullable|string|max:100',
+            'bank_account' => 'nullable|string|max:50',
+            'bank_iban' => 'nullable|string|max:50',
+            'bank_swift' => 'nullable|string|max:20',
         ]);
 
         $company->update([
@@ -102,9 +106,13 @@ class CompanyController extends Controller
             'phone' => $request->phone,
             'email' => $request->email,
             'foundation_date' => $request->foundation_date,
+            'bank_name' => $request->bank_name,
+            'bank_account' => $request->bank_account,
+            'bank_iban' => $request->bank_iban,
+            'bank_swift' => $request->bank_swift,
         ]);
 
-        return redirect()->route('company.show', $company->id)
+        return redirect()->route('user.companies.show', $company->id)
             ->with('success', 'Company information updated successfully.');
     }
 } 

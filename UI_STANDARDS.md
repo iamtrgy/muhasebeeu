@@ -675,6 +675,64 @@ public function updateField(Request $request, Model $record)
 </x-ui.button.primary>
 ```
 
+### 2. Upload Modal Pattern
+For file upload functionality with proper permission checks:
+
+```blade
+{{-- Upload button (with permission check) --}}
+@if($folder->canUpload(auth()->user()))
+    <x-ui.button.primary x-on:click="$dispatch('open-modal', 'upload-files')">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+        {{ __('Upload Files') }}
+    </x-ui.button.primary>
+@endif
+
+{{-- Upload modal definition --}}
+@if($folder->canUpload(auth()->user()))
+    <x-ui.modal.base name="upload-files" maxWidth="md">
+        <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">{{ __('Upload Files') }}</h3>
+        <form action="{{ route('user.files.upload', $folder) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+            @csrf
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {{ __('Select Files') }}
+                </label>
+                <input type="file" 
+                       name="files[]" 
+                       multiple 
+                       accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif"
+                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900 dark:file:text-indigo-300"
+                       required>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ __('Supported: PDF, Images, Word, Excel, Text files (Max 10MB each)') }}
+                </p>
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-4">
+                <x-ui.button.secondary x-on:click="$dispatch('close-modal', 'upload-files')">
+                    {{ __('Cancel') }}
+                </x-ui.button.secondary>
+                <x-ui.button.primary type="submit">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    {{ __('Upload') }}
+                </x-ui.button.primary>
+            </div>
+        </form>
+    </x-ui.modal.base>
+@endif
+```
+
+#### Upload Component Features:
+- **Permission-based**: Only shows if user has upload permission (`canUpload()` method)
+- **Clean UI**: Uses standard UI components and modal pattern
+- **File validation**: Client-side file type and server-side validation
+- **Consistent styling**: Matches the UI design system
+- **Accessibility**: Proper labels and form structure
+
 ## Color System
 
 ### 1. Primary Colors
