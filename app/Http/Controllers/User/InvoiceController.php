@@ -128,7 +128,8 @@ class InvoiceController extends Controller
 
         // Create new invoice
         $invoice = new Invoice();
-        $invoice->user_id = auth()->id();
+        // Set created_by instead of user_id
+        $invoice->created_by = auth()->id();
         $invoice->company_id = $request->company_id;
         $invoice->invoice_number = $request->invoice_number;
         $invoice->invoice_date = $request->invoice_date;
@@ -223,7 +224,9 @@ class InvoiceController extends Controller
     public function edit(Invoice $invoice)
     {
         // Ensure user can edit this invoice
-        if ($invoice->user_id !== auth()->id() && $invoice->created_by !== auth()->id()) {
+        // Check if user has access to this invoice through company relationship
+        $userCompanyIds = auth()->user()->companies->pluck('id');
+        if (!$userCompanyIds->contains($invoice->company_id) && $invoice->created_by !== auth()->id()) {
             abort(403);
         }
         
@@ -240,7 +243,9 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice)
     {
         // Ensure user can view this invoice
-        if ($invoice->user_id !== auth()->id() && $invoice->created_by !== auth()->id()) {
+        // Check if user has access to this invoice through company relationship
+        $userCompanyIds = auth()->user()->companies->pluck('id');
+        if (!$userCompanyIds->contains($invoice->company_id) && $invoice->created_by !== auth()->id()) {
             abort(403);
         }
         
@@ -253,7 +258,9 @@ class InvoiceController extends Controller
     public function update(Request $request, Invoice $invoice)
     {
         // Ensure user can update this invoice
-        if ($invoice->user_id !== auth()->id() && $invoice->created_by !== auth()->id()) {
+        // Check if user has access to this invoice through company relationship
+        $userCompanyIds = auth()->user()->companies->pluck('id');
+        if (!$userCompanyIds->contains($invoice->company_id) && $invoice->created_by !== auth()->id()) {
             abort(403);
         }
         
@@ -346,7 +353,9 @@ class InvoiceController extends Controller
     public function destroy(Invoice $invoice)
     {
         // Ensure user can delete this invoice
-        if ($invoice->user_id !== auth()->id() && $invoice->created_by !== auth()->id()) {
+        // Check if user has access to this invoice through company relationship
+        $userCompanyIds = auth()->user()->companies->pluck('id');
+        if (!$userCompanyIds->contains($invoice->company_id) && $invoice->created_by !== auth()->id()) {
             abort(403);
         }
         
@@ -363,7 +372,9 @@ class InvoiceController extends Controller
     public function downloadPdf(Invoice $invoice)
     {
         // Ensure user can download this invoice
-        if ($invoice->user_id !== auth()->id() && $invoice->created_by !== auth()->id()) {
+        // Check if user has access to this invoice through company relationship
+        $userCompanyIds = auth()->user()->companies->pluck('id');
+        if (!$userCompanyIds->contains($invoice->company_id) && $invoice->created_by !== auth()->id()) {
             abort(403);
         }
         
@@ -405,7 +416,9 @@ class InvoiceController extends Controller
     public function regeneratePdf(Invoice $invoice)
     {
         // Ensure user can regenerate this invoice
-        if ($invoice->user_id !== auth()->id() && $invoice->created_by !== auth()->id()) {
+        // Check if user has access to this invoice through company relationship
+        $userCompanyIds = auth()->user()->companies->pluck('id');
+        if (!$userCompanyIds->contains($invoice->company_id) && $invoice->created_by !== auth()->id()) {
             abort(403);
         }
         
@@ -429,8 +442,9 @@ class InvoiceController extends Controller
         $year = date('Y');
         $month = date('m');
         
-        // Get the latest invoice this month
-        $latestInvoice = Invoice::where('user_id', auth()->id())
+        // Get the latest invoice this month from user's companies
+        $userCompanyIds = auth()->user()->companies->pluck('id');
+        $latestInvoice = Invoice::whereIn('company_id', $userCompanyIds)
             ->whereYear('invoice_date', $year)
             ->whereMonth('invoice_date', $month)
             ->orderBy('id', 'desc')
