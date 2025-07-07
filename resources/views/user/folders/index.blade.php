@@ -53,6 +53,9 @@
                                                 <a href="{{ route('user.folders.show', $folder) }}" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400">
                                                     {{ $folder->name }}
                                                 </a>
+                                                @if($folder->company)
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Company') }}: {{ $folder->company->name }}</p>
+                                                @endif
                                                 @if($folder->description)
                                                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ Str::limit($folder->description, 50) }}</p>
                                                 @endif
