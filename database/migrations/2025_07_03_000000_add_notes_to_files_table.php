@@ -17,8 +17,9 @@ return new class extends Migration
             // Add notes column - nullable to protect existing data
             $table->text('notes')->nullable()->after('mime_type');
             
-            // Add index for better performance when searching notes
-            $table->index(['notes'], 'files_notes_index');
+            // Don't add index on TEXT column - MySQL doesn't support it without key length
+            // If you need to search notes, consider using fulltext index instead:
+            // $table->fullText('notes');
         });
     }
 
@@ -30,9 +31,6 @@ return new class extends Migration
     public function down()
     {
         Schema::table('files', function (Blueprint $table) {
-            // Drop index first
-            $table->dropIndex('files_notes_index');
-            
             // Drop the notes column
             $table->dropColumn('notes');
         });
