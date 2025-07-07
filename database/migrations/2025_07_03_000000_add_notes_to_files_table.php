@@ -14,8 +14,11 @@ return new class extends Migration
     public function up()
     {
         Schema::table('files', function (Blueprint $table) {
-            // Add notes column - nullable to protect existing data
-            $table->text('notes')->nullable()->after('mime_type');
+            // Check if column doesn't exist before adding
+            if (!Schema::hasColumn('files', 'notes')) {
+                // Add notes column - nullable to protect existing data
+                $table->text('notes')->nullable()->after('mime_type');
+            }
             
             // Don't add index on TEXT column - MySQL doesn't support it without key length
             // If you need to search notes, consider using fulltext index instead:
