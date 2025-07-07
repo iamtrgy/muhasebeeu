@@ -10,10 +10,18 @@ use App\Models\InvoiceItem;
 use App\Models\InvoiceEmailLog;
 use Illuminate\Http\Request;
 use App\Services\ResendService;
+use App\Services\Invoice\InvoicePdfGenerator;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceController extends Controller
 {
+    protected $pdfGenerator;
+    
+    public function __construct(InvoicePdfGenerator $pdfGenerator)
+    {
+        $this->pdfGenerator = $pdfGenerator;
+    }
     /**
      * Display a listing of invoices
      */
@@ -240,7 +248,20 @@ class InvoiceController extends Controller
         }
         
         // Generate PDF and save to storage
-        $this->generatePdf($invoice);
+        try {
+            // For now, skip PDF generation if it fails due to folder structure
+            // Users can generate PDF later when folder structure is set up
+            $this->pdfGenerator->generatePdf($invoice);
+        } catch (\Exception $e) {
+            \Log::error('Error generating PDF: ' . $e->getMessage());
+            
+            // Try simple PDF generation as fallback
+            try {
+                $this->generateSimplePdf($invoice);
+            } catch (\Exception $fallbackError) {
+                \Log::error('Fallback PDF generation also failed: ' . $fallbackError->getMessage());
+            }
+        }
         
         return redirect()->route('user.invoices.show', $invoice)
             ->with('success', 'Invoice created successfully.');
@@ -448,8 +469,7 @@ class InvoiceController extends Controller
         }
         
         try {
-            // TODO: Implement PDF generation logic here
-            // For now, just return with a message
+            $file = $this->pdfGenerator->generatePdf($invoice);
             
             return redirect()->route('user.invoices.show', $invoice)
                 ->with('success', __('Invoice PDF regenerated successfully!'));
@@ -459,55 +479,6 @@ class InvoiceController extends Controller
         }
     }
     
-    /**
-     * Generate PDF for invoice
-     */
-    private function generatePdf(Invoice $invoice)
-    {
-        try {
-            // Load invoice with all relationships
-            $invoice->load(['company', 'client', 'items']);
-            
-            // For now, create a simple HTML representation
-            // In production, you would use a PDF library like DomPDF or similar
-            $html = '<h1>Invoice ' . $invoice->invoice_number . '</h1>';
-            $html .= '<p>Date: ' . $invoice->invoice_date->format('Y-m-d') . '</p>';
-            $html .= '<p>From: ' . $invoice->company->name . '</p>';
-            $html .= '<p>To: ' . ($invoice->client_name ?? optional($invoice->client)->name ?? 'N/A') . '</p>';
-            $html .= '<h2>Items:</h2><ul>';
-            
-            foreach ($invoice->items as $item) {
-                $html .= '<li>' . $item->description . ' - Qty: ' . $item->quantity . ' x ' . $item->unit_price . ' = ' . $item->total . '</li>';
-            }
-            
-            $html .= '</ul>';
-            $html .= '<p><strong>Total: ' . $invoice->currency . ' ' . $invoice->total . '</strong></p>';
-            
-            // For now, just save the HTML as a "PDF" placeholder
-            // In production, you would convert this to actual PDF
-            $filename = 'invoices/' . $invoice->id . '/invoice-' . $invoice->invoice_number . '.pdf';
-            
-            // Save to default storage (Bunny CDN or local)
-            Storage::put($filename, $html);
-            
-            // Update invoice with PDF path
-            $invoice->update([
-                'pdf_path' => $filename,
-                'pdf_url' => Storage::url($filename)
-            ]);
-            
-            \Log::info('PDF generated for invoice', [
-                'invoice_id' => $invoice->id,
-                'path' => $filename
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Failed to generate PDF for invoice', [
-                'invoice_id' => $invoice->id,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
     
     /**
      * Generate a unique invoice number
@@ -540,6 +511,41 @@ class InvoiceController extends Controller
         // Format: INV-YYYY-MM-U{userId}-XXXX
         // Example: INV-2025-07-U6-0001
         return 'INV-' . $year . '-' . $month . '-U' . $userId . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+    }
+    
+    /**
+     * Simple PDF generation without folder structure dependency
+     */
+    private function generateSimplePdf(Invoice $invoice)
+    {
+        // Load relationships
+        $invoice->load(['company', 'client', 'items']);
+        
+        // Create PDF using DomPDF directly
+        $pdf = PDF::loadView('invoices.pdf', compact('invoice'));
+        $pdf->setPaper('a4', 'portrait');
+        
+        // Generate filename
+        $filename = 'invoices/' . $invoice->invoice_number . '.pdf';
+        
+        // Get PDF content
+        $pdfContent = $pdf->output();
+        
+        // Save to storage
+        $stored = Storage::put($filename, $pdfContent);
+        
+        if ($stored) {
+            // Update invoice with PDF path
+            $invoice->update([
+                'pdf_path' => $filename,
+                'pdf_url' => Storage::url($filename)
+            ]);
+            
+            \Log::info('Simple PDF generated for invoice', [
+                'invoice_id' => $invoice->id,
+                'path' => $filename
+            ]);
+        }
     }
     
     /**
