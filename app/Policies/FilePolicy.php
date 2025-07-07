@@ -9,12 +9,24 @@ class FilePolicy
 {
     public function view(User $user, File $file): bool
     {
-        return $file->folder && ($file->folder->is_public || $file->folder->users->contains($user->id));
+        // If no folder, check if user uploaded the file
+        if (!$file->folder) {
+            return $user->id === $file->uploaded_by;
+        }
+        
+        // Use the folder's access check method
+        return $file->folder->isAccessibleBy($user);
     }
 
     public function download(User $user, File $file): bool
     {
-        return $file->folder && ($file->folder->is_public || $file->folder->users->contains($user->id));
+        // If no folder, check if user uploaded the file
+        if (!$file->folder) {
+            return $user->id === $file->uploaded_by;
+        }
+        
+        // Use the folder's access check method
+        return $file->folder->isAccessibleBy($user);
     }
 
     public function delete(User $user, File $file): bool

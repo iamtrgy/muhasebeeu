@@ -233,7 +233,7 @@ class FileController extends Controller
     {
         try {
             // Check if user has access to the file through folder permissions
-            if (!$file->folder->canAccess(auth()->user())) {
+            if (!$file->folder->isAccessibleBy(auth()->user())) {
                 throw new \Exception('You do not have permission to access this file.');
             }
 

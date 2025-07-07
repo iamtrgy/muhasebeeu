@@ -540,6 +540,9 @@ class InvoiceController extends Controller
         $pdf = PDF::loadView('invoices.pdf', compact('invoice'));
         $pdf->setPaper('a4', 'portrait');
         
+        // Try to find or create an invoices folder for the company
+        $folder = $this->getOrCreateInvoicesFolder($invoice);
+        
         // Generate filename
         $filename = 'invoices/' . $invoice->invoice_number . '.pdf';
         
@@ -550,16 +553,72 @@ class InvoiceController extends Controller
         $stored = Storage::put($filename, $pdfContent);
         
         if ($stored) {
-            // Update invoice with PDF path
-            $invoice->update([
-                'pdf_path' => $filename,
-                'pdf_url' => Storage::url($filename)
+            // Delete old file record if exists
+            if ($invoice->pdf_path) {
+                \App\Models\File::where('path', $invoice->pdf_path)->delete();
+            }
+            
+            // Create File record in database
+            $file = new \App\Models\File([
+                'name' => $invoice->invoice_number . '.pdf',
+                'original_name' => $invoice->invoice_number . '.pdf',
+                'mime_type' => 'application/pdf',
+                'size' => strlen($pdfContent),
+                'path' => $filename,
+                'folder_id' => $folder ? $folder->id : null,
+                'uploaded_by' => auth()->id(),
             ]);
             
-            \Log::info('Simple PDF generated for invoice', [
-                'invoice_id' => $invoice->id,
-                'path' => $filename
+            $file->save();
+            
+            // Update invoice with PDF path and folder
+            $invoice->update([
+                'pdf_path' => $filename,
+                'pdf_url' => Storage::url($filename),
+                'folder_id' => $folder ? $folder->id : null
             ]);
+            
+            \Log::info('Simple PDF generated for invoice with File record', [
+                'invoice_id' => $invoice->id,
+                'file_id' => $file->id,
+                'path' => $filename,
+                'folder_id' => $folder ? $folder->id : null
+            ]);
+        }
+    }
+    
+    /**
+     * Get or create a simple invoices folder for the company
+     */
+    private function getOrCreateInvoicesFolder(Invoice $invoice)
+    {
+        try {
+            // First, try to find an existing "Invoices" folder for this company
+            $folder = \App\Models\Folder::where('company_id', $invoice->company_id)
+                ->where('name', 'Invoices')
+                ->whereNull('parent_id') // Top-level folder
+                ->first();
+            
+            if (!$folder) {
+                // Create a new Invoices folder
+                $folder = \App\Models\Folder::create([
+                    'name' => 'Invoices',
+                    'description' => 'All invoices for ' . $invoice->company->name,
+                    'company_id' => $invoice->company_id,
+                    'created_by' => auth()->id(),
+                    'is_public' => false
+                ]);
+                
+                \Log::info('Created Invoices folder for company', [
+                    'company_id' => $invoice->company_id,
+                    'folder_id' => $folder->id
+                ]);
+            }
+            
+            return $folder;
+        } catch (\Exception $e) {
+            \Log::error('Failed to get/create invoices folder: ' . $e->getMessage());
+            return null;
         }
     }
     
