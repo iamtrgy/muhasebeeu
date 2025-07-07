@@ -249,17 +249,19 @@ class InvoiceController extends Controller
         
         // Generate PDF and save to storage
         try {
-            // For now, skip PDF generation if it fails due to folder structure
-            // Users can generate PDF later when folder structure is set up
+            // Try the proper PDF generator with folder structure
             $this->pdfGenerator->generatePdf($invoice);
+            \Log::info('PDF generated successfully using InvoicePdfGenerator');
         } catch (\Exception $e) {
-            \Log::error('Error generating PDF: ' . $e->getMessage());
+            \Log::warning('InvoicePdfGenerator failed (likely missing folder structure): ' . $e->getMessage());
             
             // Try simple PDF generation as fallback
             try {
                 $this->generateSimplePdf($invoice);
+                \Log::info('PDF generated successfully using fallback method');
             } catch (\Exception $fallbackError) {
                 \Log::error('Fallback PDF generation also failed: ' . $fallbackError->getMessage());
+                // Continue without PDF - user can regenerate later
             }
         }
         
@@ -469,13 +471,26 @@ class InvoiceController extends Controller
         }
         
         try {
+            // Try the proper PDF generator with folder structure
             $file = $this->pdfGenerator->generatePdf($invoice);
             
             return redirect()->route('user.invoices.show', $invoice)
                 ->with('success', __('Invoice PDF regenerated successfully!'));
         } catch (\Exception $e) {
-            return redirect()->route('user.invoices.show', $invoice)
-                ->with('error', __('Failed to regenerate PDF: ') . $e->getMessage());
+            \Log::warning('InvoicePdfGenerator failed during regeneration: ' . $e->getMessage());
+            
+            // Try simple PDF generation as fallback
+            try {
+                $this->generateSimplePdf($invoice);
+                
+                return redirect()->route('user.invoices.show', $invoice)
+                    ->with('success', __('Invoice PDF regenerated successfully!'));
+            } catch (\Exception $fallbackError) {
+                \Log::error('Fallback PDF generation also failed during regeneration: ' . $fallbackError->getMessage());
+                
+                return redirect()->route('user.invoices.show', $invoice)
+                    ->with('error', __('Failed to regenerate PDF. Please ensure the folder structure exists (Year -> Month -> Income folders).'));
+            }
         }
     }
     
