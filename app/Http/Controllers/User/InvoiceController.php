@@ -19,7 +19,11 @@ class InvoiceController extends Controller
      */
     public function index()
     {
-        $invoices = Invoice::where('created_by', auth()->id())
+        // Get user's company IDs
+        $userCompanyIds = auth()->user()->companies->pluck('id');
+        
+        // Get invoices for user's companies
+        $invoices = Invoice::whereIn('company_id', $userCompanyIds)
             ->with(['company', 'client'])
             ->latest()
             ->paginate(10);
