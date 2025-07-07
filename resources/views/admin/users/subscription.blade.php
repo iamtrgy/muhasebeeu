@@ -255,6 +255,63 @@
                                 </form>
                             @endif
                         </div>
+                        
+                        {{-- Show create new subscription option for fully canceled subscriptions --}}
+                        @if($stripeStatus === 'canceled' || ($subscription->canceled() && !$subscription->onGracePeriod()))
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                                <h4 class="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Create New Subscription') }}</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">{{ __('This subscription is fully canceled. You can create a new subscription with a trial period.') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    @foreach($plans as $planId => $planData)
+                                        @php
+                                            $planKey = str_replace('price_', '', $planId);
+                                        @endphp
+                                        <x-ui.card.base class="flex flex-col h-full">
+                                            <x-ui.card.body class="flex flex-col h-full">
+                                            <div>
+                                                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">{{ $planData['name'] }}</h3>
+                                                <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                                    @foreach($planData['features'] as $feature)
+                                                    <li class="flex items-center">
+                                                        <svg class="h-5 w-5 text-green-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                        </svg>
+                                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ $feature }}</span>
+                                                    </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+
+                                            <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST" class="mt-auto">
+                                                @csrf
+                                                <input type="hidden" name="action" value="subscribe">
+                                                <input type="hidden" name="plan" value="{{ $planKey }}">
+
+                                                <div class="mb-4">
+                                                    <x-ui.form.select
+                                                        name="trial_days"
+                                                        id="trial_days_{{ $planKey }}"
+                                                        label="Trial Period (Days)"
+                                                        value="30"
+                                                    >
+                                                        <option value="7">7 days</option>
+                                                        <option value="14">14 days</option>
+                                                        <option value="30" selected>30 days</option>
+                                                        <option value="60">60 days</option>
+                                                        <option value="90">90 days</option>
+                                                    </x-ui.form.select>
+                                                </div>
+
+                                                <x-ui.button.primary type="submit" fullWidth>
+                                                    {{ __('Start New Trial') }}
+                                                </x-ui.button.primary>
+                                            </form>
+                                            </x-ui.card.body>
+                                        </x-ui.card.base>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     @else
                         <div class="text-center py-8">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

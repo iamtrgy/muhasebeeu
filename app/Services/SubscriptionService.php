@@ -30,6 +30,31 @@ class SubscriptionService
      */
     public function createSubscription(User $user, string $plan, int $trialDays = 30)
     {
+        // If user has a canceled subscription, delete it first
+        if ($user->subscription('default')) {
+            $existingSubscription = $user->subscription('default');
+            
+            // Check if it's fully canceled (not in grace period)
+            if ($existingSubscription->canceled() && !$existingSubscription->onGracePeriod()) {
+                // Delete the old subscription record
+                $existingSubscription->delete();
+                
+                \Log::info('Deleted old canceled subscription before creating new one', [
+                    'user_id' => $user->id
+                ]);
+            } elseif (!$existingSubscription->canceled()) {
+                return [
+                    'success' => false,
+                    'message' => 'User already has an active subscription. Please cancel it first.'
+                ];
+            } elseif ($existingSubscription->onGracePeriod()) {
+                return [
+                    'success' => false,
+                    'message' => 'User has a subscription in grace period. Please wait until it expires or resume it.'
+                ];
+            }
+        }
+        
         $stripePriceId = $this->getPlanPriceId($plan);
         
         try {
