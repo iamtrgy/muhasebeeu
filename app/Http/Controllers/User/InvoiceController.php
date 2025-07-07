@@ -240,7 +240,7 @@ class InvoiceController extends Controller
         }
         
         // Generate PDF and save to storage
-        // $this->generatePdf($invoice);
+        $this->generatePdf($invoice);
         
         return redirect()->route('user.invoices.show', $invoice)
             ->with('success', 'Invoice created successfully.');
@@ -456,6 +456,56 @@ class InvoiceController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('user.invoices.show', $invoice)
                 ->with('error', __('Failed to regenerate PDF: ') . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Generate PDF for invoice
+     */
+    private function generatePdf(Invoice $invoice)
+    {
+        try {
+            // Load invoice with all relationships
+            $invoice->load(['company', 'client', 'items']);
+            
+            // For now, create a simple HTML representation
+            // In production, you would use a PDF library like DomPDF or similar
+            $html = '<h1>Invoice ' . $invoice->invoice_number . '</h1>';
+            $html .= '<p>Date: ' . $invoice->invoice_date->format('Y-m-d') . '</p>';
+            $html .= '<p>From: ' . $invoice->company->name . '</p>';
+            $html .= '<p>To: ' . ($invoice->client_name ?? optional($invoice->client)->name ?? 'N/A') . '</p>';
+            $html .= '<h2>Items:</h2><ul>';
+            
+            foreach ($invoice->items as $item) {
+                $html .= '<li>' . $item->description . ' - Qty: ' . $item->quantity . ' x ' . $item->unit_price . ' = ' . $item->total . '</li>';
+            }
+            
+            $html .= '</ul>';
+            $html .= '<p><strong>Total: ' . $invoice->currency . ' ' . $invoice->total . '</strong></p>';
+            
+            // For now, just save the HTML as a "PDF" placeholder
+            // In production, you would convert this to actual PDF
+            $filename = 'invoices/' . $invoice->id . '/invoice-' . $invoice->invoice_number . '.pdf';
+            
+            // Save to default storage (Bunny CDN or local)
+            Storage::put($filename, $html);
+            
+            // Update invoice with PDF path
+            $invoice->update([
+                'pdf_path' => $filename,
+                'pdf_url' => Storage::url($filename)
+            ]);
+            
+            \Log::info('PDF generated for invoice', [
+                'invoice_id' => $invoice->id,
+                'path' => $filename
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate PDF for invoice', [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage()
+            ]);
         }
     }
     
