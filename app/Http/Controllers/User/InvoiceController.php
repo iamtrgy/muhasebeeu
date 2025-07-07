@@ -4,7 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
-use App\Models\Customer;
+use App\Models\UserClient;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoiceEmailLog;
@@ -46,9 +46,8 @@ class InvoiceController extends Controller
             // User's companies (kendi şirketlerim - faturanın "kimden" kısmı)
             $companies = auth()->user()->companies;
             
-            // User's customers (müşterilerim - faturanın "kime" kısmı)
-            // Değişken adını değiştirdik: $customers -> $userclients
-            $userclients = Customer::where('user_id', $userId)->orderBy('name')->get();
+            // User's clients (müşterilerim - faturanın "kime" kısmı)
+            $userclients = UserClient::where('user_id', $userId)->orderBy('name')->get();
             
             \Log::info('InvoiceController@create - Değişkenler oluşturuldu', [
                 'user_id' => $userId,
@@ -92,7 +91,17 @@ class InvoiceController extends Controller
         // Validate the request
         $validated = $request->validate([
             // Existing validation rules
-            'company_id' => 'required|exists:companies,id',
+            'company_id' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    // Check if the company belongs to the current user
+                    $belongs = auth()->user()->companies()->where('companies.id', $value)->exists();
+                    
+                    if (!$belongs) {
+                        $fail('The selected company is invalid.');
+                    }
+                }
+            ],
             'invoice_number' => 'required|string|max:50',
             'invoice_date' => 'required|date',
             'due_date' => 'nullable|date',
@@ -108,7 +117,22 @@ class InvoiceController extends Controller
             
             // Client validation conditionally required
             'client_type' => 'required|in:existing,new',
-            'client_id' => 'required_if:client_type,existing|nullable|exists:customers,id',
+            'client_id' => [
+                'required_if:client_type,existing',
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value) {
+                        // Check if the client exists and belongs to the current user
+                        $exists = UserClient::where('id', $value)
+                            ->where('user_id', auth()->id())
+                            ->exists();
+                        
+                        if (!$exists) {
+                            $fail('The selected client is invalid.');
+                        }
+                    }
+                }
+            ],
             'client_name' => 'required_if:client_type,new|nullable|string|max:255',
             'client_email' => 'nullable|email|max:255',
             'client_vat_number' => 'nullable|string|max:50',
@@ -146,14 +170,14 @@ class InvoiceController extends Controller
         $invoice->payment_url = $request->payment_url;
         
         // Handle client data based on client_type
-        if ($request->client_type === 'existing') {
+        if ($request->client_type === 'existing' && $request->client_id) {
             // Use existing customer
             $invoice->client_id = $request->client_id;
         } else {
             // Handle new customer data
             if ($request->save_client) {
                 // Save new customer to database
-                $customer = Customer::create([
+                $client = UserClient::create([
                     'user_id' => auth()->id(),
                     'name' => $request->client_name,
                     'email' => $request->client_email,
@@ -164,9 +188,10 @@ class InvoiceController extends Controller
                     'address' => $request->client_address,
                 ]);
                 
-                $invoice->client_id = $customer->id;
+                $invoice->client_id = $client->id;
             } else {
-                // Just save client info in invoice
+                // Just save client info in invoice (no client_id)
+                $invoice->client_id = null;
                 $invoice->client_name = $request->client_name;
                 $invoice->client_email = $request->client_email;
                 $invoice->client_phone = $request->client_phone;
