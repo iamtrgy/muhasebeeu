@@ -86,37 +86,67 @@ class SubscriptionService
      */
     public function cancelSubscription(User $user)
     {
-        if (!$user->subscription('default') || $user->subscription('default')->canceled()) {
+        if (!$user->subscription('default')) {
             return [
                 'success' => false,
-                'message' => 'No active subscription to cancel.'
+                'message' => 'No subscription found.'
             ];
         }
         
         $subscription = $user->subscription('default');
+        
+        // Check if already canceled
+        if ($subscription->canceled()) {
+            // If it's on grace period, it's canceled but still active
+            if ($subscription->onGracePeriod()) {
+                return [
+                    'success' => false,
+                    'message' => 'Subscription is already canceled and will end on ' . $subscription->ends_at->format('Y-m-d') . '.'
+                ];
+            }
+            
+            // If it's completely canceled
+            return [
+                'success' => false,
+                'message' => 'Subscription is already canceled.'
+            ];
+        }
+        
         $planName = $this->getPlanName($subscription->stripe_price);
         
-        $subscription->cancel();
-        
-        // Clear cache
-        $this->userDataService->clearUserCaches($user);
-        
-        // Record activity
-        \App\Services\ActivityLogService::log(
-            'subscription_cancel',
-            "Subscription canceled for {$planName} plan",
-            $user,
-            [
-                'plan' => $planName,
-                'admin_id' => auth()->id()
-            ]
-        );
-        
-        return [
-            'success' => true,
-            'message' => 'Subscription has been canceled and will end at the current period.',
-            'plan' => $planName
-        ];
+        try {
+            $subscription->cancel();
+            
+            // Clear cache
+            $this->userDataService->clearUserCaches($user);
+            
+            // Record activity
+            \App\Services\ActivityLogService::log(
+                'subscription_cancel',
+                "Subscription canceled for {$planName} plan",
+                $user,
+                [
+                    'plan' => $planName,
+                    'admin_id' => auth()->id()
+                ]
+            );
+            
+            return [
+                'success' => true,
+                'message' => 'Subscription has been canceled and will end at the current period.',
+                'plan' => $planName
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Error canceling subscription: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'subscription_id' => $subscription->id
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Error canceling subscription: ' . $e->getMessage()
+            ];
+        }
     }
     
     /**
