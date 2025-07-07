@@ -232,7 +232,7 @@ class InvoiceController extends Controller
             $item_subtotal = $item['quantity'] * $item['unit_price'];
             $item_tax = $item_subtotal * ($item['tax_rate'] / 100);
             
-            $invoiceItem->subtotal = $item_subtotal;
+            // Don't save subtotal - it's not in the table, can be calculated from quantity * unit_price
             $invoiceItem->tax_amount = $item_tax;
             $invoiceItem->total = $item_subtotal + $item_tax;
             
