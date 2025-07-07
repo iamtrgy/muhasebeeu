@@ -228,6 +228,66 @@ class SubscriptionService
     }
     
     /**
+     * Sync subscription status with Stripe
+     * 
+     * @param User $user
+     * @return array
+     */
+    public function syncSubscriptionStatus(User $user)
+    {
+        $subscription = $user->subscription('default');
+        
+        if (!$subscription || !$subscription->stripe_id) {
+            return [
+                'success' => false,
+                'message' => 'No subscription to sync.'
+            ];
+        }
+        
+        try {
+            $stripe = new StripeClient(config('cashier.secret'));
+            $stripeSubscription = $stripe->subscriptions->retrieve($subscription->stripe_id);
+            
+            // If Stripe says it's canceled but locally it's not
+            if ($stripeSubscription->status === 'canceled' && !$subscription->canceled()) {
+                // Update local subscription to match Stripe
+                $subscription->update([
+                    'stripe_status' => 'canceled',
+                    'ends_at' => now() // Set ends_at to now if not already set
+                ]);
+                
+                \Log::info('Synced canceled subscription status from Stripe', [
+                    'user_id' => $user->id,
+                    'subscription_id' => $subscription->id
+                ]);
+                
+                return [
+                    'success' => true,
+                    'message' => 'Subscription status synced with Stripe. Status: Canceled'
+                ];
+            }
+            
+            // Update stripe_status field
+            if ($subscription->stripe_status !== $stripeSubscription->status) {
+                $subscription->update(['stripe_status' => $stripeSubscription->status]);
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Subscription status is in sync.',
+                'status' => $stripeSubscription->status
+            ];
+            
+        } catch (\Exception $e) {
+            \Log::error('Error syncing subscription status: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error syncing subscription: ' . $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
      * Delete an incomplete subscription
      * 
      * @param User $user

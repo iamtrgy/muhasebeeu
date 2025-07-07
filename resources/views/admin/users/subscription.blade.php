@@ -39,13 +39,33 @@
                                 env('STRIPE_ENTERPRISE_PRICE_ID') => 'Enterprise',
                                 default => 'Unknown'
                             };
-                            $status = $subscription->canceled() 
-                                ? 'Canceled' 
-                                : ($subscription->onTrial() 
-                                    ? 'Trial' 
-                                    : ($subscription->onGracePeriod() 
-                                        ? 'Grace Period' 
-                                        : 'Active'));
+                            
+                            // Check Stripe status first
+                            $stripeStatus = null;
+                            try {
+                                if ($subscription->stripe_id) {
+                                    $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+                                    $stripeSubscription = $stripe->subscriptions->retrieve($subscription->stripe_id);
+                                    $stripeStatus = $stripeSubscription->status;
+                                }
+                            } catch (\Exception $e) {
+                                // Silently handle errors
+                            }
+                            
+                            // Determine status based on Stripe status and local state
+                            if ($stripeStatus === 'canceled') {
+                                $status = 'Canceled';
+                            } elseif ($stripeStatus === 'incomplete' || $stripeStatus === 'incomplete_expired') {
+                                $status = 'Incomplete';
+                            } elseif ($subscription->canceled()) {
+                                $status = 'Canceled';
+                            } elseif ($subscription->onTrial()) {
+                                $status = 'Trial';
+                            } elseif ($subscription->onGracePeriod()) {
+                                $status = 'Grace Period';
+                            } else {
+                                $status = 'Active';
+                            }
                         @endphp
                         
                         <div class="flex items-center gap-2 mb-6">
@@ -54,6 +74,7 @@
                                     'Active' => 'success',
                                     'Trial' => 'primary', 
                                     'Grace Period' => 'warning',
+                                    'Incomplete' => 'warning',
                                     default => 'danger',
                                 };
                             @endphp
@@ -130,21 +151,8 @@
                         
                         <!-- Status Information Box -->
                         @php
-                            $stripeStatus = null;
-                            try {
-                                if ($subscription->stripe_id) {
-                                    $stripe = new \Stripe\StripeClient(config('cashier.secret'));
-                                    $stripeSubscription = $stripe->subscriptions->retrieve($subscription->stripe_id);
-                                    $stripeStatus = $stripeSubscription->status;
-                                }
-                            } catch (\Exception $e) {
-                                // Silently handle errors
-                            }
-                        @endphp
-                        
-                        @php
                             $statusBoxBgClass = 'rounded-lg mt-4 p-4 ';
-                            if ($subscription->canceled() && !$subscription->onGracePeriod()) {
+                            if ($stripeStatus === 'canceled' || ($subscription->canceled() && !$subscription->onGracePeriod())) {
                                 $statusBoxBgClass .= 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700';
                             } elseif ($subscription->canceled() && $subscription->onGracePeriod()) {
                                 $statusBoxBgClass .= 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700';
@@ -157,7 +165,7 @@
                         <div class="{{ $statusBoxBgClass }}">
                             @php
                                 $titleClass = 'text-sm font-medium mb-2 ';
-                                if ($subscription->canceled() && !$subscription->onGracePeriod()) {
+                                if ($stripeStatus === 'canceled' || ($subscription->canceled() && !$subscription->onGracePeriod())) {
                                     $titleClass .= 'text-red-800 dark:text-red-200';
                                 } elseif ($subscription->canceled() && $subscription->onGracePeriod()) {
                                     $titleClass .= 'text-yellow-800 dark:text-yellow-200';
@@ -173,7 +181,7 @@
                             
                             @php
                                 $textClass = 'text-sm ';
-                                if ($subscription->canceled() && !$subscription->onGracePeriod()) {
+                                if ($stripeStatus === 'canceled' || ($subscription->canceled() && !$subscription->onGracePeriod())) {
                                     $textClass .= 'text-red-700 dark:text-red-300';
                                 } elseif ($subscription->canceled() && $subscription->onGracePeriod()) {
                                     $textClass .= 'text-yellow-700 dark:text-yellow-300';
@@ -184,7 +192,7 @@
                                 }
                             @endphp
                             <p class="{{ $textClass }}">
-                                @if($subscription->canceled() && !$subscription->onGracePeriod())
+                                @if($stripeStatus === 'canceled' || ($subscription->canceled() && !$subscription->onGracePeriod()))
                                     {{ __('This subscription has been fully canceled and ended. It cannot be resumed. You will need to create a new subscription with a new trial period if desired.') }}
                                 @elseif($subscription->canceled() && $subscription->onGracePeriod())
                                     {{ __('This subscription has been canceled but is still in the grace period. The user still has access until the period ends. You can resume this subscription if needed.') }}
@@ -196,7 +204,7 @@
                                     {{ __('This subscription is active and will automatically renew on the next billing date.') }}
                                 @endif
                                 
-                                @if($stripeStatus && $stripeStatus !== 'active')
+                                @if($stripeStatus && $stripeStatus !== 'active' && $stripeStatus !== 'trialing')
                                     <br><br>
                                     <strong>{{ __('Stripe Status') }}:</strong> {{ ucfirst($stripeStatus) }}
                                 @endif
@@ -204,7 +212,9 @@
                         </div>
                         
                         <div class="mt-6 flex flex-col sm:flex-row gap-3">
-                            @if($subscription->canceled() && $subscription->onGracePeriod())
+                            @if($stripeStatus === 'canceled' || ($subscription->canceled() && !$subscription->onGracePeriod()))
+                                {{-- Fully canceled subscription - cannot resume --}}
+                            @elseif($subscription->canceled() && $subscription->onGracePeriod())
                                 <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST">
                                     @csrf
                                     <input type="hidden" name="action" value="resume">
@@ -212,7 +222,7 @@
                                         {{ __('Resume Subscription') }}
                                     </x-ui.button.primary>
                                 </form>
-                            @elseif(!$subscription->canceled())
+                            @elseif(!$subscription->canceled() && $stripeStatus !== 'canceled')
                                 <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST">
                                     @csrf
                                     <input type="hidden" name="action" value="cancel">
@@ -228,6 +238,19 @@
                                     <input type="hidden" name="action" value="delete_incomplete">
                                     <x-ui.button.secondary type="submit" class="bg-amber-600 hover:bg-amber-700 focus:ring-amber-500 text-white">
                                         {{ __('Delete Incomplete Subscription') }}
+                                    </x-ui.button.secondary>
+                                </form>
+                            @endif
+                            
+                            {{-- Show sync button if there's a mismatch --}}
+                            @if($subscription && $stripeStatus && 
+                                (($stripeStatus === 'canceled' && !$subscription->canceled()) || 
+                                 ($stripeStatus === 'active' && $subscription->canceled())))
+                                <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="action" value="sync">
+                                    <x-ui.button.secondary type="submit">
+                                        {{ __('Sync with Stripe') }}
                                     </x-ui.button.secondary>
                                 </form>
                             @endif

@@ -289,7 +289,7 @@ class AdminUserController extends Controller
     public function updateSubscription(Request $request, User $user)
     {
         $request->validate([
-            'action' => 'required|in:subscribe,cancel,resume,delete_incomplete',
+            'action' => 'required|in:subscribe,cancel,resume,delete_incomplete,sync',
             'plan' => 'required_if:action,subscribe|in:basic,pro,enterprise',
             'trial_days' => 'nullable|integer|min:1|max:365'
         ]);
@@ -322,6 +322,10 @@ class AdminUserController extends Controller
                 
             case 'delete_incomplete':
                 $result = $this->subscriptionService->deleteIncompleteSubscription($user);
+                break;
+                
+            case 'sync':
+                $result = $this->subscriptionService->syncSubscriptionStatus($user);
                 break;
         }
         
