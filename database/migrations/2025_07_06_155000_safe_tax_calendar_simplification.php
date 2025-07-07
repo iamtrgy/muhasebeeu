@@ -37,20 +37,54 @@ return new class extends Migration
         ");
         
         // Create backup of complex data in user_notes field before removing
-        DB::statement("
-            UPDATE tax_calendar_tasks 
-            SET user_notes = CONCAT(
-                COALESCE(user_notes, ''),
-                CASE WHEN user_notes IS NOT NULL THEN '\n\n' ELSE '' END,
-                '--- Migrated Data ---\n',
-                'Original Status: ', COALESCE(status, 'pending'), '\n',
-                CASE WHEN submitted_at IS NOT NULL THEN CONCAT('Submitted: ', submitted_at, '\n') ELSE '' END,
-                CASE WHEN review_feedback_date IS NOT NULL THEN CONCAT('Reviewed: ', review_feedback_date, '\n') ELSE '' END,
-                CASE WHEN review_feedback IS NOT NULL THEN CONCAT('Feedback: ', review_feedback, '\n') ELSE '' END,
-                CASE WHEN completed_at IS NOT NULL THEN CONCAT('Completed: ', completed_at, '\n') ELSE '' END
-            )
-            WHERE status != 'pending' OR submitted_at IS NOT NULL OR review_feedback_date IS NOT NULL OR review_feedback IS NOT NULL
-        ");
+        // First check which columns exist to avoid errors
+        $columns = Schema::getColumnListing('tax_calendar_tasks');
+        
+        // Build the update query dynamically based on existing columns
+        $updateParts = [];
+        $whereParts = ["status != 'pending'"];
+        
+        if (in_array('submitted_at', $columns)) {
+            $updateParts[] = "CASE WHEN submitted_at IS NOT NULL THEN CONCAT('Submitted: ', submitted_at, '\n') ELSE '' END";
+            $whereParts[] = "submitted_at IS NOT NULL";
+        }
+        
+        // Check for both possible column names for reviewed date
+        if (in_array('reviewed_at', $columns)) {
+            $updateParts[] = "CASE WHEN reviewed_at IS NOT NULL THEN CONCAT('Reviewed: ', reviewed_at, '\n') ELSE '' END";
+            $whereParts[] = "reviewed_at IS NOT NULL";
+        } elseif (in_array('review_feedback_date', $columns)) {
+            $updateParts[] = "CASE WHEN review_feedback_date IS NOT NULL THEN CONCAT('Reviewed: ', review_feedback_date, '\n') ELSE '' END";
+            $whereParts[] = "review_feedback_date IS NOT NULL";
+        }
+        
+        if (in_array('review_feedback', $columns)) {
+            $updateParts[] = "CASE WHEN review_feedback IS NOT NULL THEN CONCAT('Feedback: ', review_feedback, '\n') ELSE '' END";
+            $whereParts[] = "review_feedback IS NOT NULL";
+        }
+        
+        if (in_array('completed_at', $columns)) {
+            $updateParts[] = "CASE WHEN completed_at IS NOT NULL THEN CONCAT('Completed: ', completed_at, '\n') ELSE '' END";
+            $whereParts[] = "completed_at IS NOT NULL";
+        }
+        
+        // Only run if there are columns to migrate
+        if (!empty($updateParts)) {
+            $updateString = implode(",\n                ", $updateParts);
+            $whereString = implode(" OR ", $whereParts);
+            
+            DB::statement("
+                UPDATE tax_calendar_tasks 
+                SET user_notes = CONCAT(
+                    COALESCE(user_notes, ''),
+                    CASE WHEN user_notes IS NOT NULL THEN '\n\n' ELSE '' END,
+                    '--- Migrated Data ---\n',
+                    'Original Status: ', COALESCE(status, 'pending'), '\n',
+                    {$updateString}
+                )
+                WHERE {$whereString}
+            ");
+        }
     }
 
     /**
