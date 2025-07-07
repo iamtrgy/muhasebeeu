@@ -466,19 +466,19 @@ class InvoiceController extends Controller
     {
         $year = date('Y');
         $month = date('m');
+        $userId = auth()->id();
         
-        // Get the latest invoice this month from user's companies
-        $userCompanyIds = auth()->user()->companies->pluck('id');
-        $latestInvoice = Invoice::whereIn('company_id', $userCompanyIds)
+        // Get the latest invoice this month created by this user
+        $latestInvoice = Invoice::where('created_by', $userId)
             ->whereYear('invoice_date', $year)
             ->whereMonth('invoice_date', $month)
             ->orderBy('id', 'desc')
             ->first();
         
         if ($latestInvoice) {
-            // Extract the numeric part
+            // Extract the numeric part (last 4 digits)
             $lastNumber = 0;
-            if (preg_match('/(\d+)$/', $latestInvoice->invoice_number, $matches)) {
+            if (preg_match('/(\d{4})$/', $latestInvoice->invoice_number, $matches)) {
                 $lastNumber = intval($matches[1]);
             }
             
@@ -487,8 +487,9 @@ class InvoiceController extends Controller
             $nextNumber = 1;
         }
         
-        // Format: INV-YYYY-MM-XXXX
-        return 'INV-' . $year . '-' . $month . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        // Format: INV-YYYY-MM-U{userId}-XXXX
+        // Example: INV-2025-07-U6-0001
+        return 'INV-' . $year . '-' . $month . '-U' . $userId . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
     
     /**
