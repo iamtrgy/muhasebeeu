@@ -22,8 +22,13 @@ class InvoiceController extends Controller
         // Get user's company IDs
         $userCompanyIds = auth()->user()->companies->pluck('id');
         
-        // Get invoices for user's companies
-        $invoices = Invoice::whereIn('company_id', $userCompanyIds)
+        // Get invoices in multiple ways to catch all possible scenarios:
+        // 1. Invoices from user's companies
+        // 2. Invoices created by the user (for backwards compatibility)
+        $invoices = Invoice::where(function($query) use ($userCompanyIds) {
+                $query->whereIn('company_id', $userCompanyIds)
+                      ->orWhere('created_by', auth()->id());
+            })
             ->with(['company', 'client'])
             ->latest()
             ->paginate(10);
