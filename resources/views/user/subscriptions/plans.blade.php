@@ -1,12 +1,16 @@
-<x-user.layout>
-    <x-unified-header />
-    
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<x-user.layout 
+    title="Subscription Plans" 
+    :breadcrumbs="[
+        ['title' => __('Dashboard'), 'href' => route('user.dashboard'), 'first' => true],
+        ['title' => __('Subscription Plans')]
+    ]"
+>
+    <div class="space-y-6">
 
-            <!-- Success/Error Messages -->
-            @if(isset($currentPlan) && $canceled)
-                <div class="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+        <!-- Success/Error Messages -->
+        @if(isset($currentPlan) && $canceled)
+            <x-ui.card.base class="border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20">
+                <x-ui.card.body>
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -14,14 +18,16 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm text-yellow-700">
+                            <p class="text-sm text-yellow-700 dark:text-yellow-200">
                                 Your subscription has been canceled but will remain active until the end of your billing period. You can choose a new plan or resume your current plan.
                             </p>
                         </div>
                     </div>
-                </div>
-            @elseif(isset($currentPlan))
-                <div class="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                </x-ui.card.body>
+            </x-ui.card.base>
+        @elseif(isset($currentPlan))
+            <x-ui.card.base class="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20">
+                <x-ui.card.body>
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -29,17 +35,20 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm text-blue-700">
+                            <p class="text-sm text-blue-700 dark:text-blue-200">
                                 You're currently on the <span class="font-medium">{{ ucfirst($currentPlan) }}</span> plan. You can upgrade or downgrade at any time.
                             </p>
                         </div>
                     </div>
-                </div>
-            @endif
+                </x-ui.card.body>
+            </x-ui.card.base>
+        @endif
 
-            <!-- Plan Comparison Table -->
-            <div class="relative overflow-x-auto rounded-xl bg-white dark:bg-gray-800 shadow-xl">
-                <table class="w-full text-sm text-left">
+        <!-- Plan Comparison Table -->
+        <x-ui.card.base>
+            <x-ui.card.body class="p-0">
+                <div class="relative overflow-x-auto">
+                    <table class="w-full text-sm text-left">
                     <thead>
                         <tr class="text-lg font-semibold border-b dark:border-gray-700">
                             <th scope="col" class="px-6 py-8 bg-gray-50 dark:bg-gray-900">
@@ -203,24 +212,25 @@
                                 <span class="sr-only">Choose plan</span>
                             </th>
                             <td class="px-6 py-8 text-center">
-                                <a href="{{ route('user.subscription.payment.form', 'basic') }}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                                <x-ui.button.secondary href="{{ route('user.subscription.payment.form', 'basic') }}">
                                     Choose Basic
-                                </a>
+                                </x-ui.button.secondary>
                             </td>
                             <td class="px-6 py-8 text-center">
-                                <a href="{{ route('user.subscription.payment.form', 'pro') }}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                                <x-ui.button.primary href="{{ route('user.subscription.payment.form', 'pro') }}">
                                     Choose Pro
-                                </a>
+                                </x-ui.button.primary>
                             </td>
                             <td class="px-6 py-8 text-center">
-                                <a href="{{ route('user.subscription.payment.form', 'enterprise') }}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                                <x-ui.button.secondary href="{{ route('user.subscription.payment.form', 'enterprise') }}">
                                     Choose Enterprise
-                                </a>
+                                </x-ui.button.secondary>
                             </td>
                         </tr>
                     </tbody>
-                </table>
-            </div>
-        </div>
+                    </table>
+                </div>
+            </x-ui.card.body>
+        </x-ui.card.base>
     </div>
 </x-user.layout>

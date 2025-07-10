@@ -71,10 +71,17 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
     Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
     Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('subscription.billing.portal');
     
-    // Profile routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    // Profile routes (redirected to settings)
+    Route::get('/profile', function() {
+        return redirect()->route('user.settings', ['tab' => 'profile']);
+    })->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Settings routes
+    Route::get('/settings', [\App\Http\Controllers\User\UserSettingsController::class, 'index'])->name('settings');
+    Route::patch('/settings/notifications', [\App\Http\Controllers\User\UserSettingsController::class, 'updateNotifications'])->name('settings.notifications');
+    Route::patch('/settings/appearance', [\App\Http\Controllers\User\UserSettingsController::class, 'updateAppearance'])->name('settings.appearance');
 });
 
 // All routes that require subscription
@@ -193,6 +200,14 @@ Route::prefix('/accountant')
         
         // Simplified Tax Calendar for Accountants
         Route::get('/tax-calendar', [TaxCalendarTaskController::class, 'index'])->name('tax-calendar.index');
+        
+        // Tax Calendar Reviews - MUST BE BEFORE GENERIC {task} ROUTE
+        Route::get('/tax-calendar/reviews', [TaxCalendarReviewController::class, 'index'])->name('tax-calendar.reviews');
+        Route::get('/tax-calendar/reviews/{task}', [TaxCalendarReviewController::class, 'show'])->name('tax-calendar.reviews.show');
+        Route::put('/tax-calendar/reviews/{task}', [TaxCalendarReviewController::class, 'update'])->name('tax-calendar.reviews.update');
+        Route::post('/tax-calendar/reviews/{task}/comments', [TaxCalendarReviewController::class, 'store'])->name('tax-calendar.reviews.comments');
+        
+        // Generic tax calendar task route - MUST BE AFTER SPECIFIC ROUTES
         Route::get('/tax-calendar/{task}', [TaxCalendarTaskController::class, 'show'])->name('tax-calendar.show');
         
         

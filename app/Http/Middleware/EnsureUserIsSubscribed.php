@@ -36,8 +36,9 @@ class EnsureUserIsSubscribed
         }
 
         try {
-            // Check if user has an active subscription
-            if ($request->user()->subscribed('default')) {
+            // Check if user has an active subscription using our custom method
+            // This method properly checks for expired trials and subscription end dates
+            if ($request->user()->hasActiveSubscription('default')) {
                 return $next($request);
             }
 

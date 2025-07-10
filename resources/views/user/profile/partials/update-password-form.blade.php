@@ -1,48 +1,51 @@
-<section>
-    <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Update Password') }}
-        </h2>
+<form method="post" action="{{ route('user.profile.update') }}" class="space-y-6">
+    @csrf
+    @method('put')
 
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __('Ensure your account is using a long, random password to stay secure.') }}
-        </p>
-    </header>
+    <x-ui.form.group>
+        <x-ui.form.input 
+            id="update_password_current_password" 
+            name="current_password" 
+            type="password" 
+            label="{{ __('Current Password') }}"
+            autocomplete="current-password"
+            :error="$errors->updatePassword->get('current_password')"
+        />
+    </x-ui.form.group>
 
-    <form method="post" action="{{ route('user.profile.update') }}" class="mt-6 space-y-6">
-        @csrf
-        @method('put')
+    <x-ui.form.group>
+        <x-ui.form.input 
+            id="update_password_password" 
+            name="password" 
+            type="password" 
+            label="{{ __('New Password') }}"
+            autocomplete="new-password"
+            :error="$errors->updatePassword->get('password')"
+        />
+    </x-ui.form.group>
 
-        <div>
-            <x-input-label for="update_password_current_password" :value="__('Current Password')" />
-            <x-text-input id="update_password_current_password" name="current_password" type="password" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm text-sm" style="text-overflow: ellipsis;" autocomplete="current-password" />
-            <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
-        </div>
+    <x-ui.form.group>
+        <x-ui.form.input 
+            id="update_password_password_confirmation" 
+            name="password_confirmation" 
+            type="password" 
+            label="{{ __('Confirm Password') }}"
+            autocomplete="new-password"
+            :error="$errors->updatePassword->get('password_confirmation')"
+        />
+    </x-ui.form.group>
 
-        <div>
-            <x-input-label for="update_password_password" :value="__('New Password')" />
-            <x-text-input id="update_password_password" name="password" type="password" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm text-sm" style="text-overflow: ellipsis;" autocomplete="new-password" />
-            <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
-        </div>
+    <div class="flex items-center gap-4">
+        <x-ui.button.primary type="submit">{{ __('Save Password') }}</x-ui.button.primary>
 
-        <div>
-            <x-input-label for="update_password_password_confirmation" :value="__('Confirm Password')" />
-            <x-text-input id="update_password_password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm text-sm" style="text-overflow: ellipsis;" autocomplete="new-password" />
-            <x-input-error :messages="$errors->updatePassword->get('password_confirmation')" class="mt-2" />
-        </div>
-
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
-
-            @if (session('status') === 'password-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
-            @endif
-        </div>
-    </form>
-</section>
+        @if (session('status') === 'password-updated')
+            <p
+                x-data="{ show: true }"
+                x-show="show"
+                x-transition
+                x-init="setTimeout(() => show = false, 2000)"
+                class="text-sm text-green-600 dark:text-green-400"
+            >{{ __('Password updated successfully.') }}</p>
+        @endif
+    </div>
+</form>

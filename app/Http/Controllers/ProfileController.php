@@ -16,8 +16,38 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+        $subscriptionData = null;
+        
+        // Safely get subscription data
+        if ($user->subscribed('default')) {
+            $subscription = $user->subscription('default');
+            if ($subscription) {
+                try {
+                    $stripeSubscription = $subscription->asStripeSubscription();
+                    $subscriptionData = [
+                        'plan' => $subscription->stripe_price,
+                        'status' => $subscription->stripe_status,
+                        'active' => $subscription->active(),
+                        'on_trial' => $subscription->onTrial(),
+                        'on_grace_period' => $subscription->onGracePeriod(),
+                        'trial_ends_at' => $subscription->trial_ends_at,
+                        'ends_at' => $subscription->ends_at,
+                        'next_billing_date' => $stripeSubscription->current_period_end ?? null,
+                    ];
+                } catch (\Exception $e) {
+                    // If Stripe subscription is invalid, mark as error
+                    $subscriptionData = [
+                        'error' => true,
+                        'message' => 'Subscription data unavailable'
+                    ];
+                }
+            }
+        }
+        
         return view('user.profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'subscriptionData' => $subscriptionData,
         ]);
     }
 

@@ -19,7 +19,8 @@ class SubscriptionController extends Controller
         $currentPlan = null;
         $currentPlanId = null;
         
-        if ($user && $user->subscription('default')) {
+        // Only show current plan if the user has an ACTIVE subscription
+        if ($user && $user->hasActiveSubscription('default')) {
             $subscription = $user->subscription('default');
             $currentPlanId = $subscription->stripe_price;
             
@@ -35,8 +36,8 @@ class SubscriptionController extends Controller
         return view('user.subscriptions.plans', [
             'currentPlan' => $currentPlan,
             'currentPlanId' => $currentPlanId,
-            'onGracePeriod' => $user && $user->subscription('default') ? $user->subscription('default')->onGracePeriod() : false,
-            'canceled' => $user && $user->subscription('default') ? $user->subscription('default')->canceled() : false
+            'onGracePeriod' => $user && $user->subscription('default') && $user->hasActiveSubscription('default') ? $user->subscription('default')->onGracePeriod() : false,
+            'canceled' => $user && $user->subscription('default') && $user->hasActiveSubscription('default') ? $user->subscription('default')->canceled() : false
         ]);
     }
 
