@@ -18,6 +18,7 @@ use App\Http\Middleware\RedirectAdminToDashboard;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminUserController;
+
 use App\Http\Controllers\Admin\AdminCompanyController;
 use App\Http\Controllers\Accountant\AccountantDashboardController;
 use App\Http\Controllers\Accountant\AccountantUserController;
@@ -63,6 +64,10 @@ Route::middleware(['auth', \App\Http\Middleware\RedirectAdminToDashboard::class]
 
 // Routes that don't require subscription (plans and profile) - MUST COME AFTER PROTECTED ROUTES
 Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::class])->prefix('user')->name('user.')->group(function () {
+    // Debug route (temporary)
+    Route::get('/debug-subscription', function () {
+        return view('debug-subscription');
+    })->name('debug-subscription');
     // Subscription Plans
     Route::get('/subscription/plans', [SubscriptionController::class, 'showPlans'])->name('subscription.plans');
     Route::get('/subscription/{plan}/payment', [SubscriptionController::class, 'showPaymentForm'])->name('subscription.payment.form');
@@ -125,6 +130,12 @@ Route::middleware(['auth', 'verified', 'subscribed', \App\Http\Middleware\Ensure
         Route::delete('files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
         Route::post('/folders/{folder}/upload', [FileController::class, 'store'])->name('files.upload');
         Route::post('/folders/{folder}/chunk', [FileController::class, 'storeChunk'])->name('files.chunk');
+        
+        // AI Document Analysis
+        Route::post('files/{file}/analyze', [\App\Http\Controllers\User\AIDocumentController::class, 'analyze'])->name('files.analyze');
+        Route::post('files/{file}/accept-suggestion', [\App\Http\Controllers\User\AIDocumentController::class, 'acceptSuggestion'])->name('files.accept-suggestion');
+        Route::post('files/batch-analyze', [\App\Http\Controllers\User\AIDocumentController::class, 'batchAnalyze'])->name('files.batch-analyze');
+        Route::get('ai-analysis/history', [\App\Http\Controllers\User\AIDocumentController::class, 'history'])->name('ai-analysis.history');
 });
 
 // Admin Routes

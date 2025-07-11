@@ -136,7 +136,7 @@
                                            class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                            title="{{ __('View folder') }}">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 0 1 6 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
                                         </a>
@@ -239,7 +239,7 @@
                                                             ">
                                                         {{ $file->name }}
                                                         <svg class="inline h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 0 1 6 0z" />
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                         </svg>
                                                     </button>
@@ -248,7 +248,23 @@
                                                         {{ $file->name }}
                                                     </div>
                                                 @endif
-                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $file->uploader ? $file->uploader->name : 'System' }}</div>
+                                                <div class="flex items-center gap-2 mt-1">
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $file->uploader ? $file->uploader->name : 'System' }}</div>
+                                                    @if($file->ai_analyzed_at)
+                                                        <div class="flex items-center gap-1">
+                                                            <svg class="w-3 h-3 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                                                            </svg>
+                                                            <span class="text-xs text-indigo-600 dark:text-indigo-400">AI Analyzed</span>
+                                                            @if($file->ai_suggestion_accepted)
+                                                                <svg class="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </div>
                                     </x-ui.table.cell>
@@ -285,11 +301,19 @@
                                                      $dispatch('open-modal', 'file-preview')
                                                  ">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 0 1 6 0z" />
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
                                             </button>
                                         @endif
+                                        <button type="button"
+                                           onclick="showAISuggestionModal({{ $file->id }})"
+                                           class="p-1 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors"
+                                           title="{{ __('AI Analyze') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                            </svg>
+                                        </button>
                                         <a href="{{ route('user.files.download', $file) }}" 
                                            class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                            title="{{ __('Download') }}">
@@ -392,4 +416,23 @@
             </div>
         </div>
     </x-ui.modal.base>
+    
+    <!-- AI Suggestion Modal -->
+    <x-ai-suggestion-modal />
+    
+    @push('scripts')
+    <script>
+        // Backup function in case modal component doesn't load
+        if (typeof window.showAISuggestionModal === 'undefined') {
+            window.showAISuggestionModal = function(fileId, forceNew = false) {
+                if (typeof analyzeDocument !== 'undefined') {
+                    analyzeDocument(fileId, forceNew);
+                } else {
+                    console.error('AI analyze function not available');
+                    alert('AI analysis feature is not available. Please refresh the page.');
+                }
+            };
+        }
+    </script>
+    @endpush
 </x-user.layout>

@@ -21,10 +21,17 @@ class File extends Model
         'folder_id',
         'uploaded_by',
         'notes',
+        'ai_analysis',
+        'ai_analyzed_at',
+        'ai_suggested_folder_id',
+        'ai_suggestion_accepted',
     ];
 
     protected $casts = [
         'size' => 'integer',
+        'ai_analysis' => 'array',
+        'ai_analyzed_at' => 'datetime',
+        'ai_suggestion_accepted' => 'boolean',
     ];
 
     public function folder(): BelongsTo
@@ -35,6 +42,16 @@ class File extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+    
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function suggestedFolder(): BelongsTo
+    {
+        return $this->belongsTo(Folder::class, 'ai_suggested_folder_id');
     }
 
     public function getUrlAttribute(): string

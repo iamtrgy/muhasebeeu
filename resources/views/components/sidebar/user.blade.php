@@ -14,12 +14,14 @@ $customersIcon = '<svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/20
 $companiesIcon = '<svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>';
 
 $subscriptionIcon = '<svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16a2 2 0 0 1 2 2v6a10 10 0 0 1-10 10A10 10 0 0 1 2 11V5a2 2 0 0 1 2-2z"></path><polyline points="8 10 12 14 16 10"></polyline></svg>';
+
+$aiIcon = '<svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>';
 @endphp
 
 <x-sidebar.base :dashboardRoute="route('user.dashboard')">
     <x-slot:mainNavigation>
         <x-sidebar.nav-item :route="route('user.dashboard')" routePattern="user.dashboard" :icon="$dashboardIcon">
-            {{ __('Home') }}
+            {{ __('Home') }} TEST123
         </x-sidebar.nav-item>
         
         <x-sidebar.nav-item :route="route('user.folders.index')" routePattern="user.folders.*" :icon="$foldersIcon">
@@ -32,6 +34,10 @@ $subscriptionIcon = '<svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org
         
         <x-sidebar.nav-item :route="route('user.tax-calendar.index')" routePattern="user.tax-calendar.*" :icon="$calendarIcon">
             {{ __('Tax Calendar') }}
+        </x-sidebar.nav-item>
+        
+        <x-sidebar.nav-item :route="route('user.ai-analysis.history')" routePattern="user.ai-analysis.*" :icon="$aiIcon">
+            {{ __('AI Analysis') }}
         </x-sidebar.nav-item>
     </x-slot:mainNavigation>
     

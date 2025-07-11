@@ -46,5 +46,11 @@ return [
     'claude' => [
         'key' => env('CLAUDE_API_KEY'),
     ],
+    
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL', 'o4-mini-2025-04-16'),
+        'max_tokens' => env('OPENAI_MAX_TOKENS', 1000),
+    ],
 
 ];

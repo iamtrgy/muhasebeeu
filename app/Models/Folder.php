@@ -32,6 +32,8 @@ class Folder extends Model
         'allow_uploads' => 'boolean',
         'create_for_everyone' => 'boolean'
     ];
+    
+    protected $appends = ['full_path'];
 
 
 
@@ -150,7 +152,7 @@ class Folder extends Model
             $parent = $parent->parent;
         }
         
-        return $path->implode(' > ');
+        return $path->implode('/');
     }
 
     protected static function boot()
