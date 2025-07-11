@@ -36,11 +36,9 @@ $aiIcon = '<svg class="flex-shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg"
             {{ __('Tax Calendar') }}
         </x-sidebar.nav-item>
         
-        @if(auth()->user()->hasActiveSubscription())
-            <x-sidebar.nav-item :route="route('user.ai-analysis.history')" routePattern="user.ai-analysis.*" :icon="$aiIcon">
-                {{ __('AI Analysis') }}
-            </x-sidebar.nav-item>
-        @endif
+        <x-sidebar.nav-item :route="route('user.ai-analysis.history')" routePattern="user.ai-analysis.*" :icon="$aiIcon">
+            {{ __('AI Analysis') }}
+        </x-sidebar.nav-item>
     </x-slot:mainNavigation>
     
     <x-slot:additionalNavigation>
