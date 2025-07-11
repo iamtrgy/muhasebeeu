@@ -357,11 +357,15 @@ class AIDocumentAnalyzer
         $prompt = "File name: {$fileName}\n\n";
         
         $prompt .= "Analyze this document and find:\n";
-        $prompt .= "1. Document date (IMPORTANT: Extract the exact date and match to correct month folder)\n";
+        $prompt .= "1. Document date (CRITICAL: Use EXACT month from date for folder selection)\n";
         $prompt .= "2. Who sent it\n";
         $prompt .= "3. Who received it\n\n";
-        $prompt .= "Month mapping: 01=January, 02=February, 03=March, 04=April, 05=May, 06=June, ";
-        $prompt .= "07=July, 08=August, 09=September, 10=October, 11=November, 12=December\n\n";
+        $prompt .= "STRICT MONTH RULE:\n";
+        $prompt .= "- Date 01.06.2025 = June 2025 folder (NOT April, NOT May)\n";
+        $prompt .= "- Date 15.10.2024 = October 2024 folder (NOT April)\n";
+        $prompt .= "- Always match month number to exact month name\n";
+        $prompt .= "- 01=January, 02=February, 03=March, 04=April, 05=May, 06=June\n";
+        $prompt .= "- 07=July, 08=August, 09=September, 10=October, 11=November, 12=December\n\n";
         
         if (!empty($userCompanies)) {
             $prompt .= "User owns these companies: " . implode(', ', $userCompanies) . "\n\n";
@@ -371,7 +375,13 @@ class AIDocumentAnalyzer
             $prompt .= "3. If NEITHER sender NOR receiver is user's company = Return warning\n\n";
         }
         
-        $prompt .= "Choose from these folders:\n";
+        $prompt .= "FOLDER SELECTION RULE:\n";
+        $prompt .= "1. Find the EXACT year from document date\n";
+        $prompt .= "2. Find the EXACT month from document date\n";
+        $prompt .= "3. Select Income or Expense based on transaction type\n";
+        $prompt .= "4. Choose folder: CompanyName/YEAR/MONTH/TYPE\n\n";
+        
+        $prompt .= "Available folders:\n";
         foreach ($folders as $folder) {
             $prompt .= "ID: {$folder['id']}, Path: {$folder['path']}\n";
         }
