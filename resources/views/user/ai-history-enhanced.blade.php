@@ -418,48 +418,44 @@
                 @endif
             </x-ui.card.body>
         </x-ui.card.base>
-    </div>
-
-    <!-- Include AI Suggestion Modal -->
-    <x-ai-suggestion-modal />
-    
-    <!-- Bulk Progress Modal -->
-    <div id="bulk-progress-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" x-show="isProcessing" x-cloak>
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-            <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
-                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
-                    <div class="flex items-center">
-                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900">
-                            <svg class="animate-spin h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4 text-left">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" x-text="progressTitle">Processing Files</h3>
-                            <div class="mt-2">
-                                <p class="text-sm text-gray-500 dark:text-gray-400" x-text="progressMessage">Starting...</p>
-                                
-                                <!-- Progress Bar -->
-                                <div class="mt-4">
-                                    <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                        <div class="bg-indigo-600 dark:bg-indigo-400 h-2 rounded-full transition-all duration-300" 
-                                             :style="`width: ${progressPercentage}%`"></div>
-                                    </div>
-                                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        <span x-text="`${progressCurrent} of ${progressTotal}`"></span>
-                                        <span x-text="`${progressPercentage}%`"></span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Status Messages -->
-                                <div class="mt-4 max-h-32 overflow-y-auto">
-                                    <template x-for="message in progressMessages" :key="message.id">
-                                        <div class="text-xs py-1" :class="message.type === 'success' ? 'text-green-600 dark:text-green-400' : message.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'">
-                                            <span x-text="message.text"></span>
+        <!-- Bulk Progress Modal -->
+        <div x-show="isProcessing" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+                <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                    <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
+                        <div class="flex items-center">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900">
+                                <svg class="animate-spin h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4 text-left">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" x-text="progressTitle">Processing Files</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400" x-text="progressMessage">Starting...</p>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="mt-4">
+                                        <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                            <div class="bg-indigo-600 dark:bg-indigo-400 h-2 rounded-full transition-all duration-300" 
+                                                 :style="`width: ${progressPercentage}%`"></div>
                                         </div>
-                                    </template>
+                                        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            <span x-text="`${progressCurrent} of ${progressTotal}`"></span>
+                                            <span x-text="`${progressPercentage}%`"></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status Messages -->
+                                    <div class="mt-4 max-h-32 overflow-y-auto">
+                                        <template x-for="message in progressMessages" :key="message.id">
+                                            <div class="text-xs py-1" :class="message.type === 'success' ? 'text-green-600 dark:text-green-400' : message.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'">
+                                                <span x-text="message.text"></span>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -468,6 +464,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Include AI Suggestion Modal -->
+    <x-ai-suggestion-modal />
     
     <!-- Analysis Details Modal -->
     <div id="analysis-details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
