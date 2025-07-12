@@ -183,6 +183,36 @@ function displayAnalysis(data) {
     // Document info
     document.getElementById('ai-document-name').textContent = data.file.name;
     
+    // Check if file is already in correct folder
+    if (data.analysis.already_in_correct_folder) {
+        // Show success message
+        document.getElementById('ai-accept-btn').classList.add('hidden');
+        const breadcrumbContainer = document.getElementById('ai-suggested-folder-breadcrumb');
+        breadcrumbContainer.innerHTML = '<span class="text-green-600 dark:text-green-400 font-medium">✓ ' + 
+            'This file is already in the correct folder' + '</span>';
+        
+        // Update confidence to show success
+        const confidenceLabel = document.getElementById('ai-confidence-label');
+        if (confidenceLabel) {
+            confidenceLabel.className = 'text-xs text-green-600 dark:text-green-400 font-medium';
+            confidenceLabel.textContent = 'Status:';
+        }
+        
+        // Hide the confidence bar and text
+        const confidenceBar = document.getElementById('ai-confidence-bar');
+        if (confidenceBar) {
+            confidenceBar.parentElement.style.display = 'none';
+        }
+        const confidenceText = document.getElementById('ai-confidence-text');
+        if (confidenceText) {
+            confidenceText.style.display = 'none';
+        }
+        
+        // Update reasoning
+        document.getElementById('ai-reasoning').textContent = data.analysis.reasoning || 'This file is already organized correctly.';
+        return;
+    }
+    
     // Check if there's a warning
     if (data.analysis.warning || data.analysis.transaction_type === 'not_related' || !data.analysis.suggested_folder_id) {
         // Show warning instead of folder suggestion

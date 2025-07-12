@@ -30,10 +30,10 @@ class AIDocumentAnalyzer
     /**
      * Analyze a document and suggest the best folder
      */
-    public function analyzeDocument($filePath, User $user)
+    public function analyzeDocument($filePath, User $user, $currentFolderId = null)
     {
         try {
-            Log::info('Starting document analysis', ['filePath' => $filePath, 'userId' => $user->id]);
+            Log::info('Starting document analysis', ['filePath' => $filePath, 'userId' => $user->id, 'currentFolderId' => $currentFolderId]);
             
             // Get file content or prepare for vision API
             $fileContent = $this->prepareFileForAnalysis($filePath);
@@ -58,8 +58,14 @@ class AIDocumentAnalyzer
             // Get user's companies for context
             $userCompanies = $user->companies()->pluck('name')->toArray();
             
+            // Get current folder info if provided
+            $currentFolder = null;
+            if ($currentFolderId) {
+                $currentFolder = $folders->firstWhere('id', $currentFolderId);
+            }
+            
             // Call OpenAI API with user context
-            $analysis = $this->callOpenAI($fileContent, $folders, $filePath, $userCompanies);
+            $analysis = $this->callOpenAI($fileContent, $folders, $filePath, $userCompanies, $currentFolder);
             
             Log::info('AI analysis completed successfully');
             
@@ -217,13 +223,13 @@ class AIDocumentAnalyzer
     /**
      * Call OpenAI API for analysis
      */
-    protected function callOpenAI($fileContent, $folders, $filePath, $userCompanies = [])
+    protected function callOpenAI($fileContent, $folders, $filePath, $userCompanies = [], $currentFolder = null)
     {
         // Build the system instruction
         $systemPrompt = 'You are a document analyzer. Analyze the document image and extract key information regardless of language or format. Focus on understanding who sent the document, who received it, when it was issued, and what type of document it is. Always respond in JSON format.';
         
         // Build the user prompt
-        $userPrompt = $this->buildPrompt($fileContent, $folders, $filePath, $userCompanies);
+        $userPrompt = $this->buildPrompt($fileContent, $folders, $filePath, $userCompanies, $currentFolder);
         
         // For image content, use the new API format
         if ($fileContent['type'] === 'image') {
@@ -350,11 +356,16 @@ class AIDocumentAnalyzer
     /**
      * Build the prompt for OpenAI
      */
-    protected function buildPrompt($fileContent, $folders, $filePath, $userCompanies = [])
+    protected function buildPrompt($fileContent, $folders, $filePath, $userCompanies = [], $currentFolder = null)
     {
         $fileName = basename($filePath);
         
-        $prompt = "File name: {$fileName}\n\n";
+        $prompt = "File name: {$fileName}\n";
+        
+        if ($currentFolder) {
+            $prompt .= "CURRENT FOLDER: {$currentFolder['path']} (ID: {$currentFolder['id']})\n";
+            $prompt .= "IMPORTANT: Check if this file is already in the correct folder!\n\n";
+        }
         
         $prompt .= "Analyze this document and find:\n";
         $prompt .= "1. Document date (CRITICAL: Use EXACT month from date for folder selection)\n";
@@ -416,6 +427,12 @@ class AIDocumentAnalyzer
         $existingAnalysis = $file->ai_analysis;
         
         if (!$forceNew && $existingAnalysis && !empty($existingAnalysis)) {
+            // Check if file is already in suggested folder
+            if (isset($existingAnalysis['suggested_folder_id']) && 
+                $existingAnalysis['suggested_folder_id'] == $file->folder_id) {
+                $existingAnalysis['already_in_correct_folder'] = true;
+                $existingAnalysis['reasoning'] = "This file is already in the correct folder: " . $file->folder->full_path;
+            }
             return $existingAnalysis;
         }
         
@@ -429,6 +446,13 @@ class AIDocumentAnalyzer
         $result = $this->analyzeFileFromUrl($file, $user);
         
         if ($result['success']) {
+            // Check if suggested folder is the same as current folder
+            if (isset($result['analysis']['suggested_folder_id']) && 
+                $result['analysis']['suggested_folder_id'] == $file->folder_id) {
+                $result['analysis']['already_in_correct_folder'] = true;
+                $result['analysis']['reasoning'] = "This file is already in the correct folder: " . $file->folder->full_path;
+            }
+            
             // Save the analysis to the file
             $file->update([
                 'ai_analysis' => $result['analysis'],
@@ -506,8 +530,14 @@ class AIDocumentAnalyzer
             // Get user's companies for context
             $userCompanies = $user->companies()->pluck('name')->toArray();
             
+            // Get current folder info
+            $currentFolder = null;
+            if ($file->folder_id) {
+                $currentFolder = $folders->firstWhere('id', $file->folder_id);
+            }
+            
             // Call OpenAI API
-            $analysis = $this->callOpenAI($fileContent, $folders, $file->original_name, $userCompanies);
+            $analysis = $this->callOpenAI($fileContent, $folders, $file->original_name, $userCompanies, $currentFolder);
             
             Log::info('AI analysis completed successfully');
             
