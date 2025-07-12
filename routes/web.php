@@ -87,9 +87,6 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
     Route::get('/settings', [\App\Http\Controllers\User\UserSettingsController::class, 'index'])->name('settings');
     Route::patch('/settings/notifications', [\App\Http\Controllers\User\UserSettingsController::class, 'updateNotifications'])->name('settings.notifications');
     Route::patch('/settings/appearance', [\App\Http\Controllers\User\UserSettingsController::class, 'updateAppearance'])->name('settings.appearance');
-    
-    // AI History - Available without subscription
-    Route::get('/ai-analysis/history', [\App\Http\Controllers\User\AIDocumentController::class, 'history'])->name('ai-analysis.history');
 });
 
 // All routes that require subscription
@@ -138,6 +135,7 @@ Route::middleware(['auth', 'verified', 'subscribed', \App\Http\Middleware\Ensure
         Route::post('files/{file}/analyze', [\App\Http\Controllers\User\AIDocumentController::class, 'analyze'])->name('files.analyze');
         Route::post('files/{file}/accept-suggestion', [\App\Http\Controllers\User\AIDocumentController::class, 'acceptSuggestion'])->name('files.accept-suggestion');
         Route::post('files/batch-analyze', [\App\Http\Controllers\User\AIDocumentController::class, 'batchAnalyze'])->name('files.batch-analyze');
+        Route::get('ai-analysis/history', [\App\Http\Controllers\User\AIDocumentController::class, 'history'])->name('ai-analysis.history');
 });
 
 // Admin Routes

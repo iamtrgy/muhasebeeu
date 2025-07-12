@@ -62,13 +62,15 @@
                     {{ __('Tax Calendar') }}
                 </x-ui.layout.sidebar-item>
 
-                <x-ui.layout.sidebar-item 
-                    :href="route('user.ai-analysis.history')" 
-                    :active="request()->routeIs('user.ai-analysis.*')"
-                    icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>'
-                >
-                    {{ __('AI History') }}
-                </x-ui.layout.sidebar-item>
+                @if(auth()->user()->subscribed('default'))
+                    <x-ui.layout.sidebar-item 
+                        :href="route('user.ai-analysis.history')" 
+                        :active="request()->routeIs('user.ai-analysis.*')"
+                        icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>'
+                    >
+                        {{ __('AI History') }}
+                    </x-ui.layout.sidebar-item>
+                @endif
             </x-ui.layout.sidebar-group>
 
             <!-- Company -->
