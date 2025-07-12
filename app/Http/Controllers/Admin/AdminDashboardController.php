@@ -8,7 +8,7 @@ use App\Models\Company;
 use App\Models\Folder;
 use App\Models\File;
 use Illuminate\Http\Request;
-use Laravel\Cashier\Subscription;
+use App\Models\Subscription;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 

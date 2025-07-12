@@ -289,7 +289,7 @@ class AdminUserController extends Controller
     public function updateSubscription(Request $request, User $user)
     {
         $request->validate([
-            'action' => 'required|in:subscribe,cancel,resume,delete_incomplete,sync',
+            'action' => 'required|in:subscribe,cancel,resume,delete_incomplete,sync,delete_orphaned',
             'plan' => 'required_if:action,subscribe|in:basic,pro,enterprise',
             'trial_days' => 'nullable|integer|min:1|max:365'
         ]);
