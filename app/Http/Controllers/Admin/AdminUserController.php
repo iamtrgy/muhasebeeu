@@ -305,7 +305,7 @@ class AdminUserController extends Controller
                 
                 // If user already has a subscription on a different plan, swap it
                 if ($user->subscribed('default')) {
-                    $result = $this->subscriptionService->swapSubscriptionPlan($user, $plan);
+                    $result = $this->subscriptionService->swapSubscription($user, $plan);
                 } else {
                     // Create a new subscription
                     $result = $this->subscriptionService->createSubscription($user, $plan, $trialDays);
@@ -326,6 +326,34 @@ class AdminUserController extends Controller
                 
             case 'sync':
                 $result = $this->subscriptionService->syncSubscriptionStatus($user);
+                break;
+                
+            case 'delete_orphaned':
+                // First try to check if it really doesn't exist in Stripe
+                $subscription = $user->subscription('default');
+                if ($subscription && $subscription->stripe_id) {
+                    try {
+                        $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+                        $stripeSubscription = $stripe->subscriptions->retrieve($subscription->stripe_id);
+                        // If we get here, subscription exists, don't delete
+                        $result = [
+                            'success' => false,
+                            'message' => 'Subscription still exists in Stripe. Use sync instead.'
+                        ];
+                    } catch (\Stripe\Exception\InvalidRequestException $e) {
+                        // Subscription doesn't exist in Stripe, safe to delete
+                        $subscription->delete();
+                        $result = [
+                            'success' => true,
+                            'message' => 'Orphaned subscription record has been deleted.'
+                        ];
+                    }
+                } else {
+                    $result = [
+                        'success' => false,
+                        'message' => 'No subscription found to delete.'
+                    ];
+                }
                 break;
         }
         

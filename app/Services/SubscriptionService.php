@@ -140,7 +140,41 @@ class SubscriptionService
         $planName = $this->getPlanName($subscription->stripe_price);
         
         try {
-            $subscription->cancel();
+            // First check if subscription exists in Stripe
+            if ($subscription->stripe_id) {
+                try {
+                    $stripe = new StripeClient(config('cashier.secret'));
+                    $stripeSubscription = $stripe->subscriptions->retrieve($subscription->stripe_id);
+                    
+                    // If subscription exists in Stripe and is active, cancel it
+                    if ($stripeSubscription && !in_array($stripeSubscription->status, ['canceled', 'incomplete_expired'])) {
+                        $subscription->cancel();
+                    } else {
+                        // Subscription doesn't exist or is already canceled in Stripe
+                        // Update local database to reflect this
+                        $subscription->forceFill([
+                            'stripe_status' => 'canceled',
+                            'ends_at' => now()
+                        ])->save();
+                    }
+                } catch (\Stripe\Exception\InvalidRequestException $e) {
+                    // Subscription doesn't exist in Stripe
+                    \Log::warning('Subscription not found in Stripe, canceling locally', [
+                        'user_id' => $user->id,
+                        'subscription_id' => $subscription->stripe_id,
+                        'error' => $e->getMessage()
+                    ]);
+                    
+                    // Cancel locally
+                    $subscription->forceFill([
+                        'stripe_status' => 'canceled',
+                        'ends_at' => now()
+                    ])->save();
+                }
+            } else {
+                // No Stripe ID, just cancel locally
+                $subscription->cancel();
+            }
             
             // Clear cache
             $this->userDataService->clearUserCaches($user);

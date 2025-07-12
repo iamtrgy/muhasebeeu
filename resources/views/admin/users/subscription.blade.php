@@ -271,6 +271,18 @@
                                     </x-ui.button.secondary>
                                 </form>
                             @endif
+                            
+                            {{-- Show delete button if subscription doesn't exist in Stripe --}}
+                            @if($subscription && !$stripeStatus)
+                                <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST" 
+                                      onsubmit="return confirm('This will delete the local subscription record. Are you sure?');">
+                                    @csrf
+                                    <input type="hidden" name="action" value="delete_orphaned">
+                                    <x-ui.button.danger type="submit">
+                                        {{ __('Delete Orphaned Subscription') }}
+                                    </x-ui.button.danger>
+                                </form>
+                            @endif
                         </div>
                         
                         {{-- Show create new subscription option for fully canceled subscriptions --}}
