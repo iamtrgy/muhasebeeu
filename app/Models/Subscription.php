@@ -43,13 +43,29 @@ class Subscription extends CashierSubscription
      */
     public function getPlanNameAttribute(): string
     {
+        // Hardcoded price IDs as fallback if config is not set
+        $hardcodedPrices = [
+            'price_1Pcnr2K0DZxIauCF9ApsyOBA' => 'Basic',
+            'price_1PGJUAK0DZxIauCF8f8WiU2X' => 'Pro',
+            'price_1PGJYPK0DZxIauCFcYMlTPdE' => 'Enterprise',
+        ];
+        
+        // First try config values
         $prices = [
             config('cashier.prices.basic') => 'Basic',
             config('cashier.prices.pro') => 'Pro',
             config('cashier.prices.enterprise') => 'Enterprise',
         ];
+        
+        // Remove any null keys (if env vars not set)
+        $prices = array_filter($prices, function($key) {
+            return $key !== null;
+        }, ARRAY_FILTER_USE_KEY);
+        
+        // Merge with hardcoded prices as fallback
+        $allPrices = array_merge($hardcodedPrices, $prices);
 
-        return $prices[$this->stripe_price] ?? 'Unknown Plan';
+        return $allPrices[$this->stripe_price] ?? 'Unknown Plan';
     }
 
     /**
