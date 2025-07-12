@@ -178,22 +178,71 @@ class AIDocumentController extends Controller
      */
     public function history(Request $request)
     {
-        $analyses = File::where('uploaded_by', auth()->id())
-            ->whereNotNull('ai_analyzed_at')
-            ->with(['folder', 'suggestedFolder'])
-            ->orderBy('ai_analyzed_at', 'desc')
-            ->paginate(20);
+        $tab = $request->get('tab', 'analyzed');
+        $filters = $request->only(['date_from', 'date_to', 'folder', 'confidence', 'status', 'search']);
+        
+        // Base query for user files
+        $baseQuery = File::where('uploaded_by', auth()->id())->with(['folder', 'uploader']);
+        
+        // Get tab-specific queries
+        $analyzedQuery = clone $baseQuery;
+        $analyzedQuery->whereNotNull('ai_analyzed_at');
+        
+        $notAnalyzedQuery = clone $baseQuery;
+        $notAnalyzedQuery->whereNull('ai_analyzed_at');
+        
+        $allFilesQuery = clone $baseQuery;
+        
+        // Apply filters based on current tab
+        $currentQuery = match($tab) {
+            'not_analyzed' => $notAnalyzedQuery,
+            'all' => $allFilesQuery,
+            default => $analyzedQuery,
+        };
+        
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $currentQuery->where('original_name', 'like', '%' . $filters['search'] . '%');
+        }
+        
+        if (!empty($filters['date_from'])) {
+            $currentQuery->where('created_at', '>=', $filters['date_from']);
+        }
+        
+        if (!empty($filters['date_to'])) {
+            $currentQuery->where('created_at', '<=', $filters['date_to']);
+        }
+        
+        if (!empty($filters['folder'])) {
+            $currentQuery->where('folder_id', $filters['folder']);
+        }
+        
+        if (!empty($filters['confidence']) && $tab === 'analyzed') {
+            $currentQuery->whereNotNull('ai_analysis')->where(function ($query) use ($filters) {
+                $query->whereRaw("JSON_EXTRACT(ai_analysis, '$.confidence') >= ?", [$filters['confidence']]);
+            });
+        }
+        
+        if (!empty($filters['status']) && $tab === 'analyzed') {
+            if ($filters['status'] === 'accepted') {
+                $currentQuery->where('ai_suggestion_accepted', true);
+            } elseif ($filters['status'] === 'pending') {
+                $currentQuery->where('ai_suggestion_accepted', false);
+            }
+        }
+        
+        // Get paginated results
+        $files = $currentQuery->orderBy($tab === 'analyzed' ? 'ai_analyzed_at' : 'created_at', 'desc')->paginate(20);
+        
+        // Get tab counts
+        $analyzedCount = $analyzedQuery->count();
+        $notAnalyzedCount = $notAnalyzedQuery->count();
+        $allFilesCount = $allFilesQuery->count();
         
         // Calculate statistics
-        $totalAnalyses = File::where('uploaded_by', auth()->id())
-            ->whereNotNull('ai_analyzed_at')
-            ->count();
-            
-        $acceptedCount = File::where('uploaded_by', auth()->id())
-            ->whereNotNull('ai_analyzed_at')
-            ->where('ai_suggestion_accepted', true)
-            ->count();
-            
+        $totalAnalyses = $analyzedCount;
+        $acceptedCount = $analyzedQuery->where('ai_suggestion_accepted', true)->count();
+        
         $avgConfidence = File::where('uploaded_by', auth()->id())
             ->whereNotNull('ai_analyzed_at')
             ->whereNotNull('ai_analysis')
@@ -207,13 +256,131 @@ class AIDocumentController extends Controller
             ->orderBy('ai_analyzed_at', 'desc')
             ->first()
             ?->ai_analyzed_at;
+        
+        // Get user folders for filter dropdown
+        $userFolders = auth()->user()->folders()->orderBy('name')->get();
             
-        return view('user.ai-history', [
-            'analyses' => $analyses,
+        return view('user.ai-history-enhanced', [
+            'files' => $files,
+            'currentTab' => $tab,
+            'filters' => $filters,
+            'tabCounts' => [
+                'analyzed' => $analyzedCount,
+                'not_analyzed' => $notAnalyzedCount,
+                'all' => $allFilesCount,
+            ],
             'totalAnalyses' => $totalAnalyses,
             'acceptedCount' => $acceptedCount,
             'avgConfidence' => round($avgConfidence ?? 0),
-            'lastAnalysis' => $lastAnalysis
+            'lastAnalysis' => $lastAnalysis,
+            'userFolders' => $userFolders,
+        ]);
+    }
+    
+    /**
+     * Get statistics for AI analysis dashboard
+     */
+    public function stats()
+    {
+        $analyzed = File::where('uploaded_by', auth()->id())->whereNotNull('ai_analyzed_at')->count();
+        $notAnalyzed = File::where('uploaded_by', auth()->id())->whereNull('ai_analyzed_at')->count();
+        $total = $analyzed + $notAnalyzed;
+        
+        return response()->json([
+            'analyzed' => $analyzed,
+            'not_analyzed' => $notAnalyzed,
+            'total' => $total,
+        ]);
+    }
+    
+    /**
+     * Bulk approve AI suggestions
+     */
+    public function bulkApprove(Request $request)
+    {
+        $request->validate([
+            'file_ids' => 'required|array',
+            'file_ids.*' => 'exists:files,id'
+        ]);
+        
+        $fileIds = $request->file_ids;
+        $moved = 0;
+        $skipped = 0;
+        $errors = [];
+        
+        foreach ($fileIds as $fileId) {
+            try {
+                $file = File::where('uploaded_by', auth()->id())
+                    ->where('id', $fileId)
+                    ->whereNotNull('ai_analyzed_at')
+                    ->first();
+                    
+                if (!$file) {
+                    $skipped++;
+                    continue;
+                }
+                
+                // Skip if already accepted
+                if ($file->ai_suggestion_accepted) {
+                    $skipped++;
+                    continue;
+                }
+                
+                // Skip if no suggested folder
+                if (!$file->ai_analysis || !isset($file->ai_analysis['suggested_folder_id'])) {
+                    $skipped++;
+                    continue;
+                }
+                
+                $suggestedFolderId = $file->ai_analysis['suggested_folder_id'];
+                
+                // Skip if already in suggested folder
+                if ($file->folder_id == $suggestedFolderId) {
+                    // Mark as accepted even though no move needed
+                    $file->update(['ai_suggestion_accepted' => true]);
+                    $skipped++;
+                    continue;
+                }
+                
+                // Check if user owns the target folder
+                $targetFolder = auth()->user()->folders()->find($suggestedFolderId);
+                if (!$targetFolder) {
+                    $errors[] = "File {$file->original_name}: Target folder not found";
+                    continue;
+                }
+                
+                // Move file and mark as accepted
+                $file->update([
+                    'folder_id' => $suggestedFolderId,
+                    'ai_suggestion_accepted' => true,
+                    'ai_suggested_folder_id' => $suggestedFolderId
+                ]);
+                
+                $moved++;
+                
+                Log::info('Bulk AI suggestion accepted', [
+                    'file_id' => $file->id,
+                    'old_folder' => $file->getOriginal('folder_id'),
+                    'new_folder' => $suggestedFolderId,
+                    'user_id' => auth()->id()
+                ]);
+                
+            } catch (\Exception $e) {
+                $errors[] = "File {$fileId}: " . $e->getMessage();
+                Log::error('Bulk approve error', [
+                    'file_id' => $fileId,
+                    'error' => $e->getMessage(),
+                    'user_id' => auth()->id()
+                ]);
+            }
+        }
+        
+        return response()->json([
+            'success' => true,
+            'moved' => $moved,
+            'skipped' => $skipped,
+            'errors' => $errors,
+            'message' => "Processed {$moved} files successfully" . ($skipped > 0 ? ", skipped {$skipped}" : "") . ($errors ? ", " . count($errors) . " errors" : "")
         ]);
     }
 }

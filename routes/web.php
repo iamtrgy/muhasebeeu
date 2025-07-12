@@ -135,7 +135,9 @@ Route::middleware(['auth', 'verified', 'subscribed', \App\Http\Middleware\Ensure
         Route::post('files/{file}/analyze', [\App\Http\Controllers\User\AIDocumentController::class, 'analyze'])->name('files.analyze');
         Route::post('files/{file}/accept-suggestion', [\App\Http\Controllers\User\AIDocumentController::class, 'acceptSuggestion'])->name('files.accept-suggestion');
         Route::post('files/batch-analyze', [\App\Http\Controllers\User\AIDocumentController::class, 'batchAnalyze'])->name('files.batch-analyze');
+        Route::post('ai-analysis/bulk-approve', [\App\Http\Controllers\User\AIDocumentController::class, 'bulkApprove'])->name('ai-analysis.bulk-approve');
         Route::get('ai-analysis/history', [\App\Http\Controllers\User\AIDocumentController::class, 'history'])->name('ai-analysis.history');
+        Route::get('ai-analysis/stats', [\App\Http\Controllers\User\AIDocumentController::class, 'stats'])->name('ai-analysis.stats');
 });
 
 // Admin Routes
