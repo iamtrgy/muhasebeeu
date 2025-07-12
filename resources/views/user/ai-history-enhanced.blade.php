@@ -1,5 +1,5 @@
 <x-user.layout title="AI Document Analysis">
-    <div class="space-y-6" x-data="aiHistoryManager()">
+    <div class="space-y-6" x-data="aiHistoryManager({{ $files->pluck('id')->toJson() }})">
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <x-ui.card.base>
@@ -218,7 +218,9 @@
                             <thead class="bg-gray-50 dark:bg-gray-800">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        <input type="checkbox" @change="toggleAll($event.target.checked)" 
+                                        <input type="checkbox" 
+                                               @change="toggleAll($event.target.checked)" 
+                                               :checked="allFileIds.length > 0 && selectedFiles.length === allFileIds.length"
                                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">File</th>
@@ -444,10 +446,11 @@
 
     @push('scripts')
     <script>
-        function aiHistoryManager() {
+        function aiHistoryManager(allFileIds = []) {
             return {
                 selectedFiles: [],
                 isProcessing: false,
+                allFileIds: allFileIds,
                 
                 toggleFile(fileId) {
                     if (this.selectedFiles.includes(fileId)) {
@@ -459,8 +462,7 @@
                 
                 toggleAll(checked) {
                     if (checked) {
-                        this.selectedFiles = Array.from(document.querySelectorAll('input[type="checkbox"]:not([onchange*="toggleAll"])'))
-                            .map(cb => parseInt(cb.getAttribute('@change').match(/\d+/)[0]));
+                        this.selectedFiles = [...this.allFileIds];
                     } else {
                         this.selectedFiles = [];
                     }
