@@ -423,6 +423,52 @@
     <!-- Include AI Suggestion Modal -->
     <x-ai-suggestion-modal />
     
+    <!-- Bulk Progress Modal -->
+    <div id="bulk-progress-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" x-show="isProcessing" x-cloak>
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
+                    <div class="flex items-center">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900">
+                            <svg class="animate-spin h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4 text-left">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" x-text="progressTitle">Processing Files</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500 dark:text-gray-400" x-text="progressMessage">Starting...</p>
+                                
+                                <!-- Progress Bar -->
+                                <div class="mt-4">
+                                    <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                        <div class="bg-indigo-600 dark:bg-indigo-400 h-2 rounded-full transition-all duration-300" 
+                                             :style="`width: ${progressPercentage}%`"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <span x-text="`${progressCurrent} of ${progressTotal}`"></span>
+                                        <span x-text="`${progressPercentage}%`"></span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Status Messages -->
+                                <div class="mt-4 max-h-32 overflow-y-auto">
+                                    <template x-for="message in progressMessages" :key="message.id">
+                                        <div class="text-xs py-1" :class="message.type === 'success' ? 'text-green-600 dark:text-green-400' : message.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'">
+                                            <span x-text="message.text"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Analysis Details Modal -->
     <div id="analysis-details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -452,6 +498,61 @@
                 isProcessing: false,
                 allFileIds: allFileIds,
                 
+                // Progress tracking
+                progressTitle: '',
+                progressMessage: '',
+                progressCurrent: 0,
+                progressTotal: 0,
+                progressPercentage: 0,
+                progressMessages: [],
+                
+                // Progress helper methods
+                startProgress(title, total) {
+                    this.isProcessing = true;
+                    this.progressTitle = title;
+                    this.progressCurrent = 0;
+                    this.progressTotal = total;
+                    this.progressPercentage = 0;
+                    this.progressMessages = [];
+                    this.progressMessage = `Starting to process ${total} files...`;
+                },
+                
+                updateProgress(current, message = '') {
+                    this.progressCurrent = current;
+                    this.progressPercentage = Math.round((current / this.progressTotal) * 100);
+                    if (message) {
+                        this.progressMessage = message;
+                    }
+                },
+                
+                addProgressMessage(text, type = 'info') {
+                    this.progressMessages.push({
+                        id: Date.now() + Math.random(),
+                        text,
+                        type
+                    });
+                    
+                    // Auto-scroll to bottom
+                    this.$nextTick(() => {
+                        const container = document.querySelector('.max-h-32.overflow-y-auto');
+                        if (container) {
+                            container.scrollTop = container.scrollHeight;
+                        }
+                    });
+                },
+                
+                finishProgress(successCount, errorCount = 0) {
+                    this.progressPercentage = 100;
+                    this.progressMessage = `Completed! ${successCount} successful` + (errorCount > 0 ? `, ${errorCount} errors` : '');
+                    
+                    setTimeout(() => {
+                        this.isProcessing = false;
+                        if (successCount > 0) {
+                            window.location.reload();
+                        }
+                    }, 2000);
+                },
+                
                 toggleFile(fileId) {
                     if (this.selectedFiles.includes(fileId)) {
                         this.selectedFiles = this.selectedFiles.filter(id => id !== fileId);
@@ -473,9 +574,11 @@
                     
                     if (!confirm(`Analyze ${this.selectedFiles.length} selected files?`)) return;
                     
-                    this.isProcessing = true;
+                    this.startProgress('Analyzing Files', this.selectedFiles.length);
                     
                     try {
+                        this.addProgressMessage('Starting batch analysis...', 'info');
+                        
                         const response = await fetch('/user/files/batch-analyze', {
                             method: 'POST',
                             headers: {
@@ -488,21 +591,15 @@
                         const data = await response.json();
                         
                         if (data.success) {
-                            if (typeof toastr !== 'undefined') {
-                                toastr.success(`Successfully analyzed ${this.selectedFiles.length} files!`);
-                            }
-                            setTimeout(() => window.location.reload(), 2000);
+                            this.updateProgress(this.progressTotal, 'Analysis completed!');
+                            this.addProgressMessage(`Successfully analyzed ${this.selectedFiles.length} files!`, 'success');
+                            this.finishProgress(this.selectedFiles.length);
                         } else {
                             throw new Error(data.error || 'Failed to analyze files');
                         }
                     } catch (error) {
-                        if (typeof toastr !== 'undefined') {
-                            toastr.error('Failed to analyze files: ' + error.message);
-                        } else {
-                            alert('Failed to analyze files: ' + error.message);
-                        }
-                    } finally {
-                        this.isProcessing = false;
+                        this.addProgressMessage(`Error: ${error.message}`, 'error');
+                        this.finishProgress(0, this.selectedFiles.length);
                     }
                 },
                 
@@ -511,9 +608,11 @@
                     
                     if (!confirm(`Approve AI suggestions for ${this.selectedFiles.length} selected files? This will move files to their suggested folders.`)) return;
                     
-                    this.isProcessing = true;
+                    this.startProgress('Approving Suggestions', this.selectedFiles.length);
                     
                     try {
+                        this.addProgressMessage('Processing bulk approval...', 'info');
+                        
                         const response = await fetch('/user/ai-analysis/bulk-approve', {
                             method: 'POST',
                             headers: {
@@ -526,32 +625,27 @@
                         const data = await response.json();
                         
                         if (data.success) {
-                            if (typeof toastr !== 'undefined') {
-                                toastr.success(data.message);
-                            } else {
-                                alert(data.message);
+                            this.updateProgress(this.progressTotal, data.message);
+                            this.addProgressMessage(`Moved: ${data.moved} files`, 'success');
+                            
+                            if (data.skipped > 0) {
+                                this.addProgressMessage(`Skipped: ${data.skipped} files (already in correct folder)`, 'info');
                             }
                             
-                            // Show detailed results if there were errors
+                            // Show detailed errors
                             if (data.errors && data.errors.length > 0) {
-                                console.log('Errors:', data.errors);
-                                if (typeof toastr !== 'undefined') {
-                                    data.errors.forEach(error => toastr.warning(error));
-                                }
+                                data.errors.forEach(error => {
+                                    this.addProgressMessage(error, 'error');
+                                });
                             }
                             
-                            setTimeout(() => window.location.reload(), 2000);
+                            this.finishProgress(data.moved, data.errors ? data.errors.length : 0);
                         } else {
                             throw new Error(data.error || 'Failed to approve suggestions');
                         }
                     } catch (error) {
-                        if (typeof toastr !== 'undefined') {
-                            toastr.error('Failed to approve suggestions: ' + error.message);
-                        } else {
-                            alert('Failed to approve suggestions: ' + error.message);
-                        }
-                    } finally {
-                        this.isProcessing = false;
+                        this.addProgressMessage(`Error: ${error.message}`, 'error');
+                        this.finishProgress(0, this.selectedFiles.length);
                     }
                 },
                 
@@ -560,14 +654,19 @@
                     
                     if (!confirm(`Re-analyze ${this.selectedFiles.length} selected files? This will generate new AI analysis for each file.`)) return;
                     
-                    this.isProcessing = true;
+                    this.startProgress('Re-analyzing Files', this.selectedFiles.length);
                     
                     try {
-                        // Process files one by one for re-analysis
+                        // Process files one by one for re-analysis with progress updates
                         let completed = 0;
                         let errors = [];
                         
-                        for (const fileId of this.selectedFiles) {
+                        for (let i = 0; i < this.selectedFiles.length; i++) {
+                            const fileId = this.selectedFiles[i];
+                            
+                            this.updateProgress(i, `Re-analyzing file ${i + 1} of ${this.selectedFiles.length}...`);
+                            this.addProgressMessage(`Processing file ID: ${fileId}`, 'info');
+                            
                             try {
                                 const response = await fetch(`/user/files/${fileId}/analyze?force_new=1`, {
                                     method: 'POST',
@@ -579,39 +678,24 @@
                                 
                                 if (response.ok) {
                                     completed++;
+                                    this.addProgressMessage(`✓ File ${fileId} analyzed successfully`, 'success');
                                 } else {
-                                    errors.push(`File ${fileId}: Failed to re-analyze`);
+                                    const errorText = `File ${fileId}: Failed to re-analyze`;
+                                    errors.push(errorText);
+                                    this.addProgressMessage(`✗ ${errorText}`, 'error');
                                 }
                             } catch (error) {
-                                errors.push(`File ${fileId}: ${error.message}`);
+                                const errorText = `File ${fileId}: ${error.message}`;
+                                errors.push(errorText);
+                                this.addProgressMessage(`✗ ${errorText}`, 'error');
                             }
                         }
                         
-                        const message = `Re-analyzed ${completed} files successfully` + 
-                                      (errors.length > 0 ? `, ${errors.length} errors` : '');
-                        
-                        if (typeof toastr !== 'undefined') {
-                            if (completed > 0) {
-                                toastr.success(message);
-                            }
-                            if (errors.length > 0) {
-                                console.log('Re-analysis errors:', errors);
-                                toastr.warning(`Some files failed to re-analyze. Check console for details.`);
-                            }
-                        } else {
-                            alert(message);
-                        }
-                        
-                        setTimeout(() => window.location.reload(), 2000);
+                        this.finishProgress(completed, errors.length);
                         
                     } catch (error) {
-                        if (typeof toastr !== 'undefined') {
-                            toastr.error('Failed to re-analyze files: ' + error.message);
-                        } else {
-                            alert('Failed to re-analyze files: ' + error.message);
-                        }
-                    } finally {
-                        this.isProcessing = false;
+                        this.addProgressMessage(`Critical error: ${error.message}`, 'error');
+                        this.finishProgress(0, this.selectedFiles.length);
                     }
                 }
             }
