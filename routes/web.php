@@ -87,6 +87,9 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\UserMiddleware::clas
     Route::get('/settings', [\App\Http\Controllers\User\UserSettingsController::class, 'index'])->name('settings');
     Route::patch('/settings/notifications', [\App\Http\Controllers\User\UserSettingsController::class, 'updateNotifications'])->name('settings.notifications');
     Route::patch('/settings/appearance', [\App\Http\Controllers\User\UserSettingsController::class, 'updateAppearance'])->name('settings.appearance');
+    
+    // AI History - Available without subscription
+    Route::get('/ai-analysis/history', [\App\Http\Controllers\User\AIDocumentController::class, 'history'])->name('ai-analysis.history');
 });
 
 // All routes that require subscription
@@ -135,7 +138,6 @@ Route::middleware(['auth', 'verified', 'subscribed', \App\Http\Middleware\Ensure
         Route::post('files/{file}/analyze', [\App\Http\Controllers\User\AIDocumentController::class, 'analyze'])->name('files.analyze');
         Route::post('files/{file}/accept-suggestion', [\App\Http\Controllers\User\AIDocumentController::class, 'acceptSuggestion'])->name('files.accept-suggestion');
         Route::post('files/batch-analyze', [\App\Http\Controllers\User\AIDocumentController::class, 'batchAnalyze'])->name('files.batch-analyze');
-        Route::get('ai-analysis/history', [\App\Http\Controllers\User\AIDocumentController::class, 'history'])->name('ai-analysis.history');
 });
 
 // Admin Routes
@@ -266,5 +268,8 @@ Route::middleware(['auth', 'admin'])->get('/layout-demo', function () {
 
 // Public payment page for guests (no authentication required)
 Route::get('/pay/{invoice}', [App\Http\Controllers\PaymentController::class, 'show'])->name('payment.show');
+
+// Stripe webhook endpoint (must be outside auth middleware)
+Route::post('/stripe/webhook', [\App\Http\Controllers\StripeWebhookController::class, 'handleWebhook'])->name('cashier.webhook');
 
 require __DIR__.'/auth.php';
