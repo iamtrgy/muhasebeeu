@@ -8,6 +8,23 @@
     ]"
 >
     <div class="space-y-6">
+        @if(session('success'))
+            <x-ui.alert variant="success">{{ session('success') }}</x-ui.alert>
+        @endif
+
+        @if(session('error'))
+            <x-ui.alert variant="danger">{{ session('error') }}</x-ui.alert>
+        @endif
+
+        @if($errors->any())
+            <x-ui.alert variant="danger">
+                <ul class="list-disc list-inside">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </x-ui.alert>
+        @endif
         <!-- User Profile Header -->
         <x-ui.card.base>
             <x-ui.card.body>
@@ -223,7 +240,7 @@
                                     </x-ui.button.primary>
                                 </form>
                             @elseif(!$subscription->canceled() && $stripeStatus !== 'canceled')
-                                <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST">
+                                <form action="{{ route('admin.users.subscription.update', $user) }}" method="POST" onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').innerHTML = '{{ __('Canceling...') }}';">
                                     @csrf
                                     <input type="hidden" name="action" value="cancel">
                                     <x-ui.button.danger type="submit">
