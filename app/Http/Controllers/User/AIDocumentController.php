@@ -71,7 +71,7 @@ class AIDocumentController extends Controller
                     'file' => [
                         'id' => $file->id,
                         'name' => $file->original_name ?? $file->name,
-                        'current_folder' => $file->folder ? $file->folder->name : 'Unknown',
+                        'current_folder' => $file->folder ? $file->folder->full_path : 'Unknown',
                         'current_folder_id' => $file->folder_id
                     ],
                     'folders' => $folders
