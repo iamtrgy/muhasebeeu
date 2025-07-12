@@ -72,6 +72,18 @@
                                 <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alternative Options:</p>
                                 <div class="space-y-2" id="ai-alternatives"></div>
                             </div>
+                            
+                            <!-- Manual Folder Selection -->
+                            <div id="ai-manual-section" class="hidden">
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Choose a different folder manually:
+                                    </label>
+                                    <select id="manual-folder-select" class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 text-sm">
+                                        <option value="">-- Select Folder --</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Error State -->
@@ -85,9 +97,25 @@
             </div>
             
             <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <!-- Primary Action Button -->
                 <button type="button" id="ai-accept-btn" class="hidden w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
                     Accept & Move
                 </button>
+                
+                <!-- Re-analyze Button -->
+                <button type="button" id="ai-reanalyze-btn" class="hidden w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Re-analyze
+                </button>
+                
+                <!-- Manual Move Button -->
+                <button type="button" id="ai-manual-btn" class="hidden w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    Move Manually
+                </button>
+                
+                <!-- Close Button -->
                 <button type="button" id="ai-cancel-btn" onclick="closeAISuggestionModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                     Close
                 </button>
@@ -99,6 +127,7 @@
 <script>
 let currentFileId = null;
 let currentAnalysis = null;
+let availableFolders = [];
 
 function showAISuggestionModal(fileId, forceNew = false) {
     currentFileId = fileId;
@@ -106,7 +135,12 @@ function showAISuggestionModal(fileId, forceNew = false) {
     document.getElementById('ai-loading').classList.remove('hidden');
     document.getElementById('ai-results').classList.add('hidden');
     document.getElementById('ai-error').classList.add('hidden');
+    
+    // Hide all action buttons initially
     document.getElementById('ai-accept-btn').classList.add('hidden');
+    document.getElementById('ai-reanalyze-btn').classList.add('hidden');
+    document.getElementById('ai-manual-btn').classList.add('hidden');
+    document.getElementById('ai-manual-section').classList.add('hidden');
     
     // Analyze the document
     analyzeDocument(fileId, forceNew);
@@ -174,6 +208,7 @@ function displayAnalysis(data) {
     console.log('displayAnalysis called with data:', data);
     currentFileId = data.file.id;
     currentAnalysis = data.analysis;
+    availableFolders = data.folders || [];
     
     // Make sure modal is visible
     document.getElementById('ai-suggestion-modal').classList.remove('hidden');
@@ -185,31 +220,7 @@ function displayAnalysis(data) {
     
     // Check if file is already in correct folder
     if (data.analysis.already_in_correct_folder) {
-        // Show success message
-        document.getElementById('ai-accept-btn').classList.add('hidden');
-        const breadcrumbContainer = document.getElementById('ai-suggested-folder-breadcrumb');
-        breadcrumbContainer.innerHTML = '<span class="text-green-600 dark:text-green-400 font-medium">✓ ' + 
-            'This file is already in the correct folder' + '</span>';
-        
-        // Update confidence to show success
-        const confidenceLabel = document.getElementById('ai-confidence-label');
-        if (confidenceLabel) {
-            confidenceLabel.className = 'text-xs text-green-600 dark:text-green-400 font-medium';
-            confidenceLabel.textContent = 'Status:';
-        }
-        
-        // Hide the confidence bar and text
-        const confidenceBar = document.getElementById('ai-confidence-bar');
-        if (confidenceBar) {
-            confidenceBar.parentElement.style.display = 'none';
-        }
-        const confidenceText = document.getElementById('ai-confidence-text');
-        if (confidenceText) {
-            confidenceText.style.display = 'none';
-        }
-        
-        // Update reasoning
-        document.getElementById('ai-reasoning').textContent = data.analysis.reasoning || 'This file is already organized correctly.';
+        handleAlreadyCorrectFolder(data);
         return;
     }
     
@@ -400,6 +411,130 @@ function acceptSuggestion(folderId) {
         acceptBtn.disabled = false;
         acceptBtn.textContent = 'Accept & Move';
     });
+}
+
+function handleAlreadyCorrectFolder(data) {
+    // Show success message with enhanced details
+    const breadcrumbContainer = document.getElementById('ai-suggested-folder-breadcrumb');
+    breadcrumbContainer.innerHTML = `
+        <div class="space-y-3">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-green-600 dark:text-green-400 font-medium">File is correctly placed</span>
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                Current location: <span class="font-medium">${data.file.current_folder}</span>
+            </div>
+        </div>
+    `;
+    
+    // Update confidence area to show detailed analysis
+    const confidenceContainer = document.getElementById('ai-confidence-container');
+    if (confidenceContainer) {
+        confidenceContainer.innerHTML = `
+            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 mt-2">
+                <p class="text-xs font-medium text-green-800 dark:text-green-300 mb-2">Why this folder is correct:</p>
+                <ul class="text-xs text-green-700 dark:text-green-400 space-y-1">
+                    ${data.analysis.document_type ? `<li>• Document type: ${data.analysis.document_type}</li>` : ''}
+                    ${data.analysis.document_date ? `<li>• Date matches folder period: ${data.analysis.document_date}</li>` : ''}
+                    ${data.analysis.transaction_type ? `<li>• Transaction type: ${data.analysis.transaction_type}</li>` : ''}
+                    ${data.analysis.company_involved ? `<li>• Company: ${data.analysis.company_involved}</li>` : ''}
+                </ul>
+            </div>
+        `;
+    }
+    
+    // Update reasoning
+    document.getElementById('ai-reasoning').innerHTML = `
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+            <p class="text-sm">${data.analysis.reasoning || 'This file is already organized correctly based on its content and metadata.'}</p>
+        </div>
+    `;
+    
+    // Show re-analyze and manual move buttons
+    document.getElementById('ai-reanalyze-btn').classList.remove('hidden');
+    document.getElementById('ai-manual-btn').classList.remove('hidden');
+    
+    // Setup re-analyze button
+    document.getElementById('ai-reanalyze-btn').onclick = () => {
+        showAISuggestionModal(currentFileId, true);
+    };
+    
+    // Setup manual move button
+    document.getElementById('ai-manual-btn').onclick = () => {
+        showManualFolderSelection();
+    };
+    
+    // Show alternatives if available
+    if (data.analysis.alternative_folders && data.analysis.alternative_folders.length > 0) {
+        showAlternativesWithActions(data.analysis.alternative_folders);
+    }
+}
+
+function showAlternativesWithActions(alternatives) {
+    document.getElementById('ai-alternatives-section').classList.remove('hidden');
+    const altContainer = document.getElementById('ai-alternatives');
+    altContainer.innerHTML = '';
+    
+    alternatives.forEach(alt => {
+        const div = document.createElement('div');
+        div.className = 'bg-gray-100 dark:bg-gray-600 rounded-lg p-3 flex justify-between items-center';
+        
+        let pathDisplay = alt.folder_name || alt.name || 'Unknown';
+        if (alt.folder_path || alt.path) {
+            const path = alt.folder_path || alt.path;
+            if (path.includes('/')) {
+                const parts = path.split('/').filter(p => p);
+                pathDisplay = parts.join(' › ');
+            }
+        }
+        
+        const confidence = alt.confidence || 0;
+        const reason = alt.reason || '';
+        
+        div.innerHTML = `
+            <div class="flex-1">
+                <div class="font-medium text-gray-700 dark:text-gray-300">${pathDisplay}</div>
+                ${reason ? `<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">${reason}</div>` : ''}
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Confidence: ${confidence}%</div>
+            </div>
+            <button onclick="acceptSuggestion(${alt.folder_id || alt.id})" 
+                    class="ml-3 px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors">
+                Move Here
+            </button>
+        `;
+        altContainer.appendChild(div);
+    });
+}
+
+function showManualFolderSelection() {
+    document.getElementById('ai-manual-section').classList.remove('hidden');
+    const select = document.getElementById('manual-folder-select');
+    
+    // Populate folders if not already done
+    if (select.options.length <= 1 && availableFolders.length > 0) {
+        availableFolders.forEach(folder => {
+            const option = document.createElement('option');
+            option.value = folder.id;
+            option.textContent = folder.path || folder.name;
+            select.appendChild(option);
+        });
+    }
+    
+    // Add change event listener
+    select.onchange = function() {
+        if (this.value) {
+            // Show confirmation
+            if (confirm(`Move file to ${this.options[this.selectedIndex].text}?`)) {
+                acceptSuggestion(this.value);
+            }
+        }
+    };
+    
+    // Scroll to manual section
+    document.getElementById('ai-manual-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // Global function to show AI suggestion modal

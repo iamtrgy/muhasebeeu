@@ -410,7 +410,7 @@ class AIDocumentAnalyzer
         $prompt .= '  "transaction_type": "<income|expense|not_related>",';
         $prompt .= '  "key_information": [],';
         $prompt .= '  "company_involved": "<company>",';
-        $prompt .= '  "alternative_folders": [],';
+        $prompt .= '  "alternative_folders": [{"folder_id": <id>, "folder_name": "<name>", "folder_path": "<path>", "confidence": <0-100>, "reason": "<why this could work>"}],';
         $prompt .= '  "data_source": "<from image content or filename>",';
         $prompt .= '  "warning": "<warning message if document not related to user companies>"';
         $prompt .= "\n}";
@@ -432,6 +432,11 @@ class AIDocumentAnalyzer
                 $existingAnalysis['suggested_folder_id'] == $file->folder_id) {
                 $existingAnalysis['already_in_correct_folder'] = true;
                 $existingAnalysis['reasoning'] = "This file is already in the correct folder: " . $file->folder->full_path;
+                
+                // Ensure we have alternative folders for user to consider
+                if (!isset($existingAnalysis['alternative_folders']) || empty($existingAnalysis['alternative_folders'])) {
+                    $existingAnalysis['alternative_folders'] = $this->generateAlternativeFolders($file, $user);
+                }
             }
             return $existingAnalysis;
         }
@@ -451,6 +456,11 @@ class AIDocumentAnalyzer
                 $result['analysis']['suggested_folder_id'] == $file->folder_id) {
                 $result['analysis']['already_in_correct_folder'] = true;
                 $result['analysis']['reasoning'] = "This file is already in the correct folder: " . $file->folder->full_path;
+                
+                // Ensure we have alternative folders for user to consider
+                if (!isset($result['analysis']['alternative_folders']) || empty($result['analysis']['alternative_folders'])) {
+                    $result['analysis']['alternative_folders'] = $this->generateAlternativeFolders($file, $user);
+                }
             }
             
             // Save the analysis to the file
@@ -687,5 +697,81 @@ class AIDocumentAnalyzer
             'data' => "File type: $extension",
             'mime' => $mimeType
         ];
+    }
+    
+    /**
+     * Generate alternative folder suggestions when file is already correct
+     */
+    protected function generateAlternativeFolders(File $file, User $user)
+    {
+        $alternatives = [];
+        
+        // Get all user folders
+        $folders = $user->folders()
+            ->with('parent.parent.parent')
+            ->where('id', '!=', $file->folder_id) // Exclude current folder
+            ->orderBy('name')
+            ->get();
+        
+        // Get file date if available
+        $fileDate = null;
+        if ($file->ai_analysis && isset($file->ai_analysis['document_date'])) {
+            $fileDate = \Carbon\Carbon::parse($file->ai_analysis['document_date']);
+        }
+        
+        foreach ($folders as $folder) {
+            $confidence = 0;
+            $reasons = [];
+            
+            // Check if folder path contains relevant keywords
+            $folderPath = strtolower($folder->full_path);
+            $fileName = strtolower($file->original_name ?? $file->name);
+            
+            // Date matching
+            if ($fileDate && preg_match('/(\d{4})/', $folderPath, $yearMatch)) {
+                if ($yearMatch[1] == $fileDate->year) {
+                    $confidence += 30;
+                    $reasons[] = "Year matches";
+                }
+            }
+            
+            // Month matching
+            $months = ['january', 'february', 'march', 'april', 'may', 'june', 
+                      'july', 'august', 'september', 'october', 'november', 'december'];
+            foreach ($months as $index => $month) {
+                if (str_contains($folderPath, $month) && $fileDate && $fileDate->month == ($index + 1)) {
+                    $confidence += 20;
+                    $reasons[] = "Month matches";
+                    break;
+                }
+            }
+            
+            // Type matching (Income/Expense)
+            if ($file->ai_analysis && isset($file->ai_analysis['transaction_type'])) {
+                $transType = strtolower($file->ai_analysis['transaction_type']);
+                if (str_contains($folderPath, $transType)) {
+                    $confidence += 25;
+                    $reasons[] = "Transaction type matches";
+                }
+            }
+            
+            // Only add folders with some confidence
+            if ($confidence > 0) {
+                $alternatives[] = [
+                    'folder_id' => $folder->id,
+                    'folder_name' => $folder->name,
+                    'folder_path' => $folder->full_path,
+                    'confidence' => min($confidence, 75), // Cap at 75% since current is 100%
+                    'reason' => implode(', ', $reasons)
+                ];
+            }
+        }
+        
+        // Sort by confidence and take top 3
+        usort($alternatives, function($a, $b) {
+            return $b['confidence'] - $a['confidence'];
+        });
+        
+        return array_slice($alternatives, 0, 3);
     }
 }

@@ -52,6 +52,19 @@ class AIDocumentController extends Controller
             $analysis = $this->analyzer->getOrCreateAnalysis($file, $forceNew);
             
             if ($analysis) {
+                // Get user's folders for manual selection
+                $folders = auth()->user()->folders()
+                    ->with('parent.parent.parent')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(function ($folder) {
+                        return [
+                            'id' => $folder->id,
+                            'name' => $folder->name,
+                            'path' => $folder->full_path
+                        ];
+                    });
+                
                 return response()->json([
                     'success' => true,
                     'analysis' => $analysis,
@@ -60,7 +73,8 @@ class AIDocumentController extends Controller
                         'name' => $file->original_name ?? $file->name,
                         'current_folder' => $file->folder ? $file->folder->name : 'Unknown',
                         'current_folder_id' => $file->folder_id
-                    ]
+                    ],
+                    'folders' => $folders
                 ]);
             } else {
                 return response()->json([
