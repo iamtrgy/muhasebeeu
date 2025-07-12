@@ -256,7 +256,12 @@ function displayAnalysis(data) {
         breadcrumbContainer.innerHTML = '';
         
         if (folderPath && folderPath.includes('/')) {
-            // Create breadcrumb
+            // Create clickable breadcrumb
+            const link = document.createElement('a');
+            link.href = `/user/folders/${data.analysis.suggested_folder_id}`;
+            link.target = '_blank';
+            link.className = 'hover:text-indigo-800 dark:hover:text-indigo-200 underline';
+            
             const parts = folderPath.split('/').filter(p => p);
             parts.forEach((part, index) => {
                 const span = document.createElement('span');
@@ -264,21 +269,24 @@ function displayAnalysis(data) {
                     ? 'text-sm text-indigo-700 dark:text-indigo-300 font-semibold' 
                     : 'text-sm text-indigo-600 dark:text-indigo-400';
                 span.textContent = part;
-                breadcrumbContainer.appendChild(span);
+                link.appendChild(span);
                 
                 if (index < parts.length - 1) {
                     const separator = document.createElement('span');
                     separator.className = 'mx-1 text-indigo-400 dark:text-indigo-500';
                     separator.textContent = '›';
-                    breadcrumbContainer.appendChild(separator);
+                    link.appendChild(separator);
                 }
             });
+            breadcrumbContainer.appendChild(link);
         } else {
-            // Single folder name
-            const span = document.createElement('span');
-            span.className = 'text-sm text-indigo-700 dark:text-indigo-300 font-semibold';
-            span.textContent = data.analysis.folder_name;
-            breadcrumbContainer.appendChild(span);
+            // Single folder name - also clickable
+            const link = document.createElement('a');
+            link.href = `/user/folders/${data.analysis.suggested_folder_id}`;
+            link.target = '_blank';
+            link.className = 'text-sm text-indigo-700 dark:text-indigo-300 font-semibold hover:text-indigo-800 dark:hover:text-indigo-200 underline';
+            link.textContent = data.analysis.folder_name;
+            breadcrumbContainer.appendChild(link);
         }
     }
     
@@ -425,7 +433,7 @@ function handleAlreadyCorrectFolder(data) {
                 <span class="text-green-600 dark:text-green-400 font-medium">File is correctly placed</span>
             </div>
             <div class="text-sm text-gray-600 dark:text-gray-400">
-                Current location: <span class="font-medium">${data.file.current_folder}</span>
+                Current location: <a href="/user/folders/${data.file.current_folder_id}" target="_blank" class="font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline">${data.file.current_folder}</a>
             </div>
         </div>
     `;
@@ -496,7 +504,7 @@ function showAlternativesWithActions(alternatives) {
         
         div.innerHTML = `
             <div class="flex-1">
-                <div class="font-medium text-gray-700 dark:text-gray-300">${pathDisplay}</div>
+                <a href="/user/folders/${alt.folder_id || alt.id}" target="_blank" class="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 underline">${pathDisplay}</a>
                 ${reason ? `<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">${reason}</div>` : ''}
                 <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Confidence: ${confidence}%</div>
             </div>
