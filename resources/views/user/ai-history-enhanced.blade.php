@@ -357,7 +357,14 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex items-center space-x-2">
                                                 @if($file->ai_analyzed_at)
-                                                    <button onclick="showAnalysisDetails({{ json_encode($file->ai_analysis) }})" 
+                                                    <button onclick="showAnalysisDetails({{ json_encode($file->ai_analysis) }}, {{ json_encode([
+                                                        'id' => $file->id,
+                                                        'original_name' => $file->original_name,
+                                                        'name' => $file->name,
+                                                        'current_folder' => $file->folder ? $file->folder->full_path : 'Root',
+                                                        'ai_suggestion_accepted' => $file->ai_suggestion_accepted,
+                                                        'ai_analysis' => $file->ai_analysis
+                                                    ]) }})" 
                                                             class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                                                             title="View details">
                                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -479,11 +486,54 @@
                         <!-- Content will be dynamically inserted -->
                     </div>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button type="button" onclick="closeAnalysisDetails()" 
-                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
-                        Close
-                    </button>
+                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6">
+                    <!-- Action Buttons Row -->
+                    <div class="flex flex-col sm:flex-row sm:justify-between gap-3 mb-4" id="analysis-action-buttons">
+                        <!-- Primary Actions -->
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button type="button" id="accept-suggestion-btn" onclick="acceptAnalysisSuggestion()" 
+                                    class="hidden w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Accept Suggestion
+                            </button>
+                            <button type="button" onclick="reanalyzeFromDetails()" 
+                                    class="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Re-analyze
+                            </button>
+                        </div>
+                        
+                        <!-- Secondary Actions -->
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button type="button" onclick="manualMoveFromDetails()" 
+                                    class="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                                </svg>
+                                Manual Move
+                            </button>
+                            <button type="button" id="view-file-btn" onclick="viewFileFromDetails()" 
+                                    class="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                View File
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Close Button -->
+                    <div class="flex justify-end">
+                        <button type="button" onclick="closeAnalysisDetails()" 
+                                class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                            Close
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -700,8 +750,14 @@
             }
         }
         
-        function showAnalysisDetails(analysis) {
+        // Global variable to store current file data for modal actions
+        let currentModalFile = null;
+        
+        function showAnalysisDetails(analysis, fileData = null) {
             if (!analysis) return;
+            
+            // Store current file data for actions
+            currentModalFile = fileData;
             
             const content = document.getElementById('analysis-details-content');
             content.innerHTML = `
@@ -742,10 +798,114 @@
                             <p class="text-gray-600 dark:text-gray-400">${analysis.document_date}</p>
                         </div>
                     ` : ''}
+                    
+                    ${fileData ? `
+                        <div class="pt-3 border-t border-gray-200 dark:border-gray-600">
+                            <p class="font-medium text-gray-700 dark:text-gray-300">File Information:</p>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                <p><span class="font-medium">Name:</span> ${fileData.original_name || fileData.name}</p>
+                                <p><span class="font-medium">Current Folder:</span> ${fileData.current_folder || 'Unknown'}</p>
+                                ${analysis.suggested_folder_path ? `<p><span class="font-medium">Suggested Folder:</span> ${analysis.suggested_folder_path}</p>` : ''}
+                                <p><span class="font-medium">Status:</span> ${fileData.ai_suggestion_accepted ? '<span class="text-green-600">Accepted</span>' : '<span class="text-amber-600">Pending</span>'}</p>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             `;
             
+            // Show/hide action buttons based on file status
+            updateActionButtons(analysis, fileData);
+            
             document.getElementById('analysis-details-modal').classList.remove('hidden');
+        }
+        
+        function updateActionButtons(analysis, fileData) {
+            const acceptBtn = document.getElementById('accept-suggestion-btn');
+            const viewBtn = document.getElementById('view-file-btn');
+            
+            // Show Accept button only if there's a pending suggestion
+            if (fileData && analysis && analysis.suggested_folder_id && !fileData.ai_suggestion_accepted) {
+                acceptBtn.classList.remove('hidden');
+            } else {
+                acceptBtn.classList.add('hidden');
+            }
+            
+            // Update View File button with correct URL if fileData is available
+            if (fileData && fileData.id) {
+                viewBtn.onclick = () => viewFileFromDetails(fileData.id);
+            }
+        }
+        
+        function acceptAnalysisSuggestion() {
+            if (!currentModalFile || !currentModalFile.id) {
+                alert('No file selected');
+                return;
+            }
+            
+            const analysis = currentModalFile.ai_analysis || {};
+            if (!analysis.suggested_folder_id) {
+                alert('No folder suggestion available');
+                return;
+            }
+            
+            if (confirm(`Accept AI suggestion and move "${currentModalFile.original_name || currentModalFile.name}" to the suggested folder?`)) {
+                fetch(`/user/files/${currentModalFile.id}/accept-suggestion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        folder_id: analysis.suggested_folder_id
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('File moved successfully!');
+                        closeAnalysisDetails();
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to move file'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                });
+            }
+        }
+        
+        function reanalyzeFromDetails() {
+            if (!currentModalFile || !currentModalFile.id) {
+                alert('No file selected');
+                return;
+            }
+            
+            if (confirm(`Re-analyze "${currentModalFile.original_name || currentModalFile.name}"? This will generate a new AI analysis.`)) {
+                closeAnalysisDetails();
+                showAISuggestionModal(currentModalFile.id, true);
+            }
+        }
+        
+        function manualMoveFromDetails() {
+            if (!currentModalFile || !currentModalFile.id) {
+                alert('No file selected');
+                return;
+            }
+            
+            closeAnalysisDetails();
+            showAISuggestionModal(currentModalFile.id, false);
+        }
+        
+        function viewFileFromDetails(fileId = null) {
+            const id = fileId || (currentModalFile && currentModalFile.id);
+            if (!id) {
+                alert('No file selected');
+                return;
+            }
+            
+            // Open file preview in new tab
+            window.open(`/user/files/${id}/preview`, '_blank');
         }
         
         function closeAnalysisDetails() {
