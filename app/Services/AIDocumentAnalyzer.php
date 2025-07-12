@@ -704,74 +704,86 @@ class AIDocumentAnalyzer
      */
     protected function generateAlternativeFolders(File $file, User $user)
     {
-        $alternatives = [];
+        try {
+            $alternatives = [];
+            
+            // Get all user folders
+            $folders = $user->folders()
+                ->with('parent.parent.parent')
+                ->where('folders.id', '!=', $file->folder_id) // Exclude current folder - specify table name
+                ->orderBy('name')
+                ->get();
         
-        // Get all user folders
-        $folders = $user->folders()
-            ->with('parent.parent.parent')
-            ->where('id', '!=', $file->folder_id) // Exclude current folder
-            ->orderBy('name')
-            ->get();
-        
-        // Get file date if available
-        $fileDate = null;
-        if ($file->ai_analysis && isset($file->ai_analysis['document_date'])) {
-            $fileDate = \Carbon\Carbon::parse($file->ai_analysis['document_date']);
+            // Get file date if available
+            $fileDate = null;
+            if ($file->ai_analysis && isset($file->ai_analysis['document_date'])) {
+                $fileDate = \Carbon\Carbon::parse($file->ai_analysis['document_date']);
+            }
+            
+            foreach ($folders as $folder) {
+                $confidence = 0;
+                $reasons = [];
+                
+                // Check if folder path contains relevant keywords
+                $folderPath = strtolower($folder->full_path);
+                $fileName = strtolower($file->original_name ?? $file->name);
+                
+                // Date matching
+                if ($fileDate && preg_match('/(\d{4})/', $folderPath, $yearMatch)) {
+                    if ($yearMatch[1] == $fileDate->year) {
+                        $confidence += 30;
+                        $reasons[] = "Year matches";
+                    }
+                }
+                
+                // Month matching
+                $months = ['january', 'february', 'march', 'april', 'may', 'june', 
+                          'july', 'august', 'september', 'october', 'november', 'december'];
+                foreach ($months as $index => $month) {
+                    if (str_contains($folderPath, $month) && $fileDate && $fileDate->month == ($index + 1)) {
+                        $confidence += 20;
+                        $reasons[] = "Month matches";
+                        break;
+                    }
+                }
+                
+                // Type matching (Income/Expense)
+                if ($file->ai_analysis && isset($file->ai_analysis['transaction_type'])) {
+                    $transType = strtolower($file->ai_analysis['transaction_type']);
+                    if (str_contains($folderPath, $transType)) {
+                        $confidence += 25;
+                        $reasons[] = "Transaction type matches";
+                    }
+                }
+                
+                // Only add folders with some confidence
+                if ($confidence > 0) {
+                    $alternatives[] = [
+                        'folder_id' => $folder->id,
+                        'folder_name' => $folder->name,
+                        'folder_path' => $folder->full_path,
+                        'confidence' => min($confidence, 75), // Cap at 75% since current is 100%
+                        'reason' => implode(', ', $reasons)
+                    ];
+                }
+            }
+            
+            // Sort by confidence and take top 3
+            usort($alternatives, function($a, $b) {
+                return $b['confidence'] - $a['confidence'];
+            });
+            
+            return array_slice($alternatives, 0, 3);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to generate alternative folders', [
+                'file_id' => $file->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Return empty array on error to prevent breaking the analysis
+            return [];
         }
-        
-        foreach ($folders as $folder) {
-            $confidence = 0;
-            $reasons = [];
-            
-            // Check if folder path contains relevant keywords
-            $folderPath = strtolower($folder->full_path);
-            $fileName = strtolower($file->original_name ?? $file->name);
-            
-            // Date matching
-            if ($fileDate && preg_match('/(\d{4})/', $folderPath, $yearMatch)) {
-                if ($yearMatch[1] == $fileDate->year) {
-                    $confidence += 30;
-                    $reasons[] = "Year matches";
-                }
-            }
-            
-            // Month matching
-            $months = ['january', 'february', 'march', 'april', 'may', 'june', 
-                      'july', 'august', 'september', 'october', 'november', 'december'];
-            foreach ($months as $index => $month) {
-                if (str_contains($folderPath, $month) && $fileDate && $fileDate->month == ($index + 1)) {
-                    $confidence += 20;
-                    $reasons[] = "Month matches";
-                    break;
-                }
-            }
-            
-            // Type matching (Income/Expense)
-            if ($file->ai_analysis && isset($file->ai_analysis['transaction_type'])) {
-                $transType = strtolower($file->ai_analysis['transaction_type']);
-                if (str_contains($folderPath, $transType)) {
-                    $confidence += 25;
-                    $reasons[] = "Transaction type matches";
-                }
-            }
-            
-            // Only add folders with some confidence
-            if ($confidence > 0) {
-                $alternatives[] = [
-                    'folder_id' => $folder->id,
-                    'folder_name' => $folder->name,
-                    'folder_path' => $folder->full_path,
-                    'confidence' => min($confidence, 75), // Cap at 75% since current is 100%
-                    'reason' => implode(', ', $reasons)
-                ];
-            }
-        }
-        
-        // Sort by confidence and take top 3
-        usort($alternatives, function($a, $b) {
-            return $b['confidence'] - $a['confidence'];
-        });
-        
-        return array_slice($alternatives, 0, 3);
     }
 }
