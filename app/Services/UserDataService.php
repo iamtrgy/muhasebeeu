@@ -118,7 +118,7 @@ class UserDataService
         $mainFoldersCacheKey = "main_folders_{$user->id}";
         
         return Cache::remember($mainFoldersCacheKey, self::CACHE_DURATION * 60, function() use ($user) {
-            return Folder::where('user_id', $user->id)
+            return Folder::where('created_by', $user->id)
                 ->whereNull('parent_id')
                 ->withCount('files')
                 ->get();
@@ -169,7 +169,7 @@ class UserDataService
         Cache::forget("main_folders_{$user->id}");
         
         // Also clear folder-related caches
-        $userFolders = Folder::where('user_id', $user->id)->pluck('id');
+        $userFolders = Folder::where('created_by', $user->id)->pluck('id');
         foreach ($userFolders as $folderId) {
             Cache::forget("folder_data_{$folderId}");
             Cache::forget("subfolders_{$folderId}");
