@@ -396,13 +396,7 @@ class AIDocumentAnalyzer
         
         $prompt .= "VISION AI ANALYSIS: Carefully examine the document image and extract the following information:\n\n";
         
-        $prompt .= "1. DOCUMENT TYPE:\n";
-        $prompt .= "- Invoice/Bill\n";
-        $prompt .= "- Receipt\n";
-        $prompt .= "- Bank statement\n";
-        $prompt .= "- Contract/Agreement\n";
-        $prompt .= "- Personal ticket/booking\n";
-        $prompt .= "- Other (specify)\n\n";
+        $prompt .= "1. DOCUMENT TYPE - Identify what type of document this is\n\n";
         
         $prompt .= "2. SENDER/FROM (look for):\n";
         $prompt .= "- Company name in header/letterhead\n";
@@ -430,28 +424,15 @@ class AIDocumentAnalyzer
             
             $prompt .= "SUGGEST DELETION if ANY apply:\n";
             $prompt .= "- SENDER and RECEIVER are both unknown/not user companies\n";
-            $prompt .= "- Document type is personal (ferry ticket, flight booking, hotel, restaurant receipt)\n";
+            $prompt .= "- Document is personal/individual transaction\n";
             $prompt .= "- No user company name appears in FROM or TO fields\n";
-            $prompt .= "- Document is between third parties only\n";
-            $prompt .= "- Personal expenses not related to business\n\n";
+            $prompt .= "- Document is between third parties only\n\n";
             
             $prompt .= "SUGGEST FOLDER only if ALL apply:\n";
             $prompt .= "- User company name appears as SENDER or RECEIVER\n";
-            $prompt .= "- Document is business transaction (invoice, bill, contract, bank statement)\n";
+            $prompt .= "- Document is business transaction\n";
             $prompt .= "- Transaction type: User company SENT = Income, User company RECEIVED = Expense\n\n";
             
-            $prompt .= "EXAMPLES:\n";
-            foreach ($userCompanies as $index => $company) {
-                if ($index == 0) { // Use first company for examples
-                    $prompt .= "✓ KEEP: Invoice FROM '{$company}' TO 'Client Company' = Income\n";
-                    $prompt .= "✓ KEEP: Bill FROM 'Supplier Ltd' TO '{$company}' = Expense\n";
-                    $prompt .= "✓ KEEP: Bank statement for '{$company}' account\n";
-                    break;
-                }
-            }
-            $prompt .= "✗ DELETE: Ferry ticket FROM 'Tallink' TO 'John Doe'\n";
-            $prompt .= "✗ DELETE: Restaurant receipt with no company names\n";
-            $prompt .= "✗ DELETE: Invoice FROM 'Company A' TO 'Company B' (neither is user company)\n\n";
         }
         
         $prompt .= "Available folders:\n";
