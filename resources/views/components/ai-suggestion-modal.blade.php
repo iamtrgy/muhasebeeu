@@ -300,8 +300,17 @@ function deleteFile() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            console.log('File deleted successfully');
             closeAISuggestionModal();
-            window.location.reload();
+            
+            // Instead of reloading, just remove the file from the list if it exists
+            const fileRow = document.querySelector(`div[data-file-id="${currentFileId}"]`);
+            if (fileRow) {
+                fileRow.remove();
+            }
+            
+            // Show success message
+            alert('File deleted successfully');
         } else {
             alert('Failed to delete file: ' + (data.error || 'Unknown error'));
         }
