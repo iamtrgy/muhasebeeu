@@ -204,7 +204,9 @@
                                         @if($file->ai_analysis && isset($file->ai_analysis['folder_name']))
                                             <div>
                                                 <p class="text-xs text-gray-500 dark:text-gray-400">Suggested</p>
-                                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 max-w-24 truncate">
+                                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 max-w-24 truncate" 
+                                                   title="{{ $file->ai_analysis['folder_path'] ?? $file->ai_analysis['folder_name'] }}"
+                                                   data-tooltip="true">
                                                     {{ $file->ai_analysis['folder_name'] }}
                                                 </p>
                                             </div>
