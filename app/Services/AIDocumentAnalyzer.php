@@ -441,9 +441,14 @@ class AIDocumentAnalyzer
             $prompt .= "- Transaction type: User company SENT = Income, User company RECEIVED = Expense\n\n";
             
             $prompt .= "EXAMPLES:\n";
-            $prompt .= "✓ KEEP: Invoice FROM 'Payimu OÜ' TO 'Client Company' = Income\n";
-            $prompt .= "✓ KEEP: Bill FROM 'Supplier Ltd' TO 'Payimu OÜ' = Expense\n";
-            $prompt .= "✓ KEEP: Bank statement for 'Payimu OÜ' account\n";
+            foreach ($userCompanies as $index => $company) {
+                if ($index == 0) { // Use first company for examples
+                    $prompt .= "✓ KEEP: Invoice FROM '{$company}' TO 'Client Company' = Income\n";
+                    $prompt .= "✓ KEEP: Bill FROM 'Supplier Ltd' TO '{$company}' = Expense\n";
+                    $prompt .= "✓ KEEP: Bank statement for '{$company}' account\n";
+                    break;
+                }
+            }
             $prompt .= "✗ DELETE: Ferry ticket FROM 'Tallink' TO 'John Doe'\n";
             $prompt .= "✗ DELETE: Restaurant receipt with no company names\n";
             $prompt .= "✗ DELETE: Invoice FROM 'Company A' TO 'Company B' (neither is user company)\n\n";
