@@ -394,33 +394,50 @@ class AIDocumentAnalyzer
             $prompt .= "Currently in: {$currentFolder['path']}\n\n";
         }
         
-        $prompt .= "Read the document and extract:\n";
+        $prompt .= "CRITICAL: Read the document and determine if it's business-related to the user companies.\n\n";
+        
+        $prompt .= "Extract from document:\n";
         $prompt .= "- Date\n";
         $prompt .= "- Who sent it (from)\n";
         $prompt .= "- Who received it (to)\n";
-        $prompt .= "- Document type\n\n";
+        $prompt .= "- Document type\n";
+        $prompt .= "- Is this document business-related to user companies?\n\n";
         
         if (!empty($userCompanies)) {
-            $prompt .= "User companies: " . implode(', ', $userCompanies) . "\n";
-            $prompt .= "If user company sent = Income, if received = Expense\n\n";
+            $prompt .= "User companies: " . implode(', ', $userCompanies) . "\n\n";
+            
+            $prompt .= "DELETION CRITERIA - Suggest deletion if ANY of these apply:\n";
+            $prompt .= "1. Document is NOT a business transaction with user companies\n";
+            $prompt .= "2. Document is personal (tickets, personal purchases, etc.)\n";
+            $prompt .= "3. Document doesn't mention user companies as sender OR receiver\n";
+            $prompt .= "4. Document is unrelated to business operations\n";
+            $prompt .= "5. Document is from/to unknown third parties with no business connection\n\n";
+            
+            $prompt .= "FOLDER CRITERIA - Only suggest folder if ALL apply:\n";
+            $prompt .= "1. User company is clearly the sender OR receiver\n";
+            $prompt .= "2. Document is a legitimate business transaction\n";
+            $prompt .= "3. If user company sent = Income, if received = Expense\n\n";
         }
         
-        $prompt .= "Match to best folder:\n";
+        $prompt .= "Available folders:\n";
         foreach ($folders as $folder) {
             $prompt .= "ID {$folder['id']}: {$folder['path']}\n";
         }
         
-        $prompt .= "\nReturn JSON:\n";
+        $prompt .= "\nIMPORTANT: Be strict - when in doubt, suggest deletion rather than filing.\n";
+        $prompt .= "Personal documents, tickets, unrelated invoices should be deleted.\n\n";
+        
+        $prompt .= "Return JSON:\n";
         $prompt .= "{\n";
-        $prompt .= '  "suggested_folder_id": <id or null>,';
-        $prompt .= '  "folder_name": "<name or null>",';
-        $prompt .= '  "folder_path": "<path or null>",';
+        $prompt .= '  "suggested_folder_id": <id or null if suggesting deletion>,';
+        $prompt .= '  "folder_name": "<name or null if suggesting deletion>",';
+        $prompt .= '  "folder_path": "<path or null if suggesting deletion>",';
         $prompt .= '  "confidence": <0-100>,';
-        $prompt .= '  "reasoning": "<brief explanation>",';
+        $prompt .= '  "reasoning": "<explain business relevance and decision>",';
         $prompt .= '  "document_date": "<YYYY-MM-DD>",';
         $prompt .= '  "transaction_type": "<income|expense|not_related>",';
-        $prompt .= '  "suggest_deletion": <true if document not related to user companies>,';
-        $prompt .= '  "deletion_reason": "<why suggest deletion if applicable>"';
+        $prompt .= '  "suggest_deletion": <true if not business related>,';
+        $prompt .= '  "deletion_reason": "<specific reason why document should be deleted>"';
         $prompt .= "\n}";
         
         return $prompt;
