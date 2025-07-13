@@ -418,18 +418,23 @@ class AIDocumentAnalyzer
         $prompt .= "- Or is it personal (travel, entertainment, personal purchases)?\n\n";
         
         if (!empty($userCompanies)) {
-            $prompt .= "User companies: " . implode(', ', $userCompanies) . "\n\n";
+            $prompt .= "CRITICAL: These are the ONLY companies that belong to this user:\n";
+            foreach ($userCompanies as $company) {
+                $prompt .= "- {$company}\n";
+            }
+            $prompt .= "\nAny other company names (like Payimu OÜ, if not listed above) are NOT user companies.\n";
+            $prompt .= "Do NOT assume companies belong to user unless explicitly listed above.\n\n";
             
             $prompt .= "DECISION LOGIC:\n\n";
             
             $prompt .= "SUGGEST DELETION if ANY apply:\n";
-            $prompt .= "- SENDER and RECEIVER are both unknown/not user companies\n";
+            $prompt .= "- SENDER and RECEIVER are both NOT in the user company list above\n";
             $prompt .= "- Document is personal/individual transaction\n";
-            $prompt .= "- No user company name appears in FROM or TO fields\n";
+            $prompt .= "- None of the user companies listed above appear as FROM or TO\n";
             $prompt .= "- Document is between third parties only\n\n";
             
             $prompt .= "SUGGEST FOLDER only if ALL apply:\n";
-            $prompt .= "- User company name appears as SENDER or RECEIVER\n";
+            $prompt .= "- One of the user companies listed above appears as SENDER or RECEIVER\n";
             $prompt .= "- Document is business transaction\n";
             $prompt .= "- Transaction type: User company SENT = Income, User company RECEIVED = Expense\n\n";
             
