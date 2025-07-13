@@ -366,14 +366,14 @@ function deleteFileFromModal() {
             return response.json().then(data => {
                 console.log('File deleted successfully:', data);
                 
-                // Close modal and refresh page
-                document.getElementById('ai-suggestion-modal').classList.add('hidden');
-                window.location.reload();
+                // Show success message and refresh immediately
+                alert('File deleted successfully!');
+                window.location.href = window.location.href;
             }).catch(jsonError => {
                 // If JSON parsing fails, it might be HTML response, still consider success
                 console.log('Delete successful but response was not JSON:', jsonError);
-                document.getElementById('ai-suggestion-modal').classList.add('hidden');
-                window.location.reload();
+                alert('File deleted successfully!');
+                window.location.href = window.location.href;
             });
         } else {
             // If response is not OK, show error

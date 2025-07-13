@@ -524,11 +524,25 @@ class AIDocumentAnalyzer
                 $result['analysis']['alternative_folders'] = $this->generateAlternativeFolders($file, $user);
             }
             
+            // Determine if the file needs review based on the analysis
+            $needsReview = false;
+            
+            if (isset($result['analysis']['suggest_deletion']) && $result['analysis']['suggest_deletion']) {
+                // File should be deleted - needs review
+                $needsReview = true;
+            } elseif (isset($result['analysis']['suggested_folder_id']) && $result['analysis']['suggested_folder_id']) {
+                // Check if file is already in the suggested folder
+                $needsReview = ($file->folder_id != $result['analysis']['suggested_folder_id']);
+            } else {
+                // No valid suggestion - needs review
+                $needsReview = true;
+            }
+            
             // Save the analysis to the file
             $file->update([
                 'ai_analysis' => $result['analysis'],
                 'ai_analyzed_at' => now(),
-                'ai_suggestion_accepted' => false  // Reset to false for new analysis requiring review
+                'ai_suggestion_accepted' => !$needsReview  // Only false if actually needs review
             ]);
             
             return $result['analysis'];
