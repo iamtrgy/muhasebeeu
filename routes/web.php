@@ -114,6 +114,12 @@ Route::middleware(['auth', 'verified', 'subscribed', \App\Http\Middleware\Ensure
         // Folders Management
         Route::resource('folders', FolderController::class);
         
+        // Banks Management
+        Route::resource('banks', \App\Http\Controllers\User\BankController::class);
+        
+        // Documents Management
+        Route::resource('documents', \App\Http\Controllers\User\DocumentController::class);
+        
         // Invoices Management
         Route::resource('invoices', UserInvoiceController::class);
         Route::get('invoices/{invoice}/download-pdf', [UserInvoiceController::class, 'downloadPdf'])->name('invoices.download-pdf');

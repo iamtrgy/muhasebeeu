@@ -31,19 +31,27 @@
                 </x-ui.layout.sidebar-item>
 
                 <x-ui.layout.sidebar-item 
-                    :href="route('user.folders.index')" 
-                    :active="request()->routeIs('user.folders.*')"
-                    icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>'
-                >
-                    {{ __('Folders') }}
-                </x-ui.layout.sidebar-item>
-
-                <x-ui.layout.sidebar-item 
                     :href="route('user.invoices.index')" 
                     :active="request()->routeIs('user.invoices.*')"
                     icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>'
                 >
                     {{ __('Invoices') }}
+                </x-ui.layout.sidebar-item>
+
+                <x-ui.layout.sidebar-item 
+                    :href="route('user.banks.index')" 
+                    :active="request()->routeIs('user.banks.*')"
+                    icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>'
+                >
+                    {{ __('Banks') }}
+                </x-ui.layout.sidebar-item>
+
+                <x-ui.layout.sidebar-item 
+                    :href="route('user.documents.index')" 
+                    :active="request()->routeIs('user.documents.*')"
+                    icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'
+                >
+                    {{ __('Documents') }}
                 </x-ui.layout.sidebar-item>
 
                 <x-ui.layout.sidebar-item 
