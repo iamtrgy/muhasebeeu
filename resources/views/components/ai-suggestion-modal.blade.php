@@ -333,8 +333,8 @@ function deleteFile() {
         return;
     }
     
-    // Construct the correct URL for file deletion
-    const deleteUrl = `{{ url('/user/files') }}/${fileId}`;
+    // Construct the correct URL for file deletion using route helper
+    const deleteUrl = `{{ route('files.destroy', ['file' => ':fileId']) }}`.replace(':fileId', fileId);
     console.log('DELETE URL:', deleteUrl);
     console.log('Full URL that will be used:', deleteUrl);
     
