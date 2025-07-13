@@ -54,8 +54,10 @@ class BankController extends Controller
         }
         
         // Get selected year and month from request
-        $selectedYear = $request->get('year', Carbon::now()->year);
-        $selectedMonth = $request->get('month', Carbon::now()->month);
+        // Default to last month since accounting is typically done for previous month
+        $lastMonth = Carbon::now()->subMonth();
+        $selectedYear = $request->get('year', $lastMonth->year);
+        $selectedMonth = $request->get('month', $lastMonth->month);
         
         // Get all years available
         $years = $banksFolder->children()

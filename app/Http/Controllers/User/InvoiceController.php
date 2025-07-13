@@ -31,8 +31,10 @@ class InvoiceController extends Controller
         $tab = $request->get('tab', 'income'); // Default to income tab
         
         // Get year and month from request
-        $selectedYear = $request->get('year', now()->year);
-        $selectedMonth = $request->get('month', now()->month);
+        // Default to last month since accounting is typically done for previous month
+        $lastMonth = now()->subMonth();
+        $selectedYear = $request->get('year', $lastMonth->year);
+        $selectedMonth = $request->get('month', $lastMonth->month);
         
         // Get user's active company
         $company = $user->activeCompany ?? $user->companies()->first();
