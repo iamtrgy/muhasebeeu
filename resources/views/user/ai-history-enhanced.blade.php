@@ -415,8 +415,7 @@
                 </div>
             </div>
         </div>
-    </div>
-
+    
     <!-- Include AI Suggestion Modal -->
     <x-ai-suggestion-modal />
     
@@ -492,6 +491,7 @@
         </div>
     </div>
     
+    </div> <!-- End of Alpine component -->
 
     @push('scripts')
     <script>
