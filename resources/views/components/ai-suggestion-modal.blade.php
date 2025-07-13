@@ -322,4 +322,16 @@ function deleteFile() {
 
 // Global function
 window.showAISuggestionModal = showAISuggestionModal;
+
+// Debug: Catch any navigation events
+window.addEventListener('beforeunload', function(e) {
+    console.log('Page unloading - this might be causing the DELETE request');
+});
+
+// Override fetch to log all requests
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+    console.log('FETCH REQUEST:', args[0], args[1]?.method || 'GET');
+    return originalFetch.apply(this, arguments);
+};
 </script>
