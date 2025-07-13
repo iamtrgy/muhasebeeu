@@ -99,49 +99,55 @@
             </div>
 
             <!-- Bulk Actions Bar -->
-            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <!-- Select All -->
-                        <div class="flex items-center">
-                            <input type="checkbox" 
-                                   @change="toggleAll($event.target.checked)" 
-                                   :checked="allFileIds.length > 0 && selectedFiles.length === allFileIds.length"
-                                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                            <label class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                                Select All (<span x-text="selectedFiles.length"></span>)
-                            </label>
+            <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">
+                <div class="px-6 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <!-- Simple Select All -->
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       @change="toggleAll($event.target.checked)" 
+                                       :checked="allFileIds.length > 0 && selectedFiles.length === allFileIds.length"
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                <label class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    Select All
+                                </label>
+                                <span class="ml-2 text-xs text-gray-500 dark:text-gray-400" x-show="selectedFiles.length > 0">
+                                    (<span x-text="selectedFiles.length"></span> selected)
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Bulk Actions -->
-                    <div class="flex items-center space-x-3" x-show="selectedFiles.length > 0">
-                        @if($currentTab === 'not_analyzed')
-                            <button @click="bulkAnalyze()" :disabled="isProcessing"
-                                    class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                </svg>
-                                Analyze Selected
-                            </button>
-                        @endif
                         
-                        @if($currentTab === 'analyzed')
-                            <button @click="bulkApprove()" :disabled="isProcessing"
-                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                Approve Selected
-                            </button>
-                        @endif
-                        
-                        @if($currentTab === 'analyzed')
-                            <button @click="bulkReanalyze()" :disabled="isProcessing"
-                                    class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Re-analyze
-                            </button>
-                        @endif
+                        <!-- Simple Bulk Actions -->
+                        <div class="flex items-center space-x-2" x-show="selectedFiles.length > 0" x-transition>
+                            @if($currentTab === 'not_analyzed')
+                                <button @click="bulkAnalyze()" :disabled="isProcessing"
+                                        class="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded border border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    </svg>
+                                    <span x-text="isProcessing ? 'Analyzing...' : 'Analyze Selected'"></span>
+                                </button>
+                            @endif
+                            
+                            @if($currentTab === 'analyzed')
+                                <button @click="bulkApprove()" :disabled="isProcessing"
+                                        class="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded border border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span x-text="isProcessing ? 'Approving...' : 'Approve Selected'"></span>
+                                </button>
+                                
+                                <button @click="bulkReanalyze()" :disabled="isProcessing"
+                                        class="inline-flex items-center px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    <span x-text="isProcessing ? 'Re-analyzing...' : 'Re-analyze'"></span>
+                                </button>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -149,89 +155,97 @@
             <!-- File List -->
             <x-ui.card.body class="p-0">
                 @if($files->count() > 0)
-                    <!-- Minimal File List -->
+                    <!-- Optimized File List -->
                     <div class="divide-y divide-gray-100 dark:divide-gray-700">
                         @foreach($files as $file)
-                            <div class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <div class="flex items-center justify-between px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <!-- Left: Checkbox + File Info -->
-                                <div class="flex items-center space-x-4 flex-1 min-w-0">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0">
+                                    <!-- Enhanced Checkbox -->
                                     <input type="checkbox" :checked="selectedFiles.includes({{ $file->id }})" 
                                            @change="toggleFile({{ $file->id }})"
-                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 w-4 h-4">
                                     
+                                    <!-- File Icon and Info -->
                                     <div class="flex items-center space-x-3 flex-1 min-w-0">
                                         @php
                                             $extension = pathinfo($file->original_name, PATHINFO_EXTENSION);
                                             $isPdf = in_array(strtolower($extension), ['pdf']);
                                             $isImage = in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'gif', 'webp']);
                                         @endphp
-                                        @if($isPdf)
-                                            <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-                                            </svg>
-                                        @elseif($isImage)
-                                            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        @else
-                                            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M14,2H6C4.9,2,4,2.9,4,4v16c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V8L14,2z M16,18H8v-2h8V18z M16,14H8v-2h8V14z M13,9V3.5L18.5,9H13z"/>
-                                            </svg>
-                                        @endif
+                                        <!-- File Type Icon -->
+                                        <div class="flex-shrink-0">
+                                            @if($isPdf)
+                                                <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                                </svg>
+                                            @elseif($isImage)
+                                                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                            @else
+                                                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M14,2H6C4.9,2,4,2.9,4,4v16c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V8L14,2z M16,18H8v-2h8V18z M16,14H8v-2h8V14z M13,9V3.5L18.5,9H13z"/>
+                                                </svg>
+                                            @endif
+                                        </div>
                                         
+                                        <!-- File Details -->
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                                {{ $file->original_name ?? $file->name }}
-                                            </p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                {{ $file->size_formatted }} • 
+                                            <div class="flex items-center space-x-2">
+                                                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                                    {{ $file->original_name ?? $file->name }}
+                                                </p>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                                    {{ $file->size_formatted }}
+                                                </span>
+                                            </div>
+                                            <div class="flex items-center mt-1 space-x-2">
+                                                <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                                </svg>
                                                 @if($file->folder)
-                                                    <a href="{{ route('user.folders.show', $file->folder) }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                                    <a href="{{ route('user.folders.show', $file->folder) }}" target="_blank" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
                                                         {{ $file->folder->name }}
                                                     </a>
                                                 @else
-                                                    Root
+                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Root</span>
                                                 @endif
-                                            </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Center: AI Status (analyzed only) -->
                                 @if($currentTab === 'analyzed' && $file->ai_analyzed_at)
-                                    <div class="hidden md:flex items-center space-x-6 px-4 text-center">
+                                    <div class="hidden lg:flex items-center space-x-4 text-sm">
                                         <!-- AI Suggestion -->
                                         @if($file->ai_analysis && isset($file->ai_analysis['folder_name']))
                                             <div>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400">Suggested</p>
-                                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 max-w-24 truncate" 
-                                                   title="{{ $file->ai_analysis['folder_path'] ?? $file->ai_analysis['folder_name'] }}"
-                                                   data-tooltip="true">
+                                                <span class="text-xs text-gray-500 dark:text-gray-400">Suggested:</span>
+                                                <span class="text-xs font-medium text-gray-900 dark:text-gray-100 ml-1" 
+                                                      title="{{ $file->ai_analysis['folder_path'] ?? $file->ai_analysis['folder_name'] }}">
                                                     {{ $file->ai_analysis['folder_name'] }}
-                                                </p>
+                                                </span>
                                             </div>
                                         @endif
                                         
                                         <!-- Confidence -->
                                         @if($file->ai_analysis && isset($file->ai_analysis['confidence']))
                                             <div>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400">Confidence</p>
-                                                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $file->ai_analysis['confidence'] }}%</p>
+                                                <span class="text-xs text-gray-500 dark:text-gray-400">Confidence:</span>
+                                                <span class="text-xs font-medium text-gray-900 dark:text-gray-100 ml-1">
+                                                    {{ $file->ai_analysis['confidence'] }}%
+                                                </span>
                                             </div>
                                         @endif
                                         
                                         <!-- Status -->
-                                        <div>
-                                            @if($file->ai_suggestion_accepted)
-                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                                    ✓ Accepted
-                                                </span>
-                                            @else
-                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                                                    Pending
-                                                </span>
-                                            @endif
-                                        </div>
+                                        @if($file->ai_suggestion_accepted)
+                                            <span class="text-xs text-green-600 dark:text-green-400 font-medium">✓ Accepted</span>
+                                        @else
+                                            <span class="text-xs text-amber-600 dark:text-amber-400 font-medium">⏳ Pending</span>
+                                        @endif
                                     </div>
                                 @endif
 
