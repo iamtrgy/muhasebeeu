@@ -25,6 +25,9 @@ class File extends Model
         'ai_analyzed_at',
         'ai_suggested_folder_id',
         'ai_suggestion_accepted',
+        'statement_analyzed',
+        'statement_analysis_date',
+        'transaction_count',
     ];
 
     protected $casts = [
@@ -32,6 +35,9 @@ class File extends Model
         'ai_analysis' => 'array',
         'ai_analyzed_at' => 'datetime',
         'ai_suggestion_accepted' => 'boolean',
+        'statement_analyzed' => 'boolean',
+        'statement_analysis_date' => 'datetime',
+        'transaction_count' => 'integer',
     ];
 
     public function folder(): BelongsTo
@@ -52,6 +58,14 @@ class File extends Model
     public function suggestedFolder(): BelongsTo
     {
         return $this->belongsTo(Folder::class, 'ai_suggested_folder_id');
+    }
+
+    /**
+     * Get the bank transactions extracted from this statement file
+     */
+    public function bankTransactions()
+    {
+        return $this->hasMany(BankTransaction::class);
     }
 
     public function getUrlAttribute(): string

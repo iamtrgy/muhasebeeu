@@ -103,20 +103,60 @@
                                 @foreach($files as $file)
                                     <div class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
                                         <div class="flex items-center space-x-3">
-                                            <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
+                                            <div class="relative">
+                                                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                @if($file->statement_analyzed)
+                                                    <span class="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-green-500 rounded-full">
+                                                        ✓
+                                                    </span>
+                                                @endif
+                                            </div>
                                             <div>
-                                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                                <p class="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
                                                     {{ $file->original_name }}
+                                                    @if($file->statement_analyzed && $file->transaction_count)
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                            {{ $file->transaction_count }} {{ __('transactions') }}
+                                                        </span>
+                                                    @endif
                                                 </p>
                                                 <p class="text-xs text-gray-500 dark:text-gray-400">
                                                     {{ __('Uploaded') }} {{ $file->created_at->diffForHumans() }}
                                                     @if($file->size) • {{ number_format($file->size / 1024 / 1024, 2) }} MB @endif
+                                                    @if($file->statement_analyzed) • {{ __('Analyzed') }} {{ $file->statement_analysis_date->diffForHumans() }} @endif
                                                 </p>
                                             </div>
                                         </div>
                                         <div class="flex items-center space-x-2">
+                                            @if($file->statement_analyzed)
+                                                <a href="{{ route('user.banks.statements.show', $file) }}" 
+                                                   class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900 dark:hover:bg-indigo-800"
+                                                   title="{{ __('View Details') }}">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                                    </svg>
+                                                    {{ __('Details') }}
+                                                </a>
+                                                <button onclick="reanalyzeStatement({{ $file->id }})" 
+                                                   class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-amber-700 bg-amber-100 hover:bg-amber-200 dark:text-amber-300 dark:bg-amber-900 dark:hover:bg-amber-800"
+                                                   title="{{ __('Re-analyze Statement') }}">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    </svg>
+                                                    {{ __('Re-analyze') }}
+                                                </button>
+                                            @else
+                                                <button onclick="analyzeStatement({{ $file->id }})" 
+                                                   class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-sm"
+                                                   title="{{ __('Analyze Statement') }}">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                                    </svg>
+                                                    {{ __('Analyze') }}
+                                                </button>
+                                            @endif
                                             <button onclick="previewFile({{ json_encode([
                                                 'id' => $file->id,
                                                 'name' => $file->original_name,
@@ -357,5 +397,119 @@
             }
         });
     });
+    
+    // Analyze bank statement
+    function analyzeStatement(fileId) {
+        if (!confirm('Are you sure you want to analyze this bank statement? This will extract all transactions from the statement.')) {
+            return;
+        }
+        
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = `
+            <svg class="animate-spin h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ __('Analyzing...') }}
+        `;
+        
+        // Make request
+        fetch(`/user/banks/statements/${fileId}/analyze`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw data;
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Redirect to statement details
+                window.location.href = `/user/banks/statements/${fileId}`;
+            } else {
+                console.error('Analysis failed:', data);
+                alert(data.message || 'Analysis failed');
+                button.disabled = false;
+                button.innerHTML = originalContent;
+            }
+        })
+        .catch(error => {
+            console.error('Analysis error:', error);
+            if (error.debug) {
+                console.log('Debug info:', error.debug);
+                alert(`Error: ${error.message}\n\nDebug Info:\nFile ID: ${error.debug.file_id}\nFolder Path: ${error.debug.folder_path || 'No folder'}\nFolder Name: ${error.debug.folder_name || 'No folder'}`);
+            } else {
+                alert('An error occurred during analysis. Check console for details.');
+            }
+            button.disabled = false;
+            button.innerHTML = originalContent;
+        });
+    }
+    
+    // Re-analyze bank statement
+    function reanalyzeStatement(fileId) {
+        if (!confirm('Are you sure you want to re-analyze this bank statement? This will delete existing transactions and extract them again.\n\nNote: Multi-page statements will be processed page by page, which may take a moment.')) {
+            return;
+        }
+        
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = `
+            <svg class="animate-spin h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ __('Re-analyzing...') }}
+        `;
+        
+        // Make request with force flag
+        fetch(`/user/banks/statements/${fileId}/analyze`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ force: true })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw data;
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Redirect to statement details
+                window.location.href = `/user/banks/statements/${fileId}`;
+            } else {
+                console.error('Re-analysis failed:', data);
+                alert(data.message || 'Re-analysis failed');
+                button.disabled = false;
+                button.innerHTML = originalContent;
+            }
+        })
+        .catch(error => {
+            console.error('Re-analysis error:', error);
+            alert('An error occurred during re-analysis. Check console for details.');
+            button.disabled = false;
+            button.innerHTML = originalContent;
+        });
+    }
     </script>
 </x-user.layout>

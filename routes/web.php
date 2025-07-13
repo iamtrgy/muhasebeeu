@@ -117,6 +117,14 @@ Route::middleware(['auth', 'verified', 'subscribed', \App\Http\Middleware\Ensure
         // Banks Management
         Route::resource('banks', \App\Http\Controllers\User\BankController::class);
         
+        // Bank Statement Analysis
+        Route::post('banks/statements/{file}/analyze', [\App\Http\Controllers\User\StatementAnalysisController::class, 'analyze'])->name('banks.statements.analyze');
+        Route::get('banks/statements/{file}', [\App\Http\Controllers\User\StatementAnalysisController::class, 'show'])->name('banks.statements.show');
+        Route::put('banks/transactions/{transaction}', [\App\Http\Controllers\User\StatementAnalysisController::class, 'updateTransaction'])->name('banks.transactions.update');
+        Route::post('banks/transactions/{transaction}/match', [\App\Http\Controllers\User\StatementAnalysisController::class, 'matchInvoice'])->name('banks.transactions.match');
+        Route::delete('banks/transactions/{transaction}/match', [\App\Http\Controllers\User\StatementAnalysisController::class, 'unmatchInvoice'])->name('banks.transactions.unmatch');
+        Route::get('banks/transactions/{transaction}/find-matches', [\App\Http\Controllers\User\StatementAnalysisController::class, 'findMatches'])->name('banks.transactions.find-matches');
+        
         // Documents Management
         Route::resource('documents', \App\Http\Controllers\User\DocumentController::class);
         
