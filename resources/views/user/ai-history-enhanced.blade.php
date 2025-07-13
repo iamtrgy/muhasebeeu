@@ -219,20 +219,30 @@
                                 @if($file->ai_analyzed_at)
                                     <div class="hidden lg:flex items-center space-x-4 text-sm">
                                         <!-- AI Suggestion -->
-                                        @if($file->ai_analysis && isset($file->ai_analysis['folder_name']))
+                                        @if($file->ai_analysis)
                                             <div>
                                                 <span class="text-xs text-gray-500 dark:text-gray-400">Suggested:</span>
-                                                @php
-                                                    $suggestedPath = $file->ai_analysis['folder_path'] ?? $file->ai_analysis['folder_name'];
-                                                    $suggestedName = $file->ai_analysis['folder_name'];
-                                                    if ($suggestedPath && str_contains($suggestedPath, '/')) {
-                                                        $suggestedName = last(explode('/', $suggestedPath));
-                                                    }
-                                                @endphp
-                                                <span class="text-xs font-medium text-gray-900 dark:text-gray-100 ml-1" 
-                                                      title="{{ $suggestedPath }}">
-                                                    {{ $suggestedName }}
-                                                </span>
+                                                @if(isset($file->ai_analysis['suggest_deletion']) && $file->ai_analysis['suggest_deletion'])
+                                                    <span class="text-xs font-medium text-red-600 dark:text-red-400 ml-1">
+                                                        Delete File
+                                                    </span>
+                                                @elseif(isset($file->ai_analysis['folder_name']))
+                                                    @php
+                                                        $suggestedPath = $file->ai_analysis['folder_path'] ?? $file->ai_analysis['folder_name'];
+                                                        $suggestedName = $file->ai_analysis['folder_name'];
+                                                        if ($suggestedPath && str_contains($suggestedPath, '/')) {
+                                                            $suggestedName = last(explode('/', $suggestedPath));
+                                                        }
+                                                    @endphp
+                                                    <span class="text-xs font-medium text-gray-900 dark:text-gray-100 ml-1" 
+                                                          title="{{ $suggestedPath }}">
+                                                        {{ $suggestedName }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1">
+                                                        No suggestion
+                                                    </span>
+                                                @endif
                                             </div>
                                         @endif
                                         
@@ -295,19 +305,29 @@
                                 <!-- Right: Quick Actions -->
                                 <div class="flex items-center space-x-2 ml-4">
                                     @if($file->ai_analyzed_at)
-                                        <!-- Accept Button (only if file needs to be moved) -->
-                                        @if(!$file->ai_suggestion_accepted && $file->ai_analysis && isset($file->ai_analysis['suggested_folder_id']))
-                                            @php
-                                                $currentFolderId = $file->folder_id;
-                                                $suggestedFolderId = $file->ai_analysis['suggested_folder_id'] ?? null;
-                                                $needsMove = $currentFolderId != $suggestedFolderId;
-                                            @endphp
-                                            @if($needsMove)
-                                                <button onclick="acceptSuggestionQuick({{ $file->id }}, {{ $file->ai_analysis['suggested_folder_id'] ?? 'null' }}, '{{ addslashes($file->original_name ?? $file->name) }}')"
-                                                        class="inline-flex items-center px-3 py-1 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
-                                                        title="Accept AI suggestion">
-                                                    ✓ Accept
+                                        <!-- Action Button (Accept move or Delete file) -->
+                                        @if(!$file->ai_suggestion_accepted && $file->ai_analysis)
+                                            @if(isset($file->ai_analysis['suggest_deletion']) && $file->ai_analysis['suggest_deletion'])
+                                                {{-- Show Delete button for files marked for deletion --}}
+                                                <button onclick="showAISuggestionModal({{ $file->id }})"
+                                                        class="inline-flex items-center px-3 py-1 text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500"
+                                                        title="Delete recommended">
+                                                    🗑️ Delete
                                                 </button>
+                                            @elseif(isset($file->ai_analysis['suggested_folder_id']))
+                                                {{-- Show Accept button for files that need to be moved --}}
+                                                @php
+                                                    $currentFolderId = $file->folder_id;
+                                                    $suggestedFolderId = $file->ai_analysis['suggested_folder_id'] ?? null;
+                                                    $needsMove = $currentFolderId != $suggestedFolderId;
+                                                @endphp
+                                                @if($needsMove)
+                                                    <button onclick="acceptSuggestionQuick({{ $file->id }}, {{ $file->ai_analysis['suggested_folder_id'] ?? 'null' }}, '{{ addslashes($file->original_name ?? $file->name) }}')"
+                                                            class="inline-flex items-center px-3 py-1 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
+                                                            title="Accept AI suggestion">
+                                                        ✓ Accept
+                                                    </button>
+                                                @endif
                                             @endif
                                         @endif
                                         
