@@ -215,8 +215,8 @@
                                     </div>
                                 </div>
 
-                                <!-- Center: AI Status (analyzed only) -->
-                                @if($currentTab === 'analyzed' && $file->ai_analyzed_at)
+                                <!-- Center: AI Status (show for all tabs if analyzed) -->
+                                @if($file->ai_analyzed_at)
                                     <div class="hidden lg:flex items-center space-x-4 text-sm">
                                         <!-- AI Suggestion -->
                                         @if($file->ai_analysis && isset($file->ai_analysis['folder_name']))
@@ -386,14 +386,7 @@
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
                 <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
                     <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
-                        <div class="flex items-center">
-                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900">
-                                <svg class="animate-spin h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-4 text-center">
+                        <div class="text-center w-full">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" x-text="progressTitle">Processing Files</h3>
                                 <div class="mt-3">
                                     <p class="text-sm text-gray-500 dark:text-gray-400" x-text="progressMessage">Starting...</p>
@@ -407,6 +400,14 @@
                                         <div class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
                                             <span x-text="(progressCurrent || 0) + ' of ' + (progressTotal || 0)"></span>
                                         </div>
+                                    </div>
+                                    
+                                    <!-- Close Button (show when completed) -->
+                                    <div class="mt-4 text-center" x-show="progressPercentage >= 100">
+                                        <button @click="isProcessing = false" 
+                                                class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition-colors">
+                                            Close
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -715,10 +716,9 @@
                             this.progressMessage = 'Review the new AI suggestions and accept or reject them.';
                         }, 1500);
                         
-                        setTimeout(() => {
-                            this.isProcessing = false;
-                            // Update filesData to reflect new analysis status before clearing selection
-                            const reanalyzedFiles = [...this.selectedFiles];
+                        // Note: User will manually close modal via Close button
+                        // Update filesData to reflect new analysis status before clearing selection
+                        const reanalyzedFiles = [...this.selectedFiles];
                             this.filesData.forEach(fileData => {
                                 if (reanalyzedFiles.includes(fileData.id)) {
                                     fileData.ai_suggestion_accepted = false; // Mark as pending review
@@ -731,9 +731,7 @@
                         this.progressTitle = '⚠️ Re-analysis Failed';
                         this.progressMessage = 'No files were successfully analyzed. Please try again.';
                         
-                        setTimeout(() => {
-                            this.isProcessing = false;
-                        }, 3000);
+                        // Note: User will manually close modal via Close button
                     }
                 },
                 
