@@ -1811,68 +1811,6 @@
         }
         
         // Removed showMinimalAnalysisDetails - now using showAISuggestionModal from component
-        /*
-        function showMinimalAnalysisDetails(analysis, fileData) {
-            // REMOVED - using showAISuggestionModal instead
-            
-            // Simple content
-            const content = document.getElementById('analysis-details-content');
-            if (!content) {
-                console.error('Analysis details content not found');
-                return;
-            }
-            content.innerHTML = `
-                <div>
-                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">${fileData.original_name || fileData.name}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Current: ${fileData.folder ? fileData.folder.full_path : 'Root'}</p>
-                </div>
-                
-                ${analysis && analysis.folder_name ? `
-                <div>
-                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                        <span class="font-medium">AI Suggests:</span> ${analysis.folder_name}
-                    </p>
-                    ${analysis.confidence ? `<p class="text-xs text-gray-500 dark:text-gray-400">Confidence: ${analysis.confidence}%</p>` : ''}
-                </div>
-                ` : ''}
-                
-                ${analysis && analysis.reasoning ? `
-                <div>
-                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                        <span class="font-medium">Why:</span> ${analysis.reasoning}
-                    </p>
-                </div>
-                ` : ''}
-            `;
-            
-            // Simple action buttons
-            const actions = document.getElementById('analysis-action-buttons');
-            const currentFolderId = fileData.folder_id;
-            const suggestedFolderId = analysis && analysis.suggested_folder_id;
-            const needsMove = currentFolderId != suggestedFolderId;
-            
-            if (needsMove && suggestedFolderId && !fileData.ai_suggestion_accepted) {
-                const escapedFileName = (fileData.original_name || fileData.name).replace(/'/g, "\\'").replace(/"/g, '\\"');
-                actions.innerHTML = `
-                    <button onclick="acceptSuggestionFromModalTable(${fileData.id}, ${suggestedFolderId}, '${escapedFileName}'); closeAnalysisDetails();" 
-                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded">
-                        Accept & Move
-                    </button>
-                    <button onclick="closeAnalysisDetails()" 
-                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                        Cancel
-                    </button>
-                `;
-            } else if (fileData.ai_suggestion_accepted) {
-                actions.innerHTML = `
-                    <div class="text-sm text-green-600 dark:text-green-400 font-medium">✓ Already accepted</div>
-                `;
-            } else {
-                actions.innerHTML = `
-                    <div class="text-sm text-green-600 dark:text-green-400 font-medium">✓ File is in correct place</div>
-                `;
-            }
-        }
         
         function acceptSuggestionFromModalTable(fileId, folderId, fileName) {
             acceptSuggestionQuick(fileId, folderId, fileName);
