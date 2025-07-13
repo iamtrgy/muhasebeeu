@@ -405,7 +405,7 @@
                                                  :style="`width: ${progressPercentage}%`"></div>
                                         </div>
                                         <div class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                            <span x-text="`${progressCurrent} of ${progressTotal}`"></span>
+                                            <span x-text="progressCurrent + ' of ' + progressTotal"></span>
                                         </div>
                                     </div>
                                 </div>
