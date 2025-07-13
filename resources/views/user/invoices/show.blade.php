@@ -1,5 +1,5 @@
 <x-user.layout 
-    title="{{ __('Invoice') }} #{{ $invoice->invoice_number }}" 
+    title="" 
     :breadcrumbs="[
         ['title' => __('Home'), 'href' => route('user.dashboard'), 'first' => true],
         ['title' => __('Invoices'), 'href' => route('user.invoices.index')],
@@ -12,12 +12,14 @@
         @endif
 
         <!-- Invoice Header with Actions -->
-        <x-ui.card.base>
-            <x-ui.card.body>
-                <div class="flex justify-between items-start">
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <div class="flex items-center justify-between">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Invoice #{{ $invoice->invoice_number }}</h2>
-                        <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                            Invoice #{{ $invoice->invoice_number }}
+                        </h2>
+                        <div class="mt-1 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                             <span>{{ __('Created') }}: {{ $invoice->created_at->format('d.m.Y H:i') }}</span>
                             <span>•</span>
                             <span>
@@ -33,7 +35,7 @@
                             </span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center space-x-3">
                         @if($invoice->status == 'draft')
                             <x-ui.button.primary size="sm" x-data x-on:click="$dispatch('open-modal', 'send-invoice-modal')">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,8 +85,8 @@
                         </form>
                     </div>
                 </div>
-            </x-ui.card.body>
-        </x-ui.card.base>
+            </div>
+        </div>
 
         <!-- Invoice Details Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

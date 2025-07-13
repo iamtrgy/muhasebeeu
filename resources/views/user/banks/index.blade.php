@@ -117,14 +117,19 @@
                                             </div>
                                         </div>
                                         <div class="flex items-center space-x-2">
-                                            <a href="{{ route('user.files.preview', $file) }}" 
+                                            <button onclick="previewFile({{ json_encode([
+                                                'id' => $file->id,
+                                                'name' => $file->original_name,
+                                                'mime_type' => $file->mime_type,
+                                                'url' => route('user.files.preview', $file)
+                                            ]) }})" 
                                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                                                title="{{ __('Preview') }}">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
-                                            </a>
+                                            </button>
                                             <a href="{{ route('user.files.download', $file) }}" 
                                                class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                                                title="{{ __('Download') }}">
@@ -205,15 +210,24 @@
                             <ul class="space-y-3">
                                 @foreach($recentStatements->take(5) as $statement)
                                     <li>
-                                        <a href="{{ route('user.files.preview', $statement) }}" 
-                                           class="block hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded">
+                                        <button onclick="previewFile({{ json_encode([
+                                            'id' => $statement->id,
+                                            'name' => $statement->original_name,
+                                            'mime_type' => $statement->mime_type,
+                                            'url' => route('user.files.preview', $statement)
+                                        ]) }})" 
+                                           class="block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded">
                                             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
                                                 {{ $statement->original_name }}
                                             </p>
                                             <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                {{ $statement->folder->parent->name ?? '' }} {{ $statement->folder->name ?? '' }}
+                                                @if($statement->folder && $statement->folder->parent)
+                                                    {{ $statement->folder->parent->name }} {{ $statement->folder->name }}
+                                                @else
+                                                    {{ $statement->created_at->format('M Y') }}
+                                                @endif
                                             </p>
-                                        </a>
+                                        </button>
                                     </li>
                                 @endforeach
                             </ul>
@@ -227,4 +241,121 @@
             </div>
         </div>
     </div>
+
+    <!-- File Preview Modal -->
+    <div id="filePreviewModal" class="hidden fixed inset-0 z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" id="modal-backdrop"></div>
+
+        <!-- Modal Content -->
+        <div class="fixed inset-0 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl">
+                    <div class="absolute top-0 right-0 pt-4 pr-4 z-10">
+                        <button type="button" onclick="closePreviewModal()" class="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                            <span class="sr-only">Close</span>
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="w-full">
+                            <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white mb-4 pt-4" id="preview-title"></h3>
+                            <div id="preview-content" class="mt-2 max-h-[70vh] overflow-auto"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    window.previewFile = function(file) {
+        const modal = document.getElementById('filePreviewModal');
+        const previewTitle = document.getElementById('preview-title');
+        const previewContent = document.getElementById('preview-content');
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Set title and show loading
+        previewTitle.textContent = file.name;
+        previewTitle.style.display = 'block';
+        previewContent.innerHTML = '<div class="flex justify-center py-12"><svg class="animate-spin h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+        
+        // Reset modal padding first
+        const modalContent = previewContent.closest('.bg-white');
+        modalContent.classList.remove('p-0');
+        modalContent.classList.add('px-4', 'pb-4', 'pt-5', 'sm:p-6', 'sm:pb-4');
+        
+        // Load content based on file type
+        if (file.mime_type && file.mime_type.startsWith('image/')) {
+            // Show title for images
+            previewTitle.style.display = 'block';
+            previewContent.innerHTML = `<img src="${file.url}" alt="${file.name}" class="max-w-full h-auto mx-auto">`;
+        } else if (file.mime_type === 'application/pdf') {
+            // For PDFs, remove padding and make iframe full size
+            modalContent.classList.remove('px-4', 'pb-4', 'pt-5', 'sm:p-6', 'sm:pb-4');
+            modalContent.classList.add('p-0');
+            
+            // Hide the main title since we don't need it for PDFs
+            previewTitle.style.display = 'none';
+            
+            previewContent.innerHTML = `
+                <div class="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${file.name}</h3>
+                </div>
+                <iframe src="${file.url}" class="w-full h-[80vh]" frameborder="0"></iframe>`;
+        } else {
+            previewContent.innerHTML = `
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p class="text-sm text-gray-500 mb-4">Preview not available for this file type</p>
+                    <a href="${file.url}" target="_blank" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        Open in New Tab
+                    </a>
+                    <a href="/user/files/${file.id}/download" class="ml-3 inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-md transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download File
+                    </a>
+                </div>`;
+        }
+    }
+
+    window.closePreviewModal = function() {
+        const modal = document.getElementById('filePreviewModal');
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    // Initialize event listeners when the document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('filePreviewModal');
+        const backdrop = document.getElementById('modal-backdrop');
+        
+        // Close modal when clicking the backdrop
+        backdrop.addEventListener('click', function(event) {
+            if (event.target === backdrop) {
+                closePreviewModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+                closePreviewModal();
+            }
+        });
+    });
+    </script>
 </x-user.layout>

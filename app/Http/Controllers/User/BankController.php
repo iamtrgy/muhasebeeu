@@ -94,10 +94,17 @@ class BankController extends Controller
         }
         
         // Get recent bank statements across all months
+        // Only get files that are actually in Banks year/month folders (not misplaced files)
         $recentStatements = File::whereHas('folder', function ($query) use ($banksFolder) {
-                $query->where('path', 'like', $banksFolder->path . '%');
+                // Ensure the file is in a month folder (3 levels deep: Banks/Year/Month)
+                $query->where('path', 'like', $banksFolder->path . '/%/%')
+                      ->whereHas('parent', function($q) use ($banksFolder) {
+                          // Parent folder (year) must be direct child of Banks
+                          $q->where('parent_id', $banksFolder->id);
+                      });
             })
-            ->with(['folder', 'uploader'])
+            ->where('original_name', 'not like', 'invoice_%') // Exclude invoice files
+            ->with(['folder.parent', 'uploader'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();

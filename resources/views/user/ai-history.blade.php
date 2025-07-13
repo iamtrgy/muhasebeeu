@@ -317,10 +317,17 @@
         }
         
         function reanalyzeFile(fileId) {
-            if (confirm('Are you sure you want to re-analyze this file? This will generate a new AI analysis.')) {
-                // Force re-analysis by passing true for forceNew parameter
-                showAISuggestionModal(fileId, true);
-            }
+            // Use custom confirmation modal
+            window.showConfirmationModal({
+                title: 'Re-analyze File',
+                message: 'Are you sure you want to re-analyze this file? This will generate a new AI analysis.',
+                confirmText: 'Re-analyze',
+                cancelText: 'Cancel',
+                onConfirm: function() {
+                    // Force re-analysis by passing true for forceNew parameter
+                    showAISuggestionModal(fileId, true);
+                }
+            });
         }
     </script>
     @endpush

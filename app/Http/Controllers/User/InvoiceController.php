@@ -79,6 +79,10 @@ class InvoiceController extends Controller
         $selectedMonthFolder = null;
         $monthlySystemInvoiceCounts = [];
         
+        // Initialize counts for current month tabs
+        $currentMonthIncomeCount = 0;
+        $currentMonthExpenseCount = 0;
+        
         // Calculate system invoice counts for each month of the selected year (only for income tab)
         for ($m = 1; $m <= 12; $m++) {
             $monthCount = 0;
@@ -130,6 +134,57 @@ class InvoiceController extends Controller
                             ->with('files')
                             ->orderBy('name')
                             ->get();
+                            
+                        // Calculate tab counts for current selected month only
+                        // Get Income folder for selected month
+                        $incomeTabFolder = \App\Models\Folder::where('name', 'Income')
+                            ->where('parent_id', $invoicesFolder->id)
+                            ->where('company_id', $company->id)
+                            ->first();
+                            
+                        if ($incomeTabFolder) {
+                            $incomeYearFolder = \App\Models\Folder::where('name', $selectedYear)
+                                ->where('parent_id', $incomeTabFolder->id)
+                                ->where('company_id', $company->id)
+                                ->first();
+                                
+                            if ($incomeYearFolder) {
+                                $monthName = \Carbon\Carbon::createFromDate(null, (int) $selectedMonth, 1)->format('F');
+                                $incomeMonthFolder = \App\Models\Folder::where('name', $monthName)
+                                    ->where('parent_id', $incomeYearFolder->id)
+                                    ->where('company_id', $company->id)
+                                    ->first();
+                                    
+                                if ($incomeMonthFolder) {
+                                    $currentMonthIncomeCount = $incomeMonthFolder->files()->count();
+                                }
+                            }
+                        }
+                        
+                        // Get Expense folder for selected month
+                        $expenseTabFolder = \App\Models\Folder::where('name', 'Expense')
+                            ->where('parent_id', $invoicesFolder->id)
+                            ->where('company_id', $company->id)
+                            ->first();
+                            
+                        if ($expenseTabFolder) {
+                            $expenseYearFolder = \App\Models\Folder::where('name', $selectedYear)
+                                ->where('parent_id', $expenseTabFolder->id)
+                                ->where('company_id', $company->id)
+                                ->first();
+                                
+                            if ($expenseYearFolder) {
+                                $monthName = \Carbon\Carbon::createFromDate(null, (int) $selectedMonth, 1)->format('F');
+                                $expenseMonthFolder = \App\Models\Folder::where('name', $monthName)
+                                    ->where('parent_id', $expenseYearFolder->id)
+                                    ->where('company_id', $company->id)
+                                    ->first();
+                                    
+                                if ($expenseMonthFolder) {
+                                    $currentMonthExpenseCount = $expenseMonthFolder->files()->count();
+                                }
+                            }
+                        }
                             
                         // Get selected month folder
                         $monthName = \Carbon\Carbon::createFromDate(null, (int) $selectedMonth, 1)->format('F');
@@ -255,8 +310,8 @@ class InvoiceController extends Controller
             'tab' => $tab,
             'company' => $company,
             'systemInvoicesCount' => $systemInvoices->count(),
-            'uploadedIncomeCount' => $incomeFiles->count(),
-            'uploadedExpenseCount' => $expenseFiles->count(),
+            'uploadedIncomeCount' => $currentMonthIncomeCount,
+            'uploadedExpenseCount' => $currentMonthExpenseCount,
             'years' => $years,
             'months' => $months,
             'monthlySystemInvoiceCounts' => $monthlySystemInvoiceCounts,

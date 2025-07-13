@@ -307,7 +307,7 @@
                                             </svg>
                                         </button>
                                         
-                                        <button onclick="showAISuggestionModal({{ $file->id }}, true)"
+                                        <button onclick="reanalyzeFile({{ $file->id }})"
                                                 class="p-1.5 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 focus:outline-none"
                                                 title="Re-analyze">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1757,10 +1757,17 @@
         
         
         function reanalyzeFile(fileId) {
-            if (confirm('Are you sure you want to re-analyze this file? This will generate a new AI analysis.')) {
-                // Force re-analysis by passing true for forceNew parameter
-                showAISuggestionModal(fileId, true);
-            }
+            // Use custom confirmation modal
+            window.showConfirmationModal({
+                title: 'Re-analyze File',
+                message: 'Are you sure you want to re-analyze this file? This will generate a new AI analysis.',
+                confirmText: 'Re-analyze',
+                cancelText: 'Cancel',
+                onConfirm: function() {
+                    // Force re-analysis by passing true for forceNew parameter
+                    showAISuggestionModal(fileId, true);
+                }
+            });
         }
         
         // Preview file function
