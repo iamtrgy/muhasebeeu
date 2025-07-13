@@ -155,7 +155,9 @@
                     <!-- File List -->
                     <div class="divide-y divide-gray-100 dark:divide-gray-700">
                         @foreach($files as $file)
-                            <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" data-file-id="{{ $file->id }}">
+                            <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" 
+                                 data-file-id="{{ $file->id }}"
+                                 data-file='@json($file)'>
                                 <!-- Left: Checkbox + File Info -->
                                 <div class="flex items-center space-x-3 flex-1 min-w-0">
                                     <!-- Enhanced Checkbox -->
@@ -190,7 +192,7 @@
                                         <!-- File Details -->
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center space-x-2">
-                                                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
                                                     {{ $file->original_name ?? $file->name }}
                                                 </p>
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
@@ -309,15 +311,7 @@
                                             @endif
                                         @endif
                                         
-                                        <button onclick="showMinimalAnalysisDetails({{ json_encode($file->ai_analysis) }}, {{ json_encode([
-                                            'id' => $file->id,
-                                            'original_name' => $file->original_name,
-                                            'name' => $file->name,
-                                            'folder' => $file->folder,
-                                            'folder_id' => $file->folder_id,
-                                            'ai_suggestion_accepted' => $file->ai_suggestion_accepted,
-                                            'ai_analysis' => $file->ai_analysis
-                                        ]) }})"
+                                        <button onclick="showAISuggestionModal({{ $file->id }})"
                                                 class="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none"
                                                 title="View details">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -489,7 +483,7 @@
                 
                 <!-- Actions -->
                 <div class="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                    <button type="button" onclick="closeReviewGuidance(); showAnalysisDetailsFromReview()" 
+                    <button type="button" onclick="closeReviewGuidance(); if(currentReviewFileId) { showAISuggestionModal(currentReviewFileId); }" 
                             class="w-full inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                         Review Now
                     </button>
@@ -498,39 +492,6 @@
         </div>
     </div>
     
-    <!-- Analysis Details Modal - Minimal Design -->
-    <div id="analysis-details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeAnalysisDetails()"></div>
-            
-            <!-- Modal Content -->
-            <div class="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-lg w-full">
-                <!-- Header -->
-                <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">File Review</h3>
-                    <button onclick="closeAnalysisDetails()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                
-                <!-- Content -->
-                <div class="p-4">
-                    <div id="analysis-details-content" class="space-y-3">
-                        <!-- Content will be dynamically inserted -->
-                    </div>
-                </div>
-                
-                <!-- Actions -->
-                <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-                    <div id="analysis-action-buttons" class="flex gap-2">
-                        <!-- Action buttons will be inserted here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     @push('scripts')
     <script>
@@ -800,26 +761,43 @@
                     this.startProgress('Analyzing Files', this.selectedFiles.length);
                     
                     try {
-                        this.addProgressMessage('Starting batch analysis...', 'info');
+                        this.addProgressMessage('Starting analysis...', 'info');
                         
-                        const response = await fetch('/user/files/batch-analyze', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            },
-                            body: JSON.stringify({ file_ids: this.selectedFiles })
-                        });
+                        let successCount = 0;
+                        let errorCount = 0;
                         
-                        const data = await response.json();
-                        
-                        if (data.success) {
-                            this.updateProgress(this.progressTotal, 'Analysis completed!');
-                            this.addProgressMessage(`Successfully analyzed ${this.selectedFiles.length} files!`, 'success');
-                            this.finishProgress(this.selectedFiles.length);
-                        } else {
-                            throw new Error(data.error || 'Failed to analyze files');
+                        // Analyze files one by one to show progress
+                        for (const fileId of this.selectedFiles) {
+                            try {
+                                this.addProgressMessage(`Analyzing file ${successCount + errorCount + 1} of ${this.selectedFiles.length}...`, 'info');
+                                
+                                const response = await fetch(`/user/files/${fileId}/analyze?force_new=1`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                        'Accept': 'application/json'
+                                    }
+                                });
+                                
+                                const data = await response.json();
+                                
+                                if (data.success) {
+                                    successCount++;
+                                    this.updateProgress(successCount + errorCount);
+                                } else {
+                                    errorCount++;
+                                    this.addProgressMessage(`Failed to analyze file: ${data.error}`, 'error');
+                                }
+                            } catch (error) {
+                                errorCount++;
+                                this.addProgressMessage(`Error analyzing file: ${error.message}`, 'error');
+                            }
                         }
+                        
+                        this.addProgressMessage(`Completed! Analyzed ${successCount} files${errorCount > 0 ? `, ${errorCount} failed` : ''}.`, 'success');
+                        this.finishProgress(successCount, errorCount);
+                        
                     } catch (error) {
                         this.addProgressMessage(`Error: ${error.message}`, 'error');
                         this.finishProgress(0, this.selectedFiles.length);
@@ -834,7 +812,7 @@
                     const filesAlreadyCorrect = [];
                     
                     this.selectedFiles.forEach(fileId => {
-                        const fileRow = document.querySelector(`tr[data-file-id="${fileId}"]`);
+                        const fileRow = document.querySelector(`div[data-file-id="${fileId}"]`);
                         if (fileRow) {
                             const fileData = JSON.parse(fileRow.getAttribute('data-file') || '{}');
                             if (fileData.ai_analysis) {
@@ -970,7 +948,8 @@
         let currentModalFile = null;
         
         // Make functions globally accessible for onclick handlers
-        window.showAnalysisDetails = function showAnalysisDetails(analysis, fileData = null) {
+        // Removed showAnalysisDetails - using showAISuggestionModal
+        /*window.showAnalysisDetails = function showAnalysisDetails(analysis, fileData = null) {
             if (!analysis) return;
             
             // Store current file data for actions
@@ -1343,7 +1322,7 @@
         // Make all functions globally accessible for onclick handlers
         window.manualMoveFromDetails = manualMoveFromDetails;
         window.viewFileFromDetails = viewFileFromDetails;
-        window.closeAnalysisDetails = closeAnalysisDetails;
+        // window.closeAnalysisDetails = closeAnalysisDetails; // Removed - using new modal
         window.acceptAnalysisSuggestion = acceptAnalysisSuggestion;
         window.restoreAnalysisDetailsView = restoreAnalysisDetailsView;
         window.selectFolderAndConfirm = selectFolderAndConfirm;
@@ -1830,9 +1809,10 @@
             document.getElementById('analysis-details-modal').classList.add('hidden');
         }
         
+        // Removed showMinimalAnalysisDetails - now using showAISuggestionModal from component
+        /*
         function showMinimalAnalysisDetails(analysis, fileData) {
-            // Show minimal analysis modal
-            document.getElementById('analysis-details-modal').classList.remove('hidden');
+            // REMOVED - using showAISuggestionModal instead
             
             // Simple content
             const content = document.getElementById('analysis-details-content');
@@ -1901,9 +1881,12 @@
         window.closeReviewGuidance = closeReviewGuidance;
         window.showAnalysisDetailsFromReview = showAnalysisDetailsFromReview;
         window.acceptSuggestionFromModal = acceptSuggestionFromModal;
-        window.closeAnalysisDetails = closeAnalysisDetails;
+        // window.closeAnalysisDetails = closeAnalysisDetails; // Removed - using new modal
         window.showMinimalAnalysisDetails = showMinimalAnalysisDetails;
         window.acceptSuggestionFromModalTable = acceptSuggestionFromModalTable;
     </script>
     @endpush
+    
+    <!-- Include AI Suggestion Modal Component -->
+    @include('components.ai-suggestion-modal')
 </x-user.layout>

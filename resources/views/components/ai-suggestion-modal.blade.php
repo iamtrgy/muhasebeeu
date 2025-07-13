@@ -146,11 +146,15 @@ function displayAnalysis(data) {
         docName.textContent = data.file.name;
     }
     
-    // Suggested folder
+    // Suggested folder or deletion
     const breadcrumb = document.getElementById('ai-suggested-folder-breadcrumb');
     if (breadcrumb) {
-        const folderPath = data.analysis.folder_path || data.analysis.folder_name || 'Unknown';
-        breadcrumb.textContent = folderPath;
+        if (data.analysis.suggest_deletion) {
+            breadcrumb.innerHTML = '<span class="text-red-600 dark:text-red-400">No folder - Delete recommended</span>';
+        } else {
+            const folderPath = data.analysis.folder_path || data.analysis.folder_name || 'Unknown';
+            breadcrumb.textContent = folderPath;
+        }
     }
     
     // Confidence
@@ -188,9 +192,46 @@ function displayAnalysis(data) {
         });
     }
     
-    // Show actions if we have a suggested folder
-    if (currentSuggestedFolderId && data.file.current_folder_id !== currentSuggestedFolderId) {
+    // Show actions based on analysis
+    if (data.analysis.suggest_deletion) {
+        // Show deletion suggestion
         document.getElementById('ai-actions').classList.remove('hidden');
+        document.getElementById('ai-actions').innerHTML = `
+            <div class="space-y-3">
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded p-3">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-red-800 dark:text-red-200">Suggested Action: Delete File</p>
+                            <p class="text-sm text-red-600 dark:text-red-400 mt-1">${data.analysis.deletion_reason || 'This document is not related to any of your companies.'}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="deleteFile()" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
+                        Delete File
+                    </button>
+                    <button onclick="closeAISuggestionModal()" class="flex-1 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded border border-gray-300 dark:border-gray-600 transition-colors">
+                        Keep File
+                    </button>
+                </div>
+            </div>
+        `;
+    } else if (currentSuggestedFolderId && data.file.current_folder_id !== currentSuggestedFolderId) {
+        // Show normal move actions
+        document.getElementById('ai-actions').classList.remove('hidden');
+        document.getElementById('ai-actions').innerHTML = `
+            <div class="flex gap-2">
+                <button id="ai-accept-btn" onclick="acceptSuggestion()" class="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition-colors">
+                    Accept
+                </button>
+                <button onclick="closeAISuggestionModal()" class="flex-1 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded border border-gray-300 dark:border-gray-600 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        `;
     }
 }
 
@@ -227,6 +268,34 @@ function acceptSuggestion(folderId = null) {
             window.location.reload();
         } else {
             alert('Failed to move file: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Network error: ' + error.message);
+    });
+}
+
+function deleteFile() {
+    if (!currentFileId) return;
+    
+    if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/user/files/${currentFileId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeAISuggestionModal();
+            window.location.reload();
+        } else {
+            alert('Failed to delete file: ' + (data.error || 'Unknown error'));
         }
     })
     .catch(error => {

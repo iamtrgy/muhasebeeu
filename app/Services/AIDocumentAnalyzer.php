@@ -347,10 +347,22 @@ class AIDocumentAnalyzer
             throw new Exception('AI response was not valid JSON: ' . json_last_error_msg());
         }
         
-        // Ensure required fields exist
-        if (!isset($parsed['suggested_folder_id']) || !isset($parsed['folder_name'])) {
+        // Ensure required fields exist - but allow null values for deletion suggestions
+        if (!array_key_exists('suggested_folder_id', $parsed) || !array_key_exists('folder_name', $parsed)) {
             Log::error('AI response missing required fields', ['parsed' => $parsed]);
             throw new Exception('AI response missing required fields');
+        }
+        
+        // If deletion is suggested, folder fields can be null
+        if (isset($parsed['suggest_deletion']) && $parsed['suggest_deletion'] === true) {
+            // This is valid - document should be deleted
+            Log::info('AI suggests deletion for unrelated document', [
+                'reason' => $parsed['deletion_reason'] ?? 'Not related to user companies'
+            ]);
+        } else if (empty($parsed['suggested_folder_id']) || empty($parsed['folder_name'])) {
+            // If not suggesting deletion, we need valid folder info
+            Log::error('AI response has null folder info without deletion suggestion', ['parsed' => $parsed]);
+            throw new Exception('AI response missing folder information');
         }
         
         // Handle zero or very low confidence cases
@@ -400,13 +412,15 @@ class AIDocumentAnalyzer
         
         $prompt .= "\nReturn JSON:\n";
         $prompt .= "{\n";
-        $prompt .= '  "suggested_folder_id": <id>,';
-        $prompt .= '  "folder_name": "<name>",';
-        $prompt .= '  "folder_path": "<path>",';
+        $prompt .= '  "suggested_folder_id": <id or null>,';
+        $prompt .= '  "folder_name": "<name or null>",';
+        $prompt .= '  "folder_path": "<path or null>",';
         $prompt .= '  "confidence": <0-100>,';
         $prompt .= '  "reasoning": "<brief explanation>",';
         $prompt .= '  "document_date": "<YYYY-MM-DD>",';
-        $prompt .= '  "transaction_type": "<income|expense|other>"';
+        $prompt .= '  "transaction_type": "<income|expense|not_related>",';
+        $prompt .= '  "suggest_deletion": <true if document not related to user companies>,';
+        $prompt .= '  "deletion_reason": "<why suggest deletion if applicable>"';
         $prompt .= "\n}";
         
         return $prompt;
