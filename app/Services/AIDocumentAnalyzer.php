@@ -429,17 +429,23 @@ class AIDocumentAnalyzer
             
             $prompt .= "DECISION LOGIC:\n\n";
             
+            $prompt .= "CRITICAL DELETION RULE:\n";
+            $prompt .= "SUGGEST DELETION if the document is between companies that are NOT in the user company list.\n";
+            $prompt .= "Even if those companies exist in the system, if they are not user companies, DELETE the document.\n\n";
+            
             $prompt .= "SUGGEST DELETION if ANY apply:\n";
-            $prompt .= "- SENDER company is NOT in user company list AND RECEIVER company is NOT in user company list\n";
-            $prompt .= "- Document is between two third parties (neither sender nor receiver is user company)\n";
+            $prompt .= "- SENDER company is NOT in user company list\n";
+            $prompt .= "- RECEIVER company is NOT in user company list\n";
+            $prompt .= "- Document is between two companies that both exist but neither belongs to user\n";
+            $prompt .= "- Transaction does not involve user company as direct participant\n";
             $prompt .= "- Document is personal/individual transaction (not business related)\n";
-            $prompt .= "- Individual person to individual person transaction\n";
             $prompt .= "- Entertainment, travel, personal expense receipts\n\n";
             
-            $prompt .= "SUGGEST FOLDER only if ALL apply:\n";
-            $prompt .= "- EXACTLY ONE of the user companies listed above appears as SENDER OR RECEIVER\n";
+            $prompt .= "SUGGEST FOLDER only if ALL conditions are met:\n";
+            $prompt .= "- SENDER company is in user company list OR RECEIVER company is in user company list\n";
+            $prompt .= "- EXACTLY ONE of the parties (sender/receiver) must be a user company\n";
             $prompt .= "- Document is legitimate business transaction\n";
-            $prompt .= "- User company is directly involved (not just mentioned)\n";
+            $prompt .= "- User company is directly involved as sender OR receiver (not both)\n";
             $prompt .= "- Transaction type: User company SENT = Income, User company RECEIVED = Expense\n";
             $prompt .= "- Use DOCUMENT YEAR (not folder year) for date-based folder selection\n\n";
             
@@ -455,10 +461,18 @@ class AIDocumentAnalyzer
         $prompt .= "2. Identify SENDER company (who issued/sent the document)\n";
         $prompt .= "3. Identify RECEIVER company (who received/should pay)\n";
         $prompt .= "4. Read the document date and extract the ACTUAL year\n";
-        $prompt .= "5. Check if ANY user company from the list above is SENDER or RECEIVER\n";
-        $prompt .= "6. If NEITHER sender NOR receiver is a user company → suggest_deletion: true\n";
-        $prompt .= "7. If ONE user company is involved → find folder matching DOCUMENT year and transaction type\n";
-        $prompt .= "8. NEVER suggest folders with wrong years - use document date year only\n\n";
+        $prompt .= "5. CRITICAL CHECK: Is the SENDER in the user company list above?\n";
+        $prompt .= "6. CRITICAL CHECK: Is the RECEIVER in the user company list above?\n";
+        $prompt .= "7. If BOTH checks are NO → suggest_deletion: true, deletion_reason: 'Transaction between third parties'\n";
+        $prompt .= "8. If EITHER check is YES → find folder matching DOCUMENT year and transaction type\n";
+        $prompt .= "9. NEVER suggest folders for companies not in the user list\n";
+        $prompt .= "10. NEVER suggest folders with wrong years - use document date year only\n\n";
+        
+        $prompt .= "EXAMPLE SCENARIOS:\n";
+        $prompt .= "- Invoice from Company A to Company B, user owns Company C → DELETE\n";
+        $prompt .= "- Invoice from User Company to Company X → INCOME folder\n";
+        $prompt .= "- Invoice from Company Y to User Company → EXPENSE folder\n";
+        $prompt .= "- Invoice between any non-user companies → DELETE\n\n";
         
         $prompt .= "Return JSON with this exact format:\n";
         $prompt .= "{\n";
