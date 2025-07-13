@@ -402,10 +402,10 @@
                                     <div class="mt-3">
                                         <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                             <div class="bg-indigo-600 dark:bg-indigo-400 h-2 rounded-full transition-all duration-300" 
-                                                 :style="`width: ${progressPercentage}%`"></div>
+                                                 :style="'width: ' + (progressPercentage || 0) + '%'"></div>
                                         </div>
                                         <div class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                            <span x-text="progressCurrent + ' of ' + progressTotal"></span>
+                                            <span x-text="(progressCurrent || 0) + ' of ' + (progressTotal || 0)"></span>
                                         </div>
                                     </div>
                                 </div>
