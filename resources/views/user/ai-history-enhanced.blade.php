@@ -257,26 +257,37 @@
                                         ]) }})"
                                                 class="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none"
                                                 title="View details">
-                                            ℹ️
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
                                         </button>
                                         
                                         <button onclick="showAISuggestionModal({{ $file->id }}, true)"
                                                 class="p-1.5 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 focus:outline-none"
                                                 title="Re-analyze">
-                                            🔄
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
                                         </button>
                                     @else
                                         <button onclick="showAISuggestionModal({{ $file->id }})"
                                                 class="inline-flex items-center px-3 py-1 text-xs font-medium rounded text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
                                                 title="Analyze with AI">
-                                            🤖 Analyze
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                            </svg>
+                                            Analyze
                                         </button>
                                     @endif
                                     
                                     <button onclick="window.open('/user/files/{{ $file->id }}/preview', '_blank')"
                                             class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
                                             title="View file">
-                                        👁️                                    </button>
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
                                 </div>
                             </div>
                         @endforeach
@@ -362,55 +373,41 @@
     <!-- Include AI Suggestion Modal -->
     <x-ai-suggestion-modal />
     
-    <!-- Analysis Details Modal with Enhanced Actions -->
+    <!-- Analysis Details Modal - Modern Design -->
     <div id="analysis-details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-            <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <div class="bg-white dark:bg-gray-800 px-4 pt-4 pb-4 sm:p-6 sm:pb-4">
-                    <h3 class="text-base font-medium text-gray-900 dark:text-gray-100 mb-3">Analysis Details</h3>
-                    <div id="analysis-details-content" class="space-y-3 text-sm">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeAnalysisDetails()"></div>
+            
+            <!-- Modal Content -->
+            <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                <!-- Header -->
+                <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Analysis Details</h3>
+                    </div>
+                    <button onclick="closeAnalysisDetails()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Content -->
+                <div class="p-6 overflow-y-auto max-h-[60vh]">
+                    <div id="analysis-details-content">
                         <!-- Content will be dynamically inserted -->
                     </div>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6">
-                    <!-- Action Buttons Row -->
-                    <div class="flex flex-wrap gap-2 mb-3" id="analysis-action-buttons">
-                        <!-- Primary Action -->
-                        <button type="button" id="accept-suggestion-btn" onclick="acceptAnalysisSuggestion()" 
-                                class="hidden inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500">
-                            ✓ Accept
-                        </button>
-                        
-                        <!-- Secondary Actions -->
-                        <button type="button" onclick="reanalyzeFromDetails()" 
-                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-gray-600 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-500">
-                            🔄 Re-analyze
-                        </button>
-                        
-                        <!-- Secondary Actions -->
-                        <button type="button" onclick="manualMoveFromDetails()" 
-                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-gray-600 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-500">
-                            📁 Move
-                            </button>
-                        
-                        <button type="button" id="preview-file-btn" onclick="previewFileFromDetails()" 
-                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-gray-600 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-500">
-                            👁️ Preview
-                        </button>
-                        
-                        <button type="button" id="view-file-btn" onclick="goToFolder()" 
-                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-gray-600 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-500">
-                            📂 Go to Folder
-                        </button>
-                    </div>
-                    
-                    <!-- Close Button -->
-                    <div class="flex justify-end">
-                        <button type="button" onclick="closeAnalysisDetails()" 
-                                class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-3 py-1.5 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
-                            Close
-                        </button>
+                
+                <!-- Actions Footer -->
+                <div class="p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                    <div id="analysis-action-buttons" class="flex flex-wrap gap-3">
+                        <!-- Action buttons will be inserted here -->
                     </div>
                 </div>
             </div>
@@ -788,57 +785,76 @@
             
             const content = document.getElementById('analysis-details-content');
             content.innerHTML = `
-                <div class="space-y-3">
+                <div class="space-y-6">
                     <!-- File Info Card -->
                     ${fileData ? `
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">File Details</h4>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">${fileData.size_formatted || 'Unknown size'}</span>
+                        <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-base font-semibold text-gray-900 dark:text-white">File Information</h4>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">${fileData.size_formatted || 'Unknown size'}</p>
+                                    </div>
+                                </div>
                             </div>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                                <span class="font-medium">Name:</span> ${fileData.original_name || fileData.name}
-                            </p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                <span class="font-medium">Current Folder:</span> 
-                                <span class="font-mono">${fileData.current_folder || 'Root'}</span>
-                            </p>
+                            <div class="grid grid-cols-1 gap-3">
+                                <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-600 last:border-b-0">
+                                    <span class="text-sm font-medium text-gray-600 dark:text-gray-300">File Name</span>
+                                    <span class="text-sm text-gray-900 dark:text-white font-mono">${fileData.original_name || fileData.name}</span>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-600 last:border-b-0">
+                                    <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Current Location</span>
+                                    <span class="text-sm text-gray-900 dark:text-white font-mono">${fileData.current_folder || 'Root'}</span>
+                                </div>
+                            </div>
                         </div>
                     ` : ''}
                     
-                    <!-- AI Reasoning -->
+                    <!-- AI Analysis Section -->
                     ${analysis.reasoning ? `
-                        <div>
-                            <h5 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1">AI Reasoning</h5>
-                            <div class="bg-gray-50 dark:bg-gray-700/50 rounded p-2">
-                                <p class="text-sm ${analysis.reasoning.toLowerCase().includes('already in the correct folder') || analysis.reasoning.toLowerCase().includes('already in correct folder') ? 'text-green-600 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">${analysis.reasoning}</p>
+                        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-700">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    </svg>
+                                </div>
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white">AI Analysis</h4>
                             </div>
+                            <p class="text-sm leading-relaxed ${analysis.reasoning.toLowerCase().includes('already in the correct folder') || analysis.reasoning.toLowerCase().includes('already in correct folder') ? 'text-green-700 dark:text-green-300 font-medium bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-700' : 'text-gray-700 dark:text-gray-300'}">${analysis.reasoning}</p>
                         </div>
                     ` : ''}
                     
-                    <!-- Suggested Folder -->
+                    <!-- Suggested Folder Section -->
                     ${analysis.folder_path || analysis.folder_name ? `
-                        <div>
-                            <h5 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1">Suggested Folder</h5>
-                            <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded p-2">
-                                <div class="flex items-center">
-                                    <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl p-4 border border-indigo-200 dark:border-indigo-700">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                                     </svg>
-                                    <span class="text-sm font-medium text-indigo-900 dark:text-indigo-200">
-                                        ${analysis.folder_path || analysis.folder_name}
-                                    </span>
                                 </div>
-                                ${analysis.confidence ? `
-                                    <div class="mt-2 flex items-center">
-                                        <span class="text-xs text-indigo-600 dark:text-indigo-400 mr-2">Confidence:</span>
-                                        <div class="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 max-w-[100px]">
-                                            <div class="bg-indigo-600 dark:bg-indigo-400 h-1.5 rounded-full" style="width: ${analysis.confidence}%"></div>
-                                        </div>
-                                        <span class="ml-2 text-xs text-indigo-600 dark:text-indigo-400">${analysis.confidence}%</span>
-                                    </div>
-                                ` : ''}
+                                <div>
+                                    <h4 class="text-base font-semibold text-gray-900 dark:text-white">Suggested Location</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 font-mono">${analysis.folder_path || analysis.folder_name}</p>
+                                </div>
                             </div>
+                            ${analysis.confidence ? `
+                                <div class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Confidence Level</span>
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                            <div class="bg-gradient-to-r from-indigo-500 to-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${analysis.confidence}%"></div>
+                                        </div>
+                                        <span class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">${analysis.confidence}%</span>
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
                     ` : ''}
                     
@@ -859,22 +875,37 @@
                         });
                         
                         return uniqueAlternatives.length > 0 ? `
-                            <div>
-                                <h5 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1">Alternative Suggestions</h5>
-                                <div class="space-y-2">
+                            <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-700">
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <div class="w-8 h-8 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                        </svg>
+                                    </div>
+                                    <h4 class="text-base font-semibold text-gray-900 dark:text-white">Alternative Suggestions</h4>
+                                </div>
+                                <div class="grid gap-3">
                                     ${uniqueAlternatives.map((alt, index) => {
                                         const altFolderName = alt.folder_path ? alt.folder_path.split('/').pop() : alt.folder_name || alt.name || 'Unknown';
                                         return `
-                                            <div class="bg-gray-50 dark:bg-gray-700/50 rounded p-2">
-                                                <div class="flex items-start justify-between">
+                                            <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600 hover:shadow-sm transition-shadow">
+                                                <div class="flex items-center justify-between">
                                                     <div class="flex-1">
-                                                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                            ${altFolderName}
-                                                        </p>
-                                                        ${alt.reason ? `<p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">${alt.reason}</p>` : ''}
+                                                        <div class="flex items-center space-x-2 mb-1">
+                                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                                            </svg>
+                                                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                                                ${altFolderName}
+                                                            </p>
+                                                        </div>
+                                                        ${alt.reason ? `<p class="text-xs text-gray-600 dark:text-gray-400 ml-6">${alt.reason}</p>` : ''}
                                                     </div>
                                                     <button onclick="acceptAlternativeSuggestion(${alt.folder_id}, '${altFolderName.replace(/'/g, "\\'")}')" 
-                                                            class="ml-2 px-2 py-1 text-xs font-medium rounded text-gray-600 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-500">
+                                                            class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
                                                         Use This
                                                     </button>
                                                 </div>
@@ -896,16 +927,14 @@
                 </div>
             `;
             
-            // Show/hide action buttons based on file status
-            updateActionButtons(analysis, fileData);
+            // Create action buttons with proper styling and SVG icons
+            createActionButtons(analysis, fileData);
             
             document.getElementById('analysis-details-modal').classList.remove('hidden');
         }
         
-        function updateActionButtons(analysis, fileData) {
-            const acceptBtn = document.getElementById('accept-suggestion-btn');
-            const viewBtn = document.getElementById('view-file-btn');
-            const previewBtn = document.getElementById('preview-file-btn');
+        function createActionButtons(analysis, fileData) {
+            const actionContainer = document.getElementById('analysis-action-buttons');
             
             // Check if file is already in the correct folder
             let isInCorrectFolder = false;
@@ -917,18 +946,63 @@
                 isInCorrectFolder = currentFolderName === suggestedFolderName;
             }
             
-            // Show Accept button only if there's a pending suggestion and not already in correct folder
+            let buttonsHTML = '';
+            
+            // Primary Action - Accept Suggestion (only if pending and not in correct folder)
             if (fileData && analysis && analysis.suggested_folder_id && !fileData.ai_suggestion_accepted && !isInCorrectFolder) {
-                acceptBtn.classList.remove('hidden');
-            } else {
-                acceptBtn.classList.add('hidden');
+                buttonsHTML += `
+                    <button type="button" onclick="acceptAnalysisSuggestion()" 
+                            class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Accept Suggestion
+                    </button>
+                `;
             }
             
-            // Update View File button with correct URL if fileData is available
+            // Secondary Actions
+            buttonsHTML += `
+                <button type="button" onclick="reanalyzeFromDetails()" 
+                        class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Re-analyze
+                </button>
+                
+                <button type="button" onclick="manualMoveFromDetails()" 
+                        class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                    </svg>
+                    Move File
+                </button>
+            `;
+            
+            // File actions (only if fileData is available)
             if (fileData && fileData.id) {
-                viewBtn.onclick = () => viewFileFromDetails(fileData.id);
-                // Preview button is already set with onclick in HTML
+                buttonsHTML += `
+                    <button type="button" onclick="previewFileFromDetails()" 
+                            class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Preview File
+                    </button>
+                    
+                    <button type="button" onclick="goToFolder()" 
+                            class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        Go to Folder
+                    </button>
+                `;
             }
+            
+            actionContainer.innerHTML = buttonsHTML;
         }
         
         // Inline error display function
