@@ -91,7 +91,9 @@ let currentAnalysis = null;
 let currentSuggestedFolderId = null;
 
 function showAISuggestionModal(fileId, forceNew = false) {
+    console.log('showAISuggestionModal called with fileId:', fileId, 'type:', typeof fileId);
     currentFileId = fileId;
+    console.log('currentFileId set to:', currentFileId);
     document.getElementById('ai-suggestion-modal').classList.remove('hidden');
     document.getElementById('ai-loading').classList.remove('hidden');
     document.getElementById('ai-results').classList.add('hidden');
