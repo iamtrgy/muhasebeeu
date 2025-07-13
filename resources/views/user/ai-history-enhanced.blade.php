@@ -1822,7 +1822,7 @@
         window.showAnalysisDetailsFromReview = showAnalysisDetailsFromReview;
         window.acceptSuggestionFromModal = acceptSuggestionFromModal;
         // window.closeAnalysisDetails = closeAnalysisDetails; // Removed - using new modal
-        window.showMinimalAnalysisDetails = showMinimalAnalysisDetails;
+        // window.showMinimalAnalysisDetails = showMinimalAnalysisDetails; // Removed - using showAISuggestionModal
         window.acceptSuggestionFromModalTable = acceptSuggestionFromModalTable;
     </script>
     @endpush
