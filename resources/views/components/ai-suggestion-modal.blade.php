@@ -309,13 +309,15 @@ function deleteFile() {
             'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    .then(response => {
+        console.log('Delete response status:', response.status);
+        
+        if (response.ok) {
+            // If response is OK (200-299), handle success
             console.log('File deleted successfully');
             closeAISuggestionModal();
             
-            // Instead of reloading, just remove the file from the list if it exists
+            // Remove the file from the list if it exists
             const fileRow = document.querySelector(`div[data-file-id="${currentFileId}"]`);
             if (fileRow) {
                 fileRow.remove();
@@ -324,7 +326,11 @@ function deleteFile() {
             // Show success message
             alert('File deleted successfully');
         } else {
-            alert('Failed to delete file: ' + (data.error || 'Unknown error'));
+            // If response is not OK, show error
+            response.text().then(errorText => {
+                console.error('Delete failed with status:', response.status, errorText);
+                alert('Failed to delete file: ' + response.status);
+            });
         }
     })
     .catch(error => {
