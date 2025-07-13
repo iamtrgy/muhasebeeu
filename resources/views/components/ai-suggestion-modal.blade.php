@@ -212,7 +212,7 @@ function displayAnalysis(data) {
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="deleteFile()" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
+                    <button onclick="deleteFileFromModal()" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
                         Delete File
                     </button>
                     <button onclick="closeAISuggestionModal()" class="flex-1 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded border border-gray-300 dark:border-gray-600 transition-colors">
@@ -312,8 +312,8 @@ function acceptSuggestion(folderId = null) {
     });
 }
 
-function deleteFile() {
-    console.log('deleteFile called, currentFileId:', currentFileId);
+function deleteFileFromModal() {
+    console.log('deleteFileFromModal called, currentFileId:', currentFileId);
     
     if (!currentFileId || currentFileId === 'null' || currentFileId === 'undefined') {
         console.error('ERROR: currentFileId is invalid:', currentFileId);
@@ -334,9 +334,21 @@ function deleteFile() {
     }
     
     // Construct the correct URL for file deletion using route helper
-    const deleteUrl = `{{ route('user.files.destroy', ['file' => ':fileId']) }}`.replace(':fileId', fileId);
-    console.log('DELETE URL:', deleteUrl);
-    console.log('Full URL that will be used:', deleteUrl);
+    const routeTemplate = `{{ route('user.files.destroy', ['file' => ':fileId']) }}`;
+    console.log('Route template:', routeTemplate);
+    const deleteUrl = routeTemplate.replace(':fileId', fileId);
+    console.log('Final DELETE URL:', deleteUrl);
+    console.log('Current page URL:', window.location.href);
+    console.log('FileId being used:', fileId, 'Type:', typeof fileId);
+    
+    // Safety check - ensure we're not making request to wrong URL
+    if (deleteUrl.includes('ai-analysis/history')) {
+        console.error('ERROR: Delete URL is pointing to wrong endpoint:', deleteUrl);
+        alert('Error: Invalid deletion URL. Please refresh the page and try again.');
+        return;
+    }
+    
+    console.log('Making DELETE request to:', deleteUrl);
     
     fetch(deleteUrl, {
         method: 'DELETE',
