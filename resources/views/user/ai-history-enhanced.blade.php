@@ -719,14 +719,13 @@
                         // Note: User will manually close modal via Close button
                         // Update filesData to reflect new analysis status before clearing selection
                         const reanalyzedFiles = [...this.selectedFiles];
-                            this.filesData.forEach(fileData => {
-                                if (reanalyzedFiles.includes(fileData.id)) {
-                                    fileData.ai_suggestion_accepted = false; // Mark as pending review
-                                }
-                            });
-                            this.selectedFiles = []; // Clear selection
-                            window.location.reload();
-                        }, 4000);
+                        this.filesData.forEach(fileData => {
+                            if (reanalyzedFiles.includes(fileData.id)) {
+                                fileData.ai_suggestion_accepted = false; // Mark as pending review
+                            }
+                        });
+                        this.selectedFiles = []; // Clear selection
+                        window.location.reload();
                     } else {
                         this.progressTitle = '⚠️ Re-analysis Failed';
                         this.progressMessage = 'No files were successfully analyzed. Please try again.';
