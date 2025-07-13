@@ -221,16 +221,51 @@ function displayAnalysis(data) {
                 </div>
             </div>
         `;
-    } else if (currentSuggestedFolderId && data.file.current_folder_id !== currentSuggestedFolderId) {
-        // Show normal move actions
+    } else if (currentSuggestedFolderId) {
+        // Show normal move actions for any suggested folder (regardless of current folder)
+        const isAlreadyInCorrectFolder = data.file.current_folder_id === currentSuggestedFolderId;
+        
+        document.getElementById('ai-actions').classList.remove('hidden');
+        
+        if (isAlreadyInCorrectFolder) {
+            // File is already in the suggested folder
+            document.getElementById('ai-actions').innerHTML = `
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded p-3 mb-3">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-green-800 dark:text-green-200">File is already in correct location</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button onclick="closeAISuggestionModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded transition-colors">
+                        Close
+                    </button>
+                </div>
+            `;
+        } else {
+            // File needs to be moved
+            document.getElementById('ai-actions').innerHTML = `
+                <div class="flex gap-2">
+                    <button id="ai-accept-btn" onclick="acceptSuggestion()" class="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition-colors">
+                        Accept
+                    </button>
+                    <button onclick="closeAISuggestionModal()" class="flex-1 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded border border-gray-300 dark:border-gray-600 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            `;
+        }
+    } else {
+        // No valid suggestion - show close button only
         document.getElementById('ai-actions').classList.remove('hidden');
         document.getElementById('ai-actions').innerHTML = `
-            <div class="flex gap-2">
-                <button id="ai-accept-btn" onclick="acceptSuggestion()" class="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition-colors">
-                    Accept
-                </button>
-                <button onclick="closeAISuggestionModal()" class="flex-1 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded border border-gray-300 dark:border-gray-600 transition-colors">
-                    Cancel
+            <div class="flex justify-end">
+                <button onclick="closeAISuggestionModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded transition-colors">
+                    Close
                 </button>
             </div>
         `;
@@ -323,8 +358,10 @@ function deleteFile() {
                 fileRow.remove();
             }
             
-            // Show success message
-            alert('File deleted successfully');
+            // Update file counts and refresh if needed
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         } else {
             // If response is not OK, show error
             response.text().then(errorText => {
@@ -334,6 +371,7 @@ function deleteFile() {
         }
     })
     .catch(error => {
+        console.error('Network error during file deletion:', error);
         alert('Network error: ' + error.message);
     });
 }

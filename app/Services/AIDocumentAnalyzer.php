@@ -409,7 +409,9 @@ class AIDocumentAnalyzer
         $prompt .= "- Who should pay or received this\n\n";
         
         $prompt .= "4. DATE INFORMATION:\n";
-        $prompt .= "- Invoice date, issue date, or transaction date\n";
+        $prompt .= "- Look for invoice date, issue date, or transaction date\n";
+        $prompt .= "- CRITICAL: Use the ACTUAL year from the document, NOT folder years\n";
+        $prompt .= "- If document says 2024, use 2024 (even if folders have 2025)\n";
         $prompt .= "- Format as YYYY-MM-DD\n\n";
         
         $prompt .= "5. BUSINESS RELEVANCE CHECK:\n";
@@ -428,15 +430,18 @@ class AIDocumentAnalyzer
             $prompt .= "DECISION LOGIC:\n\n";
             
             $prompt .= "SUGGEST DELETION if ANY apply:\n";
-            $prompt .= "- SENDER and RECEIVER are both NOT in the user company list above\n";
-            $prompt .= "- Document is personal/individual transaction\n";
-            $prompt .= "- None of the user companies listed above appear as FROM or TO\n";
-            $prompt .= "- Document is between third parties only\n\n";
+            $prompt .= "- SENDER company is NOT in user company list AND RECEIVER company is NOT in user company list\n";
+            $prompt .= "- Document is between two third parties (neither sender nor receiver is user company)\n";
+            $prompt .= "- Document is personal/individual transaction (not business related)\n";
+            $prompt .= "- Individual person to individual person transaction\n";
+            $prompt .= "- Entertainment, travel, personal expense receipts\n\n";
             
             $prompt .= "SUGGEST FOLDER only if ALL apply:\n";
-            $prompt .= "- One of the user companies listed above appears as SENDER or RECEIVER\n";
-            $prompt .= "- Document is business transaction\n";
-            $prompt .= "- Transaction type: User company SENT = Income, User company RECEIVED = Expense\n\n";
+            $prompt .= "- EXACTLY ONE of the user companies listed above appears as SENDER OR RECEIVER\n";
+            $prompt .= "- Document is legitimate business transaction\n";
+            $prompt .= "- User company is directly involved (not just mentioned)\n";
+            $prompt .= "- Transaction type: User company SENT = Income, User company RECEIVED = Expense\n";
+            $prompt .= "- Use DOCUMENT YEAR (not folder year) for date-based folder selection\n\n";
             
         }
         
@@ -446,11 +451,14 @@ class AIDocumentAnalyzer
         }
         
         $prompt .= "\nFINAL INSTRUCTION:\n";
-        $prompt .= "1. Look at the image carefully\n";
-        $prompt .= "2. Identify SENDER and RECEIVER company names\n";
-        $prompt .= "3. Check if user company is involved as sender OR receiver\n";
-        $prompt .= "4. If NO user company involvement → suggest_deletion: true\n";
-        $prompt .= "5. If user company involved → find appropriate folder by year and type\n\n";
+        $prompt .= "1. Look at the image carefully and identify ALL company names\n";
+        $prompt .= "2. Identify SENDER company (who issued/sent the document)\n";
+        $prompt .= "3. Identify RECEIVER company (who received/should pay)\n";
+        $prompt .= "4. Read the document date and extract the ACTUAL year\n";
+        $prompt .= "5. Check if ANY user company from the list above is SENDER or RECEIVER\n";
+        $prompt .= "6. If NEITHER sender NOR receiver is a user company → suggest_deletion: true\n";
+        $prompt .= "7. If ONE user company is involved → find folder matching DOCUMENT year and transaction type\n";
+        $prompt .= "8. NEVER suggest folders with wrong years - use document date year only\n\n";
         
         $prompt .= "Return JSON with this exact format:\n";
         $prompt .= "{\n";
