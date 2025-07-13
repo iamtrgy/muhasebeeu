@@ -386,29 +386,28 @@
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
                 <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
                     <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
-                        <div class="text-center w-full">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" x-text="progressTitle">Processing Files</h3>
-                                <div class="mt-3">
-                                    <p class="text-sm text-gray-500 dark:text-gray-400" x-text="progressMessage">Starting...</p>
-                                    
-                                    <!-- Simple Progress Bar -->
-                                    <div class="mt-3">
-                                        <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                            <div class="bg-indigo-600 dark:bg-indigo-400 h-2 rounded-full transition-all duration-300" 
-                                                 :style="'width: ' + (progressPercentage || 0) + '%'"></div>
-                                        </div>
-                                        <div class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                            <span x-text="(progressCurrent || 0) + ' of ' + (progressTotal || 0)"></span>
-                                        </div>
+                        <div class="text-center">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" x-text="progressTitle">Processing Files</h3>
+                            <div class="mt-3">
+                                <p class="text-sm text-gray-500 dark:text-gray-400" x-text="progressMessage">Starting...</p>
+                                
+                                <!-- Progress Bar -->
+                                <div class="mt-4">
+                                    <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                        <div class="bg-indigo-600 dark:bg-indigo-400 h-2 rounded-full transition-all duration-300" 
+                                             :style="'width: ' + (progressPercentage || 0) + '%'"></div>
                                     </div>
-                                    
-                                    <!-- Close Button (show when completed) -->
-                                    <div class="mt-4 text-center" x-show="progressPercentage >= 100">
-                                        <button @click="isProcessing = false" 
-                                                class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition-colors">
-                                            Close
-                                        </button>
+                                    <div class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                        <span x-text="(progressCurrent || 0) + ' of ' + (progressTotal || 0)"></span>
                                     </div>
+                                </div>
+                                
+                                <!-- Close Button (show when completed) -->
+                                <div class="mt-6" x-show="progressPercentage >= 100">
+                                    <button @click="isProcessing = false" 
+                                            class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition-colors">
+                                        Close
+                                    </button>
                                 </div>
                             </div>
                         </div>
