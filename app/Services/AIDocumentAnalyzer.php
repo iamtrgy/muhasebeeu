@@ -451,13 +451,34 @@ class AIDocumentAnalyzer
             $prompt .= "SUGGEST DELETION if the document is between companies that are NOT in the user company list.\n";
             $prompt .= "Even if those companies exist in the system, if they are not user companies, DELETE the document.\n\n";
             
-            $prompt .= "SUGGEST DELETION if ANY apply:\n";
-            $prompt .= "- SENDER company is NOT in user company list\n";
-            $prompt .= "- RECEIVER company is NOT in user company list\n";
-            $prompt .= "- Document is between two companies that both exist but neither belongs to user\n";
-            $prompt .= "- Transaction does not involve user company as direct participant\n";
-            $prompt .= "- Document is personal/individual transaction (not business related)\n";
-            $prompt .= "- Entertainment, travel, personal expense receipts\n\n";
+            $prompt .= "SUGGEST DELETION if ANY of these conditions are met:\n";
+            $prompt .= "\n1. IRRELEVANT BUSINESS DOCUMENTS:\n";
+            $prompt .= "- Invoice/receipt where NEITHER sender NOR receiver is in user company list\n";
+            $prompt .= "- Documents between two third-party companies (even if they exist in system)\n";
+            $prompt .= "- Example: Invoice from CompanyX to CompanyY, neither are user companies = DELETE\n";
+            
+            $prompt .= "\n2. PERSONAL/NON-BUSINESS DOCUMENTS:\n";
+            $prompt .= "- Personal receipts (restaurants, hotels, flights, entertainment)\n";
+            $prompt .= "- Individual purchase receipts (unless business expense with user company)\n";
+            $prompt .= "- Travel documents not clearly for business purposes\n";
+            $prompt .= "- Shopping receipts, personal services\n";
+            
+            $prompt .= "\n3. UNCLEAR OR INVALID DOCUMENTS:\n";
+            $prompt .= "- Blurry/unreadable documents where company names cannot be identified\n";
+            $prompt .= "- Partial documents missing key information\n";
+            $prompt .= "- Non-business documents (photos, personal documents)\n";
+            $prompt .= "- Documents in wrong orientation that cannot be analyzed\n";
+            
+            $prompt .= "\n4. DUPLICATE OR TEST FILES:\n";
+            $prompt .= "- Clear test documents or samples\n";
+            $prompt .= "- Blank or template documents\n";
+            
+            $prompt .= "\nDO NOT DELETE if:\n";
+            $prompt .= "- Document involves at least ONE user company (as sender OR receiver)\n";
+            $prompt .= "- Bank statement belongs to user company account\n";
+            $prompt .= "- Contract/agreement where user company is a party\n";
+            $prompt .= "- Tax documents related to user company\n";
+            $prompt .= "- Any business document clearly belonging to user company\n\n";
             
             $prompt .= "SUGGEST FOLDER based on document type and NEW FOLDER STRUCTURE:\n\n";
             
@@ -524,9 +545,12 @@ class AIDocumentAnalyzer
         $prompt .= '  "reasoning": "<explain what you found: FROM company, TO company, and why decision was made>",';
         $prompt .= '  "document_date": "<YYYY-MM-DD>",';
         $prompt .= '  "document_type": "<' . $documentTypesText . '>",';
-        $prompt .= '  "transaction_type": "<' . $transactionTypesText . '",';
+        $prompt .= '  "transaction_type": "<' . $transactionTypesText . '>",';
+        $prompt .= '  "company_name": "<sender or most relevant company>",';
+        $prompt .= '  "invoice_number": "<invoice/doc number if found>",';
         $prompt .= '  "suggest_deletion": <true or false>,';
-        $prompt .= '  "deletion_reason": "<reason if suggesting deletion>"';
+        $prompt .= '  "deletion_reason": "<specific reason if suggesting deletion>",';
+        $prompt .= '  "deletion_category": "<if deletion: personal|third_party|unreadable|duplicate|test|other>"';
         $prompt .= "\n}";
         
         return $prompt;
