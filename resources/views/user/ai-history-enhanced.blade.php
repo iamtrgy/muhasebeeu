@@ -310,7 +310,7 @@
                                             @if(isset($file->ai_analysis['suggest_deletion']) && $file->ai_analysis['suggest_deletion'])
                                                 {{-- Show Delete button for files marked for deletion --}}
                                                 <button onclick="showAISuggestionModal({{ $file->id }})"
-                                                        class="inline-flex items-center px-3 py-1 text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500"
+                                                        class="inline-flex items-center text-xs text-red-600 dark:text-red-400 font-medium hover:text-red-700 dark:hover:text-red-300 transition-colors cursor-pointer"
                                                         title="Delete recommended">
                                                     🗑️ Delete
                                                 </button>
