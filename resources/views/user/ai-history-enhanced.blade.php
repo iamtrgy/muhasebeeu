@@ -1318,6 +1318,7 @@
                 });
             }
         }
+        */
         
         // Make all functions globally accessible for onclick handlers
         window.manualMoveFromDetails = manualMoveFromDetails;
