@@ -61,6 +61,12 @@ class AIDocumentAnalyzer
             // Get user's companies for context
             $userCompanies = $user->companies()->pluck('name')->toArray();
             
+            Log::info('User companies for AI analysis', [
+                'user_id' => $user->id,
+                'user_companies' => $userCompanies,
+                'companies_count' => count($userCompanies)
+            ]);
+            
             // Get current folder info if provided
             $currentFolder = null;
             if ($currentFolderId) {
@@ -424,8 +430,9 @@ class AIDocumentAnalyzer
             foreach ($userCompanies as $company) {
                 $prompt .= "- {$company}\n";
             }
-            $prompt .= "\nAny other company names (like Payimu OÜ, if not listed above) are NOT user companies.\n";
-            $prompt .= "Do NOT assume companies belong to user unless explicitly listed above.\n\n";
+            $prompt .= "\nIMPORTANT: Any company names NOT listed above are NOT user companies.\n";
+            $prompt .= "Do NOT assume ANY company belongs to user unless explicitly listed above.\n";
+            $prompt .= "Even if company names exist in the system, only the ones listed above belong to this user.\n\n";
             
             $prompt .= "DECISION LOGIC:\n\n";
             
