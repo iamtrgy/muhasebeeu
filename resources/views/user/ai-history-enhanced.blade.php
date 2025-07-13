@@ -938,12 +938,26 @@
             
             // Check if file is already in the correct folder
             let isInCorrectFolder = false;
-            if (fileData && analysis && analysis.folder_path) {
-                const folderPath = analysis.folder_path || '';
-                const pathParts = folderPath.split('/').filter(p => p);
-                const suggestedFolderName = pathParts.length > 0 ? pathParts[pathParts.length-1] : folderPath;
-                const currentFolderName = fileData.folder ? fileData.folder.name : 'Root';
-                isInCorrectFolder = currentFolderName === suggestedFolderName;
+            if (fileData && analysis) {
+                // Get the current folder path
+                const currentFolderPath = fileData.current_folder || 'Root';
+                
+                // Get the suggested folder path
+                const suggestedFolderPath = analysis.folder_path || analysis.folder_name || '';
+                
+                // Compare full paths (normalize by removing trailing slashes)
+                const normalizedCurrent = currentFolderPath.replace(/\/$/, '').toLowerCase();
+                const normalizedSuggested = suggestedFolderPath.replace(/\/$/, '').toLowerCase();
+                
+                isInCorrectFolder = normalizedCurrent === normalizedSuggested;
+                
+                // Debug log to see what we're comparing
+                console.log('Folder comparison:', {
+                    current: normalizedCurrent,
+                    suggested: normalizedSuggested,
+                    isInCorrectFolder: isInCorrectFolder,
+                    reasoning: analysis.reasoning
+                });
             }
             
             let buttonsHTML = '';

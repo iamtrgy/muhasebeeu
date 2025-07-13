@@ -1,124 +1,188 @@
 @props(['file' => null])
 
+<!-- AI Suggestion Modal - Modern Design -->
 <div id="ai-suggestion-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <!-- Background overlay -->
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-
-        <!-- Modal panel -->
-        <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div class="sm:flex sm:items-start">
-                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900 sm:mx-0 sm:h-10 sm:w-10">
-                        <svg class="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeAISuggestionModal()"></div>
+        
+        <!-- Modal Content -->
+        <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                         </svg>
                     </div>
-                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">
-                            AI Document Analysis
-                        </h3>
-                        
-                        <!-- Loading State -->
-                        <div id="ai-loading" class="mt-4">
-                            <div class="flex items-center">
-                                <x-ui.spinner class="h-5 w-5 mr-3" />
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Analyzing document...</p>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">AI Document Analysis</h3>
+                </div>
+                <button onclick="closeAISuggestionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Content -->
+            <div class="p-6 overflow-y-auto max-h-[60vh]">
+                <div class="space-y-6">
+                    <!-- Loading State -->
+                    <div id="ai-loading" class="flex items-center justify-center py-12">
+                        <div class="text-center">
+                            <svg class="animate-spin h-8 w-8 text-indigo-600 dark:text-indigo-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Analyzing document...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Results -->
+                    <div id="ai-results" class="hidden space-y-6">
+                        <!-- Document Info Card -->
+                        <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-semibold text-gray-900 dark:text-white">Document Information</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400" id="ai-document-name"></p>
+                                </div>
                             </div>
                         </div>
                         
-                        <!-- Analysis Results -->
-                        <div id="ai-results" class="hidden mt-4 space-y-4">
-                            <!-- Document Info -->
-                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Document:</p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400" id="ai-document-name"></p>
-                            </div>
-                            
-                            <!-- Suggested Folder -->
-                            <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
-                                <div class="flex items-start">
-                                    <svg class="h-5 w-5 text-indigo-600 dark:text-indigo-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <!-- Suggested Folder Section -->
+                        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl p-4 border border-indigo-200 dark:border-indigo-700">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                                     </svg>
-                                    <div class="ml-3 flex-1">
-                                        <p class="text-sm font-medium text-indigo-900 dark:text-indigo-200">Suggested Folder:</p>
-                                        <div id="ai-suggested-folder-breadcrumb" class="mt-1"></div>
-                                        <div id="ai-confidence-container" class="mt-2 flex items-center">
-                                            <span id="ai-confidence-label" class="text-xs text-indigo-600 dark:text-indigo-400">Confidence:</span>
-                                            <div class="ml-2 flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2 max-w-[100px]">
-                                                <div id="ai-confidence-bar" class="bg-indigo-600 dark:bg-indigo-400 h-2 rounded-full" style="width: 0%"></div>
-                                            </div>
-                                            <span class="ml-2 text-xs text-indigo-600 dark:text-indigo-400" id="ai-confidence-text">0%</span>
-                                        </div>
-                                    </div>
                                 </div>
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white">Suggested Location</h4>
                             </div>
-                            
-                            <!-- Reasoning -->
-                            <div>
-                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Analysis:</p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400" id="ai-reasoning"></p>
-                            </div>
-                            
-                            <!-- Key Information -->
-                            <div id="ai-key-info-section" class="hidden">
-                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Key Information:</p>
-                                <ul class="list-disc list-inside text-sm text-gray-600 dark:text-gray-400" id="ai-key-info"></ul>
-                            </div>
-                            
-                            <!-- Alternative Folders -->
-                            <div id="ai-alternatives-section" class="hidden">
-                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alternative Options:</p>
-                                <div class="space-y-2" id="ai-alternatives"></div>
-                            </div>
-                            
-                            <!-- Manual Folder Selection -->
-                            <div id="ai-manual-section" class="hidden">
-                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Choose a different folder manually:
-                                    </label>
-                                    <select id="manual-folder-select" class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 text-sm">
-                                        <option value="">-- Select Folder --</option>
-                                    </select>
+                            <div id="ai-suggested-folder-breadcrumb" class="mb-3"></div>
+                            <div id="ai-confidence-container" class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                                <span id="ai-confidence-label" class="text-sm font-medium text-gray-700 dark:text-gray-300">Confidence Level</span>
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                        <div id="ai-confidence-bar" class="bg-gradient-to-r from-indigo-500 to-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold text-indigo-600 dark:text-indigo-400" id="ai-confidence-text">0%</span>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Error State -->
-                        <div id="ai-error" class="hidden mt-4">
-                            <x-ui.alert variant="danger">
-                                <p id="ai-error-message"></p>
-                            </x-ui.alert>
+                        <!-- AI Analysis Section -->
+                        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-700">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    </svg>
+                                </div>
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white">AI Analysis</h4>
+                            </div>
+                            <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300" id="ai-reasoning"></p>
+                        </div>
+                        
+                        <!-- Key Information -->
+                        <div id="ai-key-info-section" class="hidden bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 border border-green-200 dark:border-green-700">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white">Key Information</h4>
+                            </div>
+                            <ul class="space-y-1 text-sm text-gray-700 dark:text-gray-300" id="ai-key-info"></ul>
+                        </div>
+                        
+                        <!-- Alternative Folders -->
+                        <div id="ai-alternatives-section" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-700">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <div class="w-8 h-8 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
+                                </div>
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white">Alternative Suggestions</h4>
+                            </div>
+                            <div class="grid gap-3" id="ai-alternatives"></div>
+                        </div>
+                        
+                        <!-- Manual Folder Selection -->
+                        <div id="ai-manual-section" class="hidden bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                                    </svg>
+                                </div>
+                                <label class="text-base font-semibold text-gray-900 dark:text-white">Manual Folder Selection</label>
+                            </div>
+                            <select id="manual-folder-select" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">-- Select Folder --</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Error State -->
+                    <div id="ai-error" class="hidden">
+                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-semibold text-red-900 dark:text-red-200">Error</h4>
+                                    <p class="text-sm text-red-700 dark:text-red-300" id="ai-error-message"></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <!-- Primary Action Button -->
-                <button type="button" id="ai-accept-btn" class="hidden w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
-                    Accept & Move
-                </button>
-                
-                <!-- Re-analyze Button -->
-                <button type="button" id="ai-reanalyze-btn" class="hidden w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Re-analyze
-                </button>
-                
-                <!-- Manual Move Button -->
-                <button type="button" id="ai-manual-btn" class="hidden w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm">
-                    Move Manually
-                </button>
-                
-                <!-- Close Button -->
-                <button type="button" id="ai-cancel-btn" onclick="closeAISuggestionModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                    Close
-                </button>
+            <!-- Actions Footer -->
+            <div class="p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex flex-wrap gap-3">
+                    <!-- Primary Action Button -->
+                    <button type="button" id="ai-accept-btn" class="hidden inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Accept & Move
+                    </button>
+                    
+                    <!-- Re-analyze Button -->
+                    <button type="button" id="ai-reanalyze-btn" class="hidden inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Re-analyze
+                    </button>
+                    
+                    <!-- Manual Move Button -->
+                    <button type="button" id="ai-manual-btn" class="hidden inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                        </svg>
+                        Move Manually
+                    </button>
+                    
+                    <!-- Close Button -->
+                    <button type="button" id="ai-cancel-btn" onclick="closeAISuggestionModal()" class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     </div>
