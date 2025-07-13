@@ -155,7 +155,7 @@
                     <!-- File List -->
                     <div class="divide-y divide-gray-100 dark:divide-gray-700">
                         @foreach($files as $file)
-                            <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" data-file-id="{{ $file->id }}">
                                 <!-- Left: Checkbox + File Info -->
                                 <div class="flex items-center space-x-3 flex-1 min-w-0">
                                     <!-- Enhanced Checkbox -->
@@ -220,9 +220,16 @@
                                         @if($file->ai_analysis && isset($file->ai_analysis['folder_name']))
                                             <div>
                                                 <span class="text-xs text-gray-500 dark:text-gray-400">Suggested:</span>
+                                                @php
+                                                    $suggestedPath = $file->ai_analysis['folder_path'] ?? $file->ai_analysis['folder_name'];
+                                                    $suggestedName = $file->ai_analysis['folder_name'];
+                                                    if ($suggestedPath && str_contains($suggestedPath, '/')) {
+                                                        $suggestedName = last(explode('/', $suggestedPath));
+                                                    }
+                                                @endphp
                                                 <span class="text-xs font-medium text-gray-900 dark:text-gray-100 ml-1" 
-                                                      title="{{ $file->ai_analysis['folder_path'] ?? $file->ai_analysis['folder_name'] }}">
-                                                    {{ $file->ai_analysis['folder_name'] }}
+                                                      title="{{ $suggestedPath }}">
+                                                    {{ $suggestedName }}
                                                 </span>
                                             </div>
                                         @endif
@@ -238,31 +245,76 @@
                                         @endif
                                         
                                         <!-- Status -->
-                                        @if($file->ai_suggestion_accepted)
-                                            <span class="text-xs text-green-600 dark:text-green-400 font-medium">✓ Accepted</span>
+                                        @php
+                                            $currentFolderId = $file->folder_id;
+                                            $suggestedFolderId = $file->ai_analysis['suggested_folder_id'] ?? null;
+                                            $isInCorrectFolder = $currentFolderId == $suggestedFolderId;
+                                            $wasRecentlyAnalyzed = $file->ai_analyzed_at && $file->ai_analyzed_at->diffInMinutes(now()) < 5;
+                                        @endphp
+                                        
+                                        @if($isInCorrectFolder)
+                                            {{-- File is already in the correct folder --}}
+                                            <span class="inline-flex items-center text-xs text-green-600 dark:text-green-400 font-medium">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                                Correct Place
+                                            </span>
+                                        @elseif($file->ai_suggestion_accepted)
+                                            {{-- File was moved and accepted --}}
+                                            <span class="inline-flex items-center text-xs text-green-600 dark:text-green-400 font-medium">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                                Accepted
+                                            </span>
+                                        @elseif($wasRecentlyAnalyzed)
+                                            {{-- File was just analyzed and needs review --}}
+                                            <button onclick="showAISuggestionModal({{ $file->id }})" 
+                                                    class="inline-flex items-center text-xs text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700 dark:hover:text-blue-300 transition-colors cursor-pointer">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                                Just Analyzed
+                                            </button>
                                         @else
-                                            <span class="text-xs text-amber-600 dark:text-amber-400 font-medium">⏳ Pending</span>
+                                            {{-- File needs review --}}
+                                            <button onclick="showAISuggestionModal({{ $file->id }})" 
+                                                    class="inline-flex items-center text-xs text-amber-600 dark:text-amber-400 font-medium hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Needs Review
+                                            </button>
                                         @endif
                                     </div>
                                 @endif
 
                                 <!-- Right: Quick Actions -->
-                                <div class="flex items-center space-x-1">
+                                <div class="flex items-center space-x-2 ml-4">
                                     @if($file->ai_analyzed_at)
-                                        <!-- Accept Button (pending only) -->
+                                        <!-- Accept Button (only if file needs to be moved) -->
                                         @if(!$file->ai_suggestion_accepted && $file->ai_analysis && isset($file->ai_analysis['suggested_folder_id']))
-                                            <button onclick="acceptSuggestionQuick({{ $file->id }}, {{ $file->ai_analysis['suggested_folder_id'] ?? 'null' }}, '{{ addslashes($file->original_name ?? $file->name) }}')"
-                                                    class="inline-flex items-center px-3 py-1 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
-                                                    title="Accept AI suggestion">
-                                                ✓ Accept
-                                            </button>
+                                            @php
+                                                $currentFolderId = $file->folder_id;
+                                                $suggestedFolderId = $file->ai_analysis['suggested_folder_id'] ?? null;
+                                                $needsMove = $currentFolderId != $suggestedFolderId;
+                                            @endphp
+                                            @if($needsMove)
+                                                <button onclick="acceptSuggestionQuick({{ $file->id }}, {{ $file->ai_analysis['suggested_folder_id'] ?? 'null' }}, '{{ addslashes($file->original_name ?? $file->name) }}')"
+                                                        class="inline-flex items-center px-3 py-1 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
+                                                        title="Accept AI suggestion">
+                                                    ✓ Accept
+                                                </button>
+                                            @endif
                                         @endif
                                         
-                                        <button onclick="showAnalysisDetails({{ json_encode($file->ai_analysis) }}, {{ json_encode([
+                                        <button onclick="showMinimalAnalysisDetails({{ json_encode($file->ai_analysis) }}, {{ json_encode([
                                             'id' => $file->id,
                                             'original_name' => $file->original_name,
                                             'name' => $file->name,
-                                            'current_folder' => $file->folder ? $file->folder->full_path : 'Root',
+                                            'folder' => $file->folder,
+                                            'folder_id' => $file->folder_id,
                                             'ai_suggestion_accepted' => $file->ai_suggestion_accepted,
                                             'ai_analysis' => $file->ai_analysis
                                         ]) }})"
@@ -347,30 +399,20 @@
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                             </div>
-                            <div class="ml-4 text-left">
+                            <div class="ml-4 text-center">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" x-text="progressTitle">Processing Files</h3>
-                                <div class="mt-2">
+                                <div class="mt-3">
                                     <p class="text-sm text-gray-500 dark:text-gray-400" x-text="progressMessage">Starting...</p>
                                     
-                                    <!-- Progress Bar -->
-                                    <div class="mt-4">
+                                    <!-- Simple Progress Bar -->
+                                    <div class="mt-3">
                                         <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                             <div class="bg-indigo-600 dark:bg-indigo-400 h-2 rounded-full transition-all duration-300" 
                                                  :style="`width: ${progressPercentage}%`"></div>
                                         </div>
-                                        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <div class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
                                             <span x-text="`${progressCurrent} of ${progressTotal}`"></span>
-                                            <span x-text="`${progressPercentage}%`"></span>
                                         </div>
-                                    </div>
-                                    
-                                    <!-- Status Messages -->
-                                    <div class="mt-4 max-h-32 overflow-y-auto">
-                                        <template x-for="message in progressMessages" :key="message.id">
-                                            <div class="text-xs py-1" :class="message.type === 'success' ? 'text-green-600 dark:text-green-400' : message.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'">
-                                                <span x-text="message.text"></span>
-                                            </div>
-                                        </template>
                                     </div>
                                 </div>
                             </div>
@@ -384,24 +426,24 @@
     <!-- Include AI Suggestion Modal -->
     <x-ai-suggestion-modal />
     
-    <!-- Analysis Details Modal - Modern Design -->
-    <div id="analysis-details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <!-- Review Guidance Modal -->
+    <div id="review-guidance-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeAnalysisDetails()"></div>
+            <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeReviewGuidance()"></div>
             
             <!-- Modal Content -->
-            <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
                 <!-- Header -->
                 <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                     <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                            <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <div class="w-8 h-8 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Analysis Details</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">File Needs Review</h3>
                     </div>
-                    <button onclick="closeAnalysisDetails()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    <button onclick="closeReviewGuidance()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -409,15 +451,80 @@
                 </div>
                 
                 <!-- Content -->
-                <div class="p-6 overflow-y-auto max-h-[60vh]">
-                    <div id="analysis-details-content">
+                <div class="p-4">
+                    <div class="space-y-4">
+                        <!-- File Info -->
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100" id="review-file-name">File Name</p>
+                        </div>
+                        
+                        <!-- Why Review -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Why does this need review?</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                AI has analyzed this file and suggested where it should be placed. You need to review the suggestion and decide if it's correct.
+                            </p>
+                        </div>
+                        
+                        <!-- How to Review -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">How to review:</h4>
+                            <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                <div class="flex items-start space-x-2">
+                                    <span class="font-medium text-indigo-600 dark:text-indigo-400">1.</span>
+                                    <span>Click the details button (info icon) to see AI's analysis</span>
+                                </div>
+                                <div class="flex items-start space-x-2">
+                                    <span class="font-medium text-indigo-600 dark:text-indigo-400">2.</span>
+                                    <span>Check if the suggested folder makes sense</span>
+                                </div>
+                                <div class="flex items-start space-x-2">
+                                    <span class="font-medium text-indigo-600 dark:text-indigo-400">3.</span>
+                                    <span>Click "Accept" to move the file, or use "Re-analyze" if the suggestion seems wrong</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" onclick="closeReviewGuidance(); showAnalysisDetailsFromReview()" 
+                            class="w-full inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Review Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Analysis Details Modal - Minimal Design -->
+    <div id="analysis-details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeAnalysisDetails()"></div>
+            
+            <!-- Modal Content -->
+            <div class="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-lg w-full">
+                <!-- Header -->
+                <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">File Review</h3>
+                    <button onclick="closeAnalysisDetails()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Content -->
+                <div class="p-4">
+                    <div id="analysis-details-content" class="space-y-3">
                         <!-- Content will be dynamically inserted -->
                     </div>
                 </div>
                 
-                <!-- Actions Footer -->
-                <div class="p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                    <div id="analysis-action-buttons" class="flex flex-wrap gap-3">
+                <!-- Actions -->
+                <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                    <div id="analysis-action-buttons" class="flex gap-2">
                         <!-- Action buttons will be inserted here -->
                     </div>
                 </div>
@@ -448,6 +555,11 @@
             const modalTitle = document.querySelector('#analysis-details-modal h3');
             const modalContent = document.getElementById('analysis-details-content');
             const modalActions = document.getElementById('analysis-action-buttons');
+            
+            if (!modalContent || !modalActions) {
+                console.error('Modal elements not found');
+                return;
+            }
             
             switch(modalState) {
                 case 'confirmation':
@@ -630,14 +742,38 @@
                 
                 finishProgress(successCount, errorCount = 0) {
                     this.progressPercentage = 100;
-                    this.progressMessage = `Completed! ${successCount} successful` + (errorCount > 0 ? `, ${errorCount} errors` : '');
                     
-                    setTimeout(() => {
-                        this.isProcessing = false;
-                        if (successCount > 0) {
+                    // Show completion message with next steps
+                    if (successCount > 0) {
+                        this.progressTitle = '✓ Re-analysis Complete';
+                        this.progressMessage = `${successCount} files analyzed successfully!` + (errorCount > 0 ? ` (${errorCount} failed)` : '');
+                        
+                        // Show completion message with guidance
+                        setTimeout(() => {
+                            this.progressTitle = 'What\'s Next?';
+                            this.progressMessage = 'Review the new AI suggestions and accept or reject them.';
+                        }, 1500);
+                        
+                        setTimeout(() => {
+                            this.isProcessing = false;
+                            // Update filesData to reflect new analysis status before clearing selection
+                            const reanalyzedFiles = [...this.selectedFiles];
+                            this.filesData.forEach(fileData => {
+                                if (reanalyzedFiles.includes(fileData.id)) {
+                                    fileData.ai_suggestion_accepted = false; // Mark as pending review
+                                }
+                            });
+                            this.selectedFiles = []; // Clear selection
                             window.location.reload();
-                        }
-                    }, 2000);
+                        }, 4000);
+                    } else {
+                        this.progressTitle = '⚠️ Re-analysis Failed';
+                        this.progressMessage = 'No files were successfully analyzed. Please try again.';
+                        
+                        setTimeout(() => {
+                            this.isProcessing = false;
+                        }, 3000);
+                    }
                 },
                 
                 toggleFile(fileId) {
@@ -693,7 +829,55 @@
                 async bulkApprove() {
                     if (!this.selectedFiles.length) return;
                     
-                    if (!confirm(`Approve AI suggestions for ${this.selectedFiles.length} selected files? This will move files to their suggested folders.`)) return;
+                    // Check which files actually need to be moved
+                    const filesToMove = [];
+                    const filesAlreadyCorrect = [];
+                    
+                    this.selectedFiles.forEach(fileId => {
+                        const fileRow = document.querySelector(`tr[data-file-id="${fileId}"]`);
+                        if (fileRow) {
+                            const fileData = JSON.parse(fileRow.getAttribute('data-file') || '{}');
+                            if (fileData.ai_analysis) {
+                                const currentFolderId = fileData.folder_id;
+                                const suggestedFolderId = fileData.ai_analysis.suggested_folder_id;
+                                const isAccepted = fileData.ai_suggestion_accepted;
+                                
+                                // File needs to be moved if:
+                                // 1. It has a suggested folder that's different from current
+                                // 2. AND it hasn't been accepted yet
+                                if (currentFolderId !== suggestedFolderId && suggestedFolderId && !isAccepted) {
+                                    filesToMove.push({
+                                        id: fileId,
+                                        name: fileData.original_name || fileData.name,
+                                        from: fileData.folder?.name || 'Unknown',
+                                        to: fileData.ai_analysis.folder_name || 'Unknown'
+                                    });
+                                } else {
+                                    filesAlreadyCorrect.push({
+                                        id: fileId,
+                                        name: fileData.original_name || fileData.name
+                                    });
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Show detailed confirmation
+                    let message = '';
+                    if (filesToMove.length === 0) {
+                        message = `All ${this.selectedFiles.length} selected files are already in their correct folders. No changes needed.`;
+                        alert(message);
+                        return;
+                    } else if (filesAlreadyCorrect.length > 0) {
+                        message = `Out of ${this.selectedFiles.length} selected files:\n\n`;
+                        message += `✓ ${filesAlreadyCorrect.length} files are already in correct folders\n`;
+                        message += `→ ${filesToMove.length} files will be moved to suggested folders\n\n`;
+                        message += `Continue with moving ${filesToMove.length} files?`;
+                    } else {
+                        message = `Move ${filesToMove.length} files to their suggested folders?`;
+                    }
+                    
+                    if (!confirm(message)) return;
                     
                     this.startProgress('Approving Suggestions', this.selectedFiles.length);
                     
@@ -751,8 +935,7 @@
                         for (let i = 0; i < this.selectedFiles.length; i++) {
                             const fileId = this.selectedFiles[i];
                             
-                            this.updateProgress(i, `Re-analyzing file ${i + 1} of ${this.selectedFiles.length}...`);
-                            this.addProgressMessage(`Processing file ID: ${fileId}`, 'info');
+                            this.updateProgress(i + 1, `Analyzing file ${i + 1} of ${this.selectedFiles.length}...`);
                             
                             try {
                                 const response = await fetch(`/user/files/${fileId}/analyze?force_new=1`, {
@@ -765,16 +948,11 @@
                                 
                                 if (response.ok) {
                                     completed++;
-                                    this.addProgressMessage(`✓ File ${fileId} analyzed successfully`, 'success');
                                 } else {
-                                    const errorText = `File ${fileId}: Failed to re-analyze`;
-                                    errors.push(errorText);
-                                    this.addProgressMessage(`✗ ${errorText}`, 'error');
+                                    errors.push(`File ${fileId}: Failed to re-analyze`);
                                 }
                             } catch (error) {
-                                const errorText = `File ${fileId}: ${error.message}`;
-                                errors.push(errorText);
-                                this.addProgressMessage(`✗ ${errorText}`, 'error');
+                                errors.push(`File ${fileId}: ${error.message}`);
                             }
                         }
                         
@@ -805,6 +983,10 @@
             currentCancelAction = null;
             
             const content = document.getElementById('analysis-details-content');
+            if (!content) {
+                console.error('Analysis details content not found');
+                return;
+            }
             content.innerHTML = `
                 <div class="space-y-6">
                     <!-- File Info Card -->
@@ -865,14 +1047,14 @@
                                     <p class="text-sm text-gray-600 dark:text-gray-400 font-mono">${analysis.folder_path || analysis.folder_name}</p>
                                 </div>
                             </div>
-                            ${analysis.confidence ? `
+                            ${analysis.confidence && analysis.confidence > 0 ? `
                                 <div class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
                                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Confidence Level</span>
                                     <div class="flex items-center space-x-3">
                                         <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                                            <div class="bg-gradient-to-r from-indigo-500 to-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${analysis.confidence}%"></div>
+                                            <div class="bg-gradient-to-r from-indigo-500 to-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${analysis.confidence || 0}%"></div>
                                         </div>
-                                        <span class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">${analysis.confidence}%</span>
+                                        <span class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">${analysis.confidence || 0}%</span>
                                     </div>
                                 </div>
                             ` : ''}
@@ -883,12 +1065,18 @@
                     ${analysis.alternative_folders && analysis.alternative_folders.length > 0 ? (() => {
                         // Filter out duplicates and current folder
                         const currentFolderName = fileData.folder ? fileData.folder.name : 'Root';
-                        const suggestedFolderName = analysis.folder_path ? analysis.folder_path.split('/').pop() : analysis.folder_name || '';
+                        // Standardize folder name extraction
+                        const getSuggestedFolderName = (analysis) => {
+                            const path = analysis.folder_path || analysis.folder_name;
+                            return path && path.includes('/') ? path.split('/').pop() : (analysis.folder_name || '');
+                        };
+                        
+                        const suggestedFolderName = getSuggestedFolderName(analysis);
                         const seen = new Set([currentFolderName, suggestedFolderName]);
                         
                         const uniqueAlternatives = [];
                         analysis.alternative_folders.forEach(alt => {
-                            const folderName = alt.folder_path ? alt.folder_path.split('/').pop() : alt.folder_name || alt.name || 'Unknown';
+                            const folderName = getSuggestedFolderName(alt) || alt.name || 'Unknown';
                             if (!seen.has(folderName) && alt.folder_id) {
                                 seen.add(folderName);
                                 uniqueAlternatives.push(alt);
@@ -907,7 +1095,7 @@
                                 </div>
                                 <div class="grid gap-3">
                                     ${uniqueAlternatives.map((alt, index) => {
-                                        const altFolderName = alt.folder_path ? alt.folder_path.split('/').pop() : alt.folder_name || alt.name || 'Unknown';
+                                        const altFolderName = getSuggestedFolderName(alt) || alt.name || 'Unknown';
                                         return `
                                             <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600 hover:shadow-sm transition-shadow">
                                                 <div class="flex items-center justify-between">
@@ -1172,8 +1360,8 @@
             
             // Add loading state to re-analyze button
             const reanalyzeBtn = document.querySelector('#analysis-action-buttons button[onclick*="reanalyzeFromDetails"]');
-            const textSpan = reanalyzeBtn.querySelector('span') || reanalyzeBtn;
-            const spinner = reanalyzeBtn.querySelector('.reanalyze-spinner');
+            const textSpan = reanalyzeBtn ? (reanalyzeBtn.querySelector('span') || reanalyzeBtn) : null;
+            const spinner = reanalyzeBtn ? reanalyzeBtn.querySelector('.reanalyze-spinner') : null;
             
             if (textSpan) textSpan.textContent = 'Analyzing...';
             if (spinner) spinner.classList.remove('hidden');
@@ -1339,6 +1527,11 @@
             const modalContent = document.getElementById('analysis-details-content');
             const modalActions = document.getElementById('analysis-action-buttons');
             
+            if (!modalContent || !modalActions) {
+                console.error('Modal elements not found');
+                return;
+            }
+            
             // Update content with folder selection
             modalContent.innerHTML = `
                 <div>
@@ -1374,6 +1567,11 @@
         function showFolderSelectionError(message) {
             const modalContent = document.getElementById('analysis-details-content');
             const modalActions = document.getElementById('analysis-action-buttons');
+            
+            if (!modalContent || !modalActions) {
+                console.error('Modal elements not found');
+                return;
+            }
             
             modalContent.innerHTML = `
                 <div class="text-center py-8">
@@ -1537,6 +1735,175 @@
         // Make new functions globally accessible
         window.previewFileFromDetails = previewFileFromDetails;
         window.goToFolder = goToFolder;
+        
+        // Review Guidance Modal Functions
+        let currentReviewFileId = null;
+        let currentReviewFileData = null;
+        
+        function showReviewGuidance(fileId, fileName) {
+            currentReviewFileId = fileId;
+            // Store file data for later use
+            const fileData = @json($files->keyBy('id'));
+            currentReviewFileData = fileData[fileId];
+            
+            document.getElementById('review-file-name').textContent = fileName;
+            document.getElementById('review-guidance-modal').classList.remove('hidden');
+        }
+        
+        function closeReviewGuidance() {
+            document.getElementById('review-guidance-modal').classList.add('hidden');
+            currentReviewFileId = null;
+            currentReviewFileData = null;
+        }
+        
+        function showAnalysisDetailsFromReview() {
+            if (currentReviewFileId && currentReviewFileData) {
+                const analysis = currentReviewFileData.ai_analysis;
+                const file = currentReviewFileData;
+                
+                // Show minimal analysis modal
+                document.getElementById('analysis-details-modal').classList.remove('hidden');
+                
+                // Simple content
+                const content = document.getElementById('analysis-details-content');
+            if (!content) {
+                console.error('Analysis details content not found');
+                return;
+            }
+                content.innerHTML = `
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">${file.original_name || file.name}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Current: ${file.folder ? file.folder.full_path : 'Root'}</p>
+                    </div>
+                    
+                    ${analysis && analysis.folder_name ? `
+                    <div>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                            <span class="font-medium">AI Suggests:</span> ${analysis.folder_name}
+                        </p>
+                        ${analysis.confidence ? `<p class="text-xs text-gray-500 dark:text-gray-400">Confidence: ${analysis.confidence}%</p>` : ''}
+                    </div>
+                    ` : ''}
+                    
+                    ${analysis && analysis.reasoning ? `
+                    <div>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                            <span class="font-medium">Why:</span> ${analysis.reasoning}
+                        </p>
+                    </div>
+                    ` : ''}
+                `;
+                
+                // Simple action buttons
+                const actions = document.getElementById('analysis-action-buttons');
+                const currentFolderId = file.folder_id;
+                const suggestedFolderId = analysis && analysis.suggested_folder_id;
+                const needsMove = currentFolderId != suggestedFolderId;
+                
+                if (needsMove && suggestedFolderId) {
+                    actions.innerHTML = `
+                        <button onclick="acceptSuggestionFromModal(${file.id}, ${suggestedFolderId})" 
+                                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded">
+                            Accept & Move
+                        </button>
+                        <button onclick="closeAnalysisDetails()" 
+                                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                            Cancel
+                        </button>
+                    `;
+                } else {
+                    actions.innerHTML = `
+                        <div class="text-sm text-green-600 dark:text-green-400 font-medium">✓ File is in correct place</div>
+                    `;
+                }
+            }
+        }
+        
+        function acceptSuggestionFromModal(fileId, folderId) {
+            // Use the existing quick accept function
+            const fileName = currentReviewFileData.original_name || currentReviewFileData.name;
+            acceptSuggestionQuick(fileId, folderId, fileName);
+            closeAnalysisDetails();
+        }
+        
+        function closeAnalysisDetails() {
+            document.getElementById('analysis-details-modal').classList.add('hidden');
+        }
+        
+        function showMinimalAnalysisDetails(analysis, fileData) {
+            // Show minimal analysis modal
+            document.getElementById('analysis-details-modal').classList.remove('hidden');
+            
+            // Simple content
+            const content = document.getElementById('analysis-details-content');
+            if (!content) {
+                console.error('Analysis details content not found');
+                return;
+            }
+            content.innerHTML = `
+                <div>
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">${fileData.original_name || fileData.name}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Current: ${fileData.folder ? fileData.folder.full_path : 'Root'}</p>
+                </div>
+                
+                ${analysis && analysis.folder_name ? `
+                <div>
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                        <span class="font-medium">AI Suggests:</span> ${analysis.folder_name}
+                    </p>
+                    ${analysis.confidence ? `<p class="text-xs text-gray-500 dark:text-gray-400">Confidence: ${analysis.confidence}%</p>` : ''}
+                </div>
+                ` : ''}
+                
+                ${analysis && analysis.reasoning ? `
+                <div>
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                        <span class="font-medium">Why:</span> ${analysis.reasoning}
+                    </p>
+                </div>
+                ` : ''}
+            `;
+            
+            // Simple action buttons
+            const actions = document.getElementById('analysis-action-buttons');
+            const currentFolderId = fileData.folder_id;
+            const suggestedFolderId = analysis && analysis.suggested_folder_id;
+            const needsMove = currentFolderId != suggestedFolderId;
+            
+            if (needsMove && suggestedFolderId && !fileData.ai_suggestion_accepted) {
+                actions.innerHTML = `
+                    <button onclick="acceptSuggestionFromModalTable(${fileData.id}, ${suggestedFolderId}, '${(fileData.original_name || fileData.name).replace(/'/g, "\\'")}'); closeAnalysisDetails();" 
+                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded">
+                        Accept & Move
+                    </button>
+                    <button onclick="closeAnalysisDetails()" 
+                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                        Cancel
+                    </button>
+                `;
+            } else if (fileData.ai_suggestion_accepted) {
+                actions.innerHTML = `
+                    <div class="text-sm text-green-600 dark:text-green-400 font-medium">✓ Already accepted</div>
+                `;
+            } else {
+                actions.innerHTML = `
+                    <div class="text-sm text-green-600 dark:text-green-400 font-medium">✓ File is in correct place</div>
+                `;
+            }
+        }
+        
+        function acceptSuggestionFromModalTable(fileId, folderId, fileName) {
+            acceptSuggestionQuick(fileId, folderId, fileName);
+        }
+        
+        // Make functions globally accessible
+        window.showReviewGuidance = showReviewGuidance;
+        window.closeReviewGuidance = closeReviewGuidance;
+        window.showAnalysisDetailsFromReview = showAnalysisDetailsFromReview;
+        window.acceptSuggestionFromModal = acceptSuggestionFromModal;
+        window.closeAnalysisDetails = closeAnalysisDetails;
+        window.showMinimalAnalysisDetails = showMinimalAnalysisDetails;
+        window.acceptSuggestionFromModalTable = acceptSuggestionFromModalTable;
     </script>
     @endpush
 </x-user.layout>

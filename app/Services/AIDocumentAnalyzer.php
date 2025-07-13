@@ -53,7 +53,10 @@ class AIDocumentAnalyzer
                     ];
                 });
             
-            Log::info('Found user folders', ['count' => $folders->count()]);
+            Log::info('Found user folders', [
+                'count' => $folders->count(),
+                'available_folders' => $folders->pluck('path')->toArray()
+            ]);
             
             // Get user's companies for context
             $userCompanies = $user->companies()->pluck('name')->toArray();
@@ -289,7 +292,7 @@ class AIDocumentAnalyzer
                 ],
                 [
                     'role' => 'user',
-                    'content' => $userPrompt
+                    'content' => $userPrompt . "\n\nFile Content:\n" . $fileContent['data']
                 ]
             ];
             
@@ -350,6 +353,19 @@ class AIDocumentAnalyzer
             throw new Exception('AI response missing required fields');
         }
         
+        // Handle zero or very low confidence cases
+        if (!isset($parsed['confidence']) || $parsed['confidence'] < 10) {
+            Log::warning('Very low confidence AI analysis', [
+                'confidence' => $parsed['confidence'] ?? 0,
+                'reasoning' => $parsed['reasoning'] ?? 'No reasoning provided'
+            ]);
+            
+            // Set minimum confidence and add warning
+            $parsed['confidence'] = max($parsed['confidence'] ?? 0, 5);
+            $parsed['low_confidence_warning'] = true;
+            $parsed['reasoning'] = ($parsed['reasoning'] ?? '') . ' [LOW CONFIDENCE: File may be difficult to analyze]';
+        }
+        
         return $parsed;
     }
     
@@ -360,59 +376,37 @@ class AIDocumentAnalyzer
     {
         $fileName = basename($filePath);
         
-        $prompt = "File name: {$fileName}\n";
+        $prompt = "File: {$fileName}\n";
         
         if ($currentFolder) {
-            $prompt .= "CURRENT FOLDER: {$currentFolder['path']} (ID: {$currentFolder['id']})\n";
-            $prompt .= "IMPORTANT: Check if this file is already in the correct folder!\n\n";
+            $prompt .= "Currently in: {$currentFolder['path']}\n\n";
         }
         
-        $prompt .= "Analyze this document and find:\n";
-        $prompt .= "1. Document date (CRITICAL: Use EXACT month from date for folder selection)\n";
-        $prompt .= "2. Who sent it\n";
-        $prompt .= "3. Who received it\n\n";
-        $prompt .= "STRICT MONTH RULE:\n";
-        $prompt .= "- Date 01.06.2025 = June 2025 folder (NOT April, NOT May)\n";
-        $prompt .= "- Date 15.10.2024 = October 2024 folder (NOT April)\n";
-        $prompt .= "- Always match month number to exact month name\n";
-        $prompt .= "- 01=January, 02=February, 03=March, 04=April, 05=May, 06=June\n";
-        $prompt .= "- 07=July, 08=August, 09=September, 10=October, 11=November, 12=December\n\n";
+        $prompt .= "Read the document and extract:\n";
+        $prompt .= "- Date\n";
+        $prompt .= "- Who sent it (from)\n";
+        $prompt .= "- Who received it (to)\n";
+        $prompt .= "- Document type\n\n";
         
         if (!empty($userCompanies)) {
-            $prompt .= "User owns these companies: " . implode(', ', $userCompanies) . "\n\n";
-            $prompt .= "IMPORTANT RULES:\n";
-            $prompt .= "1. If user's company SENT the document = Income folder\n";
-            $prompt .= "2. If user's company RECEIVED the document = Expense folder\n";
-            $prompt .= "3. If NEITHER sender NOR receiver is user's company = Return warning\n\n";
+            $prompt .= "User companies: " . implode(', ', $userCompanies) . "\n";
+            $prompt .= "If user company sent = Income, if received = Expense\n\n";
         }
         
-        $prompt .= "FOLDER SELECTION RULE:\n";
-        $prompt .= "1. Find the EXACT year from document date\n";
-        $prompt .= "2. Find the EXACT month from document date\n";
-        $prompt .= "3. Select Income or Expense based on transaction type\n";
-        $prompt .= "4. Choose folder: CompanyName/YEAR/MONTH/TYPE\n\n";
-        
-        $prompt .= "Available folders:\n";
+        $prompt .= "Match to best folder:\n";
         foreach ($folders as $folder) {
-            $prompt .= "ID: {$folder['id']}, Path: {$folder['path']}\n";
+            $prompt .= "ID {$folder['id']}: {$folder['path']}\n";
         }
-        $prompt .= "\n";
         
-        $prompt .= "Return JSON:\n";
+        $prompt .= "\nReturn JSON:\n";
         $prompt .= "{\n";
-        $prompt .= '  "suggested_folder_id": <id or null if no match>,';
-        $prompt .= '  "folder_name": "<name or null>",';
-        $prompt .= '  "folder_path": "<path or null>",';
+        $prompt .= '  "suggested_folder_id": <id>,';
+        $prompt .= '  "folder_name": "<name>",';
+        $prompt .= '  "folder_path": "<path>",';
         $prompt .= '  "confidence": <0-100>,';
-        $prompt .= '  "reasoning": "<what you found>",';
-        $prompt .= '  "document_type": "<type>",';
-        $prompt .= '  "document_date": "<YYYY-MM-DD format>",';
-        $prompt .= '  "transaction_type": "<income|expense|not_related>",';
-        $prompt .= '  "key_information": [],';
-        $prompt .= '  "company_involved": "<company>",';
-        $prompt .= '  "alternative_folders": [{"folder_id": <id>, "folder_name": "<name>", "folder_path": "<path>", "confidence": <0-100>, "reason": "<why this could work>"}],';
-        $prompt .= '  "data_source": "<from image content or filename>",';
-        $prompt .= '  "warning": "<warning message if document not related to user companies>"';
+        $prompt .= '  "reasoning": "<brief explanation>",';
+        $prompt .= '  "document_date": "<YYYY-MM-DD>",';
+        $prompt .= '  "transaction_type": "<income|expense|other>"';
         $prompt .= "\n}";
         
         return $prompt;
@@ -427,17 +421,6 @@ class AIDocumentAnalyzer
         $existingAnalysis = $file->ai_analysis;
         
         if (!$forceNew && $existingAnalysis && !empty($existingAnalysis)) {
-            // Check if file is already in suggested folder
-            if (isset($existingAnalysis['suggested_folder_id']) && 
-                $existingAnalysis['suggested_folder_id'] == $file->folder_id) {
-                $existingAnalysis['already_in_correct_folder'] = true;
-                $existingAnalysis['reasoning'] = "This file is already in the correct folder: " . $file->folder->full_path;
-                
-                // Ensure we have alternative folders for user to consider
-                if (!isset($existingAnalysis['alternative_folders']) || empty($existingAnalysis['alternative_folders'])) {
-                    $existingAnalysis['alternative_folders'] = $this->generateAlternativeFolders($file, $user);
-                }
-            }
             return $existingAnalysis;
         }
         
@@ -451,22 +434,16 @@ class AIDocumentAnalyzer
         $result = $this->analyzeFileFromUrl($file, $user);
         
         if ($result['success']) {
-            // Check if suggested folder is the same as current folder
-            if (isset($result['analysis']['suggested_folder_id']) && 
-                $result['analysis']['suggested_folder_id'] == $file->folder_id) {
-                $result['analysis']['already_in_correct_folder'] = true;
-                $result['analysis']['reasoning'] = "This file is already in the correct folder: " . $file->folder->full_path;
-                
-                // Ensure we have alternative folders for user to consider
-                if (!isset($result['analysis']['alternative_folders']) || empty($result['analysis']['alternative_folders'])) {
-                    $result['analysis']['alternative_folders'] = $this->generateAlternativeFolders($file, $user);
-                }
+            // Always generate alternative folders for user to consider
+            if (!isset($result['analysis']['alternative_folders']) || empty($result['analysis']['alternative_folders'])) {
+                $result['analysis']['alternative_folders'] = $this->generateAlternativeFolders($file, $user);
             }
             
             // Save the analysis to the file
             $file->update([
                 'ai_analysis' => $result['analysis'],
-                'ai_analyzed_at' => now()
+                'ai_analyzed_at' => now(),
+                'ai_suggestion_accepted' => false  // Reset to false for new analysis requiring review
             ]);
             
             return $result['analysis'];
@@ -535,7 +512,10 @@ class AIDocumentAnalyzer
                     ];
                 });
             
-            Log::info('Found user folders', ['count' => $folders->count()]);
+            Log::info('Found user folders', [
+                'count' => $folders->count(),
+                'available_folders' => $folders->pluck('path')->toArray()
+            ]);
             
             // Get user's companies for context
             $userCompanies = $user->companies()->pluck('name')->toArray();
@@ -580,6 +560,22 @@ class AIDocumentAnalyzer
     protected function prepareFileFromTempPath($tempPath, $fileName)
     {
         $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $fileSize = filesize($tempPath);
+        
+        // Handle zero-byte or very small files
+        if ($fileSize < 100) {
+            Log::warning('Very small file detected', [
+                'fileName' => $fileName,
+                'fileSize' => $fileSize
+            ]);
+            
+            return [
+                'type' => 'small_file',
+                'data' => "This is a very small file ({$fileSize} bytes). Cannot analyze content reliably. Suggest placing in 'Other' folder.",
+                'mime' => 'application/octet-stream',
+                'file_size' => $fileSize
+            ];
+        }
         
         // Mime type detection
         $mimeTypes = [
