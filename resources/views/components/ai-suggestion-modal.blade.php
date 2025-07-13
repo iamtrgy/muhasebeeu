@@ -276,13 +276,21 @@ function acceptSuggestion(folderId = null) {
 }
 
 function deleteFile() {
-    if (!currentFileId) return;
+    console.log('deleteFile called, currentFileId:', currentFileId);
+    
+    if (!currentFileId) {
+        alert('No file selected for deletion');
+        return;
+    }
     
     if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
         return;
     }
     
-    fetch(`/user/files/${currentFileId}`, {
+    const deleteUrl = `/user/files/${currentFileId}`;
+    console.log('DELETE URL:', deleteUrl);
+    
+    fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
