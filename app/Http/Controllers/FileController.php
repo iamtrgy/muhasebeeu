@@ -162,8 +162,8 @@ class FileController extends Controller
             // Delete the file record from database
             $file->delete();
 
-            // Check if it's an AJAX request
-            if (request()->ajax()) {
+            // Check if it's an AJAX request (modern fetch API or traditional AJAX)
+            if (request()->ajax() || request()->expectsJson() || request()->header('Accept') === 'application/json') {
                 return response()->json([
                     'success' => true,
                     'message' => 'File deleted successfully'
@@ -178,7 +178,7 @@ class FileController extends Controller
                 'user_id' => auth()->id()
             ]);
 
-            if (request()->ajax()) {
+            if (request()->ajax() || request()->expectsJson() || request()->header('Accept') === 'application/json') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to delete file: ' . $e->getMessage()

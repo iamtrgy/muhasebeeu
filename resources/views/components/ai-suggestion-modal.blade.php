@@ -359,14 +359,22 @@ function deleteFileFromModal() {
     })
     .then(response => {
         console.log('Delete response status:', response.status);
+        console.log('Delete response headers:', response.headers.get('content-type'));
         
         if (response.ok) {
-            // If response is OK (200-299), handle success
-            console.log('File deleted successfully');
-            
-            // Close modal and refresh page
-            document.getElementById('ai-suggestion-modal').classList.add('hidden');
-            window.location.reload();
+            // Try to parse JSON response
+            return response.json().then(data => {
+                console.log('File deleted successfully:', data);
+                
+                // Close modal and refresh page
+                document.getElementById('ai-suggestion-modal').classList.add('hidden');
+                window.location.reload();
+            }).catch(jsonError => {
+                // If JSON parsing fails, it might be HTML response, still consider success
+                console.log('Delete successful but response was not JSON:', jsonError);
+                document.getElementById('ai-suggestion-modal').classList.add('hidden');
+                window.location.reload();
+            });
         } else {
             // If response is not OK, show error
             response.text().then(errorText => {
