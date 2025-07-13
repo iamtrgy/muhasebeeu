@@ -60,6 +60,13 @@ class InvoiceController extends Controller
         $incomeFiles = collect();
         $expenseFiles = collect();
         
+        // Log for debugging
+        \Log::info('Invoice page loaded', [
+            'tab' => $tab,
+            'company' => $company->name,
+            'root_folder_exists' => $rootFolder ? true : false
+        ]);
+        
         if ($rootFolder) {
             $invoicesFolder = \App\Models\Folder::where('name', 'Invoices')
                 ->where('parent_id', $rootFolder->id)
@@ -70,6 +77,7 @@ class InvoiceController extends Controller
                 // Get Income folder and files
                 $incomeFolder = \App\Models\Folder::where('name', 'Income')
                     ->where('parent_id', $invoicesFolder->id)
+                    ->where('company_id', $company->id)
                     ->first();
                     
                 if ($incomeFolder) {
@@ -84,6 +92,7 @@ class InvoiceController extends Controller
                 // Get Expense folder and files
                 $expenseFolder = \App\Models\Folder::where('name', 'Expense')
                     ->where('parent_id', $invoicesFolder->id)
+                    ->where('company_id', $company->id)
                     ->first();
                     
                 if ($expenseFolder) {
