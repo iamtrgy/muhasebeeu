@@ -47,10 +47,24 @@ window.previewFile = function(fileName, mimeType, url) {
         document.body.style.overflow = 'hidden';
     }
     
+    // Reset modal padding first
+    const modalContent = content.closest('.bg-white, .dark\\:bg-gray-800');
+    modalContent.classList.remove('p-0');
+    modalContent.classList.add('px-4', 'pb-4', 'pt-5', 'sm:p-6', 'sm:pb-4');
+    
     if (mimeType.startsWith('image/')) {
         content.innerHTML = `<img src="${url}" alt="${fileName}" class="max-w-full h-auto mx-auto">`;
     } else if (mimeType === 'application/pdf') {
-        content.innerHTML = `<iframe src="${url}" class="w-full h-[70vh]" frameborder="0"></iframe>`;
+        // For PDFs, remove padding and make iframe full size
+        modalContent.classList.remove('px-4', 'pb-4', 'pt-5', 'sm:p-6', 'sm:pb-4');
+        modalContent.classList.add('p-0');
+        
+        content.innerHTML = `
+            <div class="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${fileName}</h3>
+            </div>
+            <iframe src="${url}" class="w-full h-[80vh]" frameborder="0"></iframe>
+        `;
     } else {
         // For non-previewable files, show a download prompt
         content.innerHTML = `
