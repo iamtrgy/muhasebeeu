@@ -1153,7 +1153,7 @@
             // Primary Action - Accept Suggestion (only if pending and not in correct folder)
             if (fileData && analysis && analysis.suggested_folder_id && !fileData.ai_suggestion_accepted && !isInCorrectFolder) {
                 buttonsHTML += `
-                    <button type="button" onclick="acceptAnalysisSuggestion()" 
+                    <button type="button" onclick="acceptSuggestionFromModal(${fileData.id}, ${analysis.suggested_folder_id})" 
                             class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -1324,7 +1324,7 @@
         window.manualMoveFromDetails = manualMoveFromDetails;
         window.viewFileFromDetails = viewFileFromDetails;
         // window.closeAnalysisDetails = closeAnalysisDetails; // Removed - using new modal
-        window.acceptAnalysisSuggestion = acceptAnalysisSuggestion;
+        // window.acceptAnalysisSuggestion = acceptAnalysisSuggestion; // Removed - using new modal
         window.restoreAnalysisDetailsView = restoreAnalysisDetailsView;
         window.selectFolderAndConfirm = selectFolderAndConfirm;
         
