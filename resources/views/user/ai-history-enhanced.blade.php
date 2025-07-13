@@ -49,6 +49,33 @@
                                     <span x-text="isProcessing ? 'Re-analyzing...' : 'Re-analyze'"></span>
                                 </button>
                             @endif
+                            
+                            @if($currentTab === 'all')
+                                <!-- Show appropriate actions based on selected files -->
+                                <button @click="bulkAnalyze()" :disabled="isProcessing" x-show="hasSelectedFilesNotAnalyzed"
+                                        class="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded border border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    </svg>
+                                    <span x-text="isProcessing ? 'Analyzing...' : 'Analyze Selected'"></span>
+                                </button>
+                                
+                                <button @click="bulkApprove()" :disabled="isProcessing" x-show="hasSelectedFilesPendingApproval"
+                                        class="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded border border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span x-text="isProcessing ? 'Approving...' : 'Approve Selected'"></span>
+                                </button>
+                                
+                                <button @click="bulkReanalyze()" :disabled="isProcessing" x-show="hasSelectedFilesAnalyzed"
+                                        class="inline-flex items-center px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    <span x-text="isProcessing ? 'Re-analyzing...' : 'Re-analyze'"></span>
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -136,9 +163,18 @@
                                                             $suggestedName = last(explode('/', $suggestedPath));
                                                         }
                                                     @endphp
-                                                    <span class="text-xs font-medium text-gray-900 dark:text-gray-100 ml-1" 
-                                                          title="{{ $suggestedPath }}">
-                                                        {{ $suggestedName }}
+                                                    <span class="inline-flex items-center relative group">
+                                                        <span class="text-xs font-medium text-indigo-600 dark:text-indigo-400 ml-1 cursor-help border-b border-dotted border-indigo-300 dark:border-indigo-500">
+                                                            {{ $suggestedName }}
+                                                        </span>
+                                                        <svg class="w-3 h-3 ml-1 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <!-- Custom Tooltip -->
+                                                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                                            Suggested Folder: {{ $suggestedPath }}
+                                                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                                                        </div>
                                                     </span>
                                                 @else
                                                     <span class="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1">
@@ -221,7 +257,7 @@
                                         @if(!$file->ai_suggestion_accepted && $file->ai_analysis)
                                             @if(isset($file->ai_analysis['suggest_deletion']) && $file->ai_analysis['suggest_deletion'])
                                                 {{-- Show Delete button for files marked for deletion --}}
-                                                <button onclick="showAISuggestionModal({{ $file->id }})"
+                                                <button onclick="showDeleteConfirm({{ $file->id }}, '{{ addslashes($file->original_name ?? $file->name) }}')"
                                                         class="inline-flex items-center text-xs text-red-600 dark:text-red-400 font-medium hover:text-red-700 dark:hover:text-red-300 transition-colors cursor-pointer"
                                                         title="Delete recommended">
                                                     <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,9 +274,12 @@
                                                 @endphp
                                                 @if($needsMove)
                                                     <button onclick="acceptSuggestionQuick({{ $file->id }}, {{ $file->ai_analysis['suggested_folder_id'] ?? 'null' }}, '{{ addslashes($file->original_name ?? $file->name) }}')"
-                                                            class="inline-flex items-center px-3 py-1 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
+                                                            class="inline-flex items-center text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer"
                                                             title="Accept AI suggestion">
-                                                        ✓ Accept
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        Accept
                                                     </button>
                                                 @endif
                                             @endif
@@ -596,6 +635,24 @@
                     });
                 },
                 
+                // Computed property to check if any selected files are not analyzed
+                get hasSelectedFilesNotAnalyzed() {
+                    if (!this.selectedFiles.length) return false;
+                    return this.selectedFiles.some(fileId => {
+                        const fileData = this.filesData.find(f => f.id === fileId);
+                        return fileData && !fileData.ai_analysis;
+                    });
+                },
+                
+                // Computed property to check if any selected files are analyzed
+                get hasSelectedFilesAnalyzed() {
+                    if (!this.selectedFiles.length) return false;
+                    return this.selectedFiles.some(fileId => {
+                        const fileData = this.filesData.find(f => f.id === fileId);
+                        return fileData && fileData.ai_analysis;
+                    });
+                },
+                
                 // Progress helper methods
                 startProgress(title, total) {
                     this.isProcessing = true;
@@ -692,7 +749,17 @@
                 async bulkAnalyze() {
                     if (!this.selectedFiles.length) return;
                     
-                    if (!confirm(`Analyze ${this.selectedFiles.length} selected files?`)) return;
+                    // Use custom confirmation modal
+                    showConfirmationModal({
+                        title: 'Analyze Files',
+                        message: `Analyze ${this.selectedFiles.length} selected files?`,
+                        confirmText: 'Analyze',
+                        type: 'info',
+                        onConfirm: () => this.executeBulkAnalyze()
+                    });
+                },
+                
+                async executeBulkAnalyze() {
                     
                     this.startProgress('Analyzing Files', this.selectedFiles.length);
                     
@@ -791,7 +858,17 @@
                         message = `Move ${filesToMove.length} files to their suggested folders?`;
                     }
                     
-                    if (!confirm(message)) return;
+                    // Use custom confirmation modal
+                    showConfirmationModal({
+                        title: 'Approve Suggestions',
+                        message: message,
+                        confirmText: 'Approve',
+                        type: 'info',
+                        onConfirm: () => this.executeBulkApprove()
+                    });
+                },
+                
+                async executeBulkApprove() {
                     
                     this.startProgress('Approving Suggestions', this.selectedFiles.length);
                     
@@ -837,7 +914,17 @@
                 async bulkReanalyze() {
                     if (!this.selectedFiles.length) return;
                     
-                    if (!confirm(`Re-analyze ${this.selectedFiles.length} selected files? This will generate new AI analysis for each file.`)) return;
+                    // Use custom confirmation modal
+                    showConfirmationModal({
+                        title: 'Re-analyze Files',
+                        message: `Re-analyze ${this.selectedFiles.length} selected files? This will generate new AI analysis for each file.`,
+                        confirmText: 'Re-analyze',
+                        type: 'warning',
+                        onConfirm: () => this.executeBulkReanalyze()
+                    });
+                },
+                
+                async executeBulkReanalyze() {
                     
                     this.startProgress('Re-analyzing Files', this.selectedFiles.length);
                     
@@ -1090,7 +1177,7 @@
             if (fileData && analysis && analysis.suggested_folder_id && !fileData.ai_suggestion_accepted && !isInCorrectFolder) {
                 buttonsHTML += `
                     <button type="button" onclick="acceptSuggestionFromModal(${fileData.id}, ${analysis.suggested_folder_id})" 
-                            class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            class="inline-flex items-center px-4 py-2 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium transition-colors focus:outline-none">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
@@ -1219,8 +1306,14 @@
                 return;
             }
             
-            if (confirm(`Accept AI suggestion and move "${currentModalFile.original_name || currentModalFile.name}" to the suggested folder?`)) {
-                fetch(`/user/files/${currentModalFile.id}/accept-suggestion`, {
+            // Use custom confirmation modal
+            showConfirmationModal({
+                title: 'Accept Suggestion',
+                message: `Accept AI suggestion and move "${currentModalFile.original_name || currentModalFile.name}" to the suggested folder?`,
+                confirmText: 'Accept & Move',
+                type: 'info',
+                onConfirm: () => {
+                    fetch(`/user/files/${currentModalFile.id}/accept-suggestion`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1243,7 +1336,8 @@
                 .catch(error => {
                     alert('Error: ' + error.message);
                 });
-            }
+                }
+            });
         }
         */
         
@@ -1588,30 +1682,77 @@
         
         // Quick accept function for inline buttons
         function acceptSuggestionQuick(fileId, folderId, fileName) {
-            if (confirm(`Accept AI suggestion and move "${fileName}" to the suggested folder?`)) {
-                fetch(`/user/files/${fileId}/accept-suggestion`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        folder_id: folderId
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('File moved successfully!');
-                        window.location.reload();
-                    } else {
-                        alert('Error: ' + (data.error || 'Failed to move file'));
+            // Get file data to show summary
+            const fileData = document.querySelector(`[data-file-id="${fileId}"]`)?.dataset.file;
+            let summary = `Accept AI suggestion and move "${fileName}" to the suggested folder?`;
+            
+            if (fileData) {
+                try {
+                    const file = JSON.parse(fileData);
+                    const analysis = file.ai_analysis;
+                    
+                    if (analysis) {
+                        summary = `File: ${fileName}\n\n`;
+                        
+                        if (analysis.document_type) {
+                            summary += `Document Type: ${analysis.document_type}\n`;
+                        }
+                        
+                        if (analysis.transaction_type && analysis.transaction_type !== 'not_related') {
+                            summary += `Transaction Type: ${analysis.transaction_type}\n`;
+                        }
+                        
+                        if (analysis.confidence) {
+                            summary += `AI Confidence: ${analysis.confidence}%\n`;
+                        }
+                        
+                        if (analysis.folder_path) {
+                            summary += `\nMove to: ${analysis.folder_path}`;
+                        }
+                        
+                        if (analysis.reasoning) {
+                            summary += `\n\nReasoning: ${analysis.reasoning}`;
+                        }
                     }
-                })
-                .catch(error => {
-                    alert('Error: ' + error.message);
-                });
+                } catch (e) {
+                    // Fallback to simple message if parsing fails
+                    console.warn('Failed to parse file data:', e);
+                }
             }
+            
+            // Use custom confirmation modal
+            showConfirmationModal({
+                title: 'Accept AI Suggestion',
+                message: summary,
+                confirmText: 'Accept & Move',
+                type: 'info',
+                onConfirm: () => executeAcceptSuggestion(fileId, folderId)
+            });
+        }
+        
+        function executeAcceptSuggestion(fileId, folderId) {
+            fetch(`/user/files/${fileId}/accept-suggestion`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    folder_id: folderId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('File moved successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to move file'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
         }
         
         function reanalyzeFile(fileId) {
@@ -1710,7 +1851,7 @@
                 if (needsMove && suggestedFolderId) {
                     actions.innerHTML = `
                         <button onclick="acceptSuggestionFromModal(${file.id}, ${suggestedFolderId})" 
-                                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded">
+                                class="px-4 py-2 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium">
                             Accept & Move
                         </button>
                         <button onclick="closeAnalysisDetails()" 
@@ -1805,6 +1946,101 @@
             modal.classList.add('hidden');
         }
 
+        // Simple Delete Confirmation Modal Functions
+        let deleteFileId = null;
+        
+        function showDeleteConfirm(fileId, fileName) {
+            deleteFileId = fileId;
+            
+            // Get file data to show summary
+            const fileData = document.querySelector(`[data-file-id="${fileId}"]`)?.dataset.file;
+            let summary = `File: ${fileName}\n\nAre you sure you want to delete this file? This action cannot be undone.`;
+            
+            if (fileData) {
+                try {
+                    const file = JSON.parse(fileData);
+                    const analysis = file.ai_analysis;
+                    
+                    if (analysis) {
+                        summary = `File: ${fileName}\n\n`;
+                        
+                        if (analysis.suggest_deletion && analysis.deletion_reason) {
+                            summary += `🤖 AI Recommendation: Delete\n`;
+                            summary += `Reason: ${analysis.deletion_reason}\n\n`;
+                        }
+                        
+                        if (analysis.document_type) {
+                            summary += `Document Type: ${analysis.document_type}\n`;
+                        }
+                        
+                        if (analysis.confidence) {
+                            summary += `AI Confidence: ${analysis.confidence}%\n`;
+                        }
+                        
+                        if (analysis.reasoning) {
+                            summary += `\nAI Analysis: ${analysis.reasoning}\n`;
+                        }
+                        
+                        summary += `\nAre you sure you want to delete this file? This action cannot be undone.`;
+                    }
+                } catch (e) {
+                    // Fallback to simple message if parsing fails
+                    console.warn('Failed to parse file data:', e);
+                }
+            }
+            
+            // Use custom confirmation modal instead of the component modal
+            showConfirmationModal({
+                title: 'Delete File',
+                message: summary,
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                type: 'danger',
+                onConfirm: () => confirmDelete()
+            });
+        }
+
+        function closeDeleteConfirm() {
+            const modal = document.getElementById('delete-confirm-modal');
+            modal.classList.add('hidden');
+            deleteFileId = null;
+        }
+
+        function confirmDelete() {
+            if (!deleteFileId) return;
+            
+            const routeTemplate = `{{ route('user.files.destroy', ['file' => ':fileId']) }}`;
+            const deleteUrl = routeTemplate.replace(':fileId', deleteFileId);
+            
+            fetch(deleteUrl, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the file row from the page
+                    const fileRow = document.querySelector(`[data-file-id="${deleteFileId}"]`);
+                    if (fileRow) {
+                        fileRow.remove();
+                    }
+                    
+                    // Close modal and refresh page
+                    closeDeleteConfirm();
+                    window.location.reload();
+                } else {
+                    alert('Error deleting file: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Delete error:', error);
+                alert('Error deleting file: ' + error.message);
+            });
+        }
+
         // Make functions globally accessible
         window.showReviewGuidance = showReviewGuidance;
         window.closeReviewGuidance = closeReviewGuidance;
@@ -1815,8 +2051,12 @@
         window.acceptSuggestionFromModalTable = acceptSuggestionFromModalTable;
         window.showFilePreview = showFilePreview;
         window.closeFilePreview = closeFilePreview;
+        window.showDeleteConfirm = showDeleteConfirm;
+        window.closeDeleteConfirm = closeDeleteConfirm;
+        window.confirmDelete = confirmDelete;
     </script>
     @endpush
 
     <x-ai-history.modals.file-preview />
+    <x-ai-history.modals.delete-confirm />
 </x-user.layout>

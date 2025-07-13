@@ -321,16 +321,28 @@ function deleteFileFromModal() {
         return;
     }
     
-    if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
-        return;
-    }
-    
     // Validate fileId is a positive number
     const fileId = parseInt(currentFileId);
     if (!fileId || fileId <= 0) {
         console.error('ERROR: Invalid file ID for deletion:', currentFileId);
         alert('Invalid file ID. Cannot delete file.');
         return;
+    }
+    
+    // Use custom confirmation modal instead of browser confirm
+    if (typeof window.showDeleteConfirm === 'function') {
+        // Get the file name from the modal
+        const fileName = document.getElementById('ai-document-name')?.textContent || 'this file';
+        // Close the AI suggestion modal first
+        closeAISuggestionModal();
+        // Show our custom delete confirmation modal
+        window.showDeleteConfirm(fileId, fileName);
+        return;
+    } else {
+        // Fallback to browser confirm if custom modal not available
+        if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
+            return;
+        }
     }
     
     // Construct the correct URL for file deletion using route helper

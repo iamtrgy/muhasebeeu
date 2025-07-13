@@ -394,6 +394,14 @@ class AIDocumentAnalyzer
     {
         $fileName = basename($filePath);
         
+        // Define document types and transaction types as variables
+        $documentTypes = ['invoice', 'bank_statement', 'contract', 'other', 'unknown'];
+        $transactionTypes = ['income', 'expense', 'bank', 'other', 'not_related'];
+        $folderCategories = ['Income', 'Expense', 'Banks', 'Other'];
+        $documentTypesText = implode('|', $documentTypes);
+        $transactionTypesText = implode('|', $transactionTypes);
+        $folderCategoriesText = implode(', ', $folderCategories);
+        
         $prompt = "File: {$fileName}\n";
         
         if ($currentFolder) {
@@ -402,7 +410,12 @@ class AIDocumentAnalyzer
         
         $prompt .= "VISION AI ANALYSIS: Carefully examine the document image and extract the following information:\n\n";
         
-        $prompt .= "1. DOCUMENT TYPE - Identify what type of document this is\n\n";
+        $prompt .= "1. DOCUMENT TYPE - Identify what type of document this is:\n";
+        $prompt .= "- Invoice/Receipt (income/expense transaction)\n";
+        $prompt .= "- Bank Statement (account activity summary)\n";
+        $prompt .= "- Financial Report\n";
+        $prompt .= "- Contract/Agreement\n";
+        $prompt .= "- Other business document\n\n";
         
         $prompt .= "2. SENDER/FROM (look for):\n";
         $prompt .= "- Company name in header/letterhead\n";
@@ -448,13 +461,24 @@ class AIDocumentAnalyzer
             $prompt .= "- Document is personal/individual transaction (not business related)\n";
             $prompt .= "- Entertainment, travel, personal expense receipts\n\n";
             
-            $prompt .= "SUGGEST FOLDER only if ALL conditions are met:\n";
+            $prompt .= "SUGGEST FOLDER based on document type:\n\n";
+            
+            $prompt .= "FOR BANK STATEMENTS:\n";
+            $prompt .= "- If bank statement belongs to user company account → {$folderCategories[2]} folder\n";
+            $prompt .= "- Look for account holder name matching user companies\n";
+            $prompt .= "- Bank statements show account activity, not individual transactions\n\n";
+            
+            $prompt .= "FOR INVOICES/RECEIPTS:\n";
             $prompt .= "- SENDER company is in user company list OR RECEIVER company is in user company list\n";
             $prompt .= "- EXACTLY ONE of the parties (sender/receiver) must be a user company\n";
-            $prompt .= "- Document is legitimate business transaction\n";
-            $prompt .= "- User company is directly involved as sender OR receiver (not both)\n";
-            $prompt .= "- Transaction type: User company SENT = Income, User company RECEIVED = Expense\n";
+            $prompt .= "- Transaction type: User company SENT = {$folderCategories[0]}, User company RECEIVED = {$folderCategories[1]}\n";
             $prompt .= "- Use DOCUMENT YEAR (not folder year) for date-based folder selection\n\n";
+            
+            $prompt .= "FOR OTHER BUSINESS DOCUMENTS:\n";
+            $prompt .= "- If document belongs to user company AND has a date → {$folderCategories[3]} folder\n";
+            $prompt .= "- Examples: contracts, agreements, reports, certificates related to user company\n";
+            $prompt .= "- Must be business-related to user company\n";
+            $prompt .= "- Use DOCUMENT YEAR for folder selection\n\n";
             
         }
         
@@ -468,17 +492,24 @@ class AIDocumentAnalyzer
         $prompt .= "2. Identify SENDER company (who issued/sent the document)\n";
         $prompt .= "3. Identify RECEIVER company (who received/should pay)\n";
         $prompt .= "4. Read the document date and extract the ACTUAL year\n";
-        $prompt .= "5. CRITICAL CHECK: Is the SENDER in the user company list above?\n";
-        $prompt .= "6. CRITICAL CHECK: Is the RECEIVER in the user company list above?\n";
-        $prompt .= "7. If BOTH checks are NO → suggest_deletion: true, deletion_reason: 'Transaction between third parties'\n";
-        $prompt .= "8. If EITHER check is YES → find folder matching DOCUMENT year and transaction type\n";
+        $prompt .= "5. CRITICAL CHECK: What type of document is this?\n";
+        $prompt .= "6. If BANK STATEMENT → Check if account holder is user company → {$folderCategories[2]} folder\n";
+        $prompt .= "7. If INVOICE/RECEIPT → Check sender/receiver involvement:\n";
+        $prompt .= "   - BOTH sender and receiver NOT in user list → DELETE\n";
+        $prompt .= "   - EITHER sender OR receiver in user list → {$folderCategories[0]}/{$folderCategories[1]} folder\n";
+        $prompt .= "8. If OTHER BUSINESS DOCUMENT → Check if belongs to user company:\n";
+        $prompt .= "   - Related to user company AND has date → {$folderCategories[3]} folder\n";
+        $prompt .= "   - Not related to user company → DELETE\n";
         $prompt .= "9. NEVER suggest folders for companies not in the user list\n";
         $prompt .= "10. NEVER suggest folders with wrong years - use document date year only\n\n";
         
         $prompt .= "EXAMPLE SCENARIOS:\n";
         $prompt .= "- Invoice between two companies neither in user list → DELETE\n";
-        $prompt .= "- Invoice from user company to other company → INCOME folder\n";
-        $prompt .= "- Invoice from other company to user company → EXPENSE folder\n";
+        $prompt .= "- Invoice from user company to other company → {$folderCategories[0]} folder\n";
+        $prompt .= "- Invoice from other company to user company → {$folderCategories[1]} folder\n";
+        $prompt .= "- Bank statement of user company account → {$folderCategories[2]} folder\n";
+        $prompt .= "- Contract/agreement for user company → {$folderCategories[3]} folder\n";
+        $prompt .= "- Bank statement of unknown company → DELETE\n";
         $prompt .= "- Invoice where user company not involved → DELETE\n\n";
         
         $prompt .= "Return JSON with this exact format:\n";
@@ -489,7 +520,8 @@ class AIDocumentAnalyzer
         $prompt .= '  "confidence": <0-100>,';
         $prompt .= '  "reasoning": "<explain what you found: FROM company, TO company, and why decision was made>",';
         $prompt .= '  "document_date": "<YYYY-MM-DD>",';
-        $prompt .= '  "transaction_type": "<income|expense|not_related>",';
+        $prompt .= '  "document_type": "<' . $documentTypesText . '>",';
+        $prompt .= '  "transaction_type": "<' . $transactionTypesText . '",';
         $prompt .= '  "suggest_deletion": <true or false>,';
         $prompt .= '  "deletion_reason": "<reason if suggesting deletion>"';
         $prompt .= "\n}";

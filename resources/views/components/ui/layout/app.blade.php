@@ -70,6 +70,9 @@
     <!-- Toast Notifications -->
     <div id="toast-container" class="fixed bottom-0 right-0 p-6 space-y-4 z-50"></div>
 
+    <!-- Global Confirmation Modal -->
+    <x-ui.confirmation-modal />
+    
     @stack('modals')
     @stack('scripts')
 </body>
