@@ -1694,25 +1694,11 @@
                     if (analysis) {
                         summary = `File: ${fileName}\n\n`;
                         
-                        if (analysis.document_type) {
-                            summary += `Document Type: ${analysis.document_type}\n`;
-                        }
-                        
-                        if (analysis.transaction_type && analysis.transaction_type !== 'not_related') {
-                            summary += `Transaction Type: ${analysis.transaction_type}\n`;
-                        }
-                        
-                        if (analysis.confidence) {
-                            summary += `AI Confidence: ${analysis.confidence}%\n`;
-                        }
-                        
                         if (analysis.folder_path) {
-                            summary += `\nMove to: ${analysis.folder_path}`;
+                            summary += `Move to: ${analysis.folder_path}\n\n`;
                         }
                         
-                        if (analysis.reasoning) {
-                            summary += `\n\nReasoning: ${analysis.reasoning}`;
-                        }
+                        summary += `Accept AI suggestion and move this file?`;
                     }
                 } catch (e) {
                     // Fallback to simple message if parsing fails
@@ -1754,6 +1740,7 @@
                 alert('Error: ' + error.message);
             });
         }
+        
         
         function reanalyzeFile(fileId) {
             if (confirm('Are you sure you want to re-analyze this file? This will generate a new AI analysis.')) {
@@ -1965,23 +1952,10 @@
                         summary = `File: ${fileName}\n\n`;
                         
                         if (analysis.suggest_deletion && analysis.deletion_reason) {
-                            summary += `🤖 AI Recommendation: Delete\n`;
-                            summary += `Reason: ${analysis.deletion_reason}\n\n`;
+                            summary += `AI recommends deletion:\n${analysis.deletion_reason}\n\n`;
                         }
                         
-                        if (analysis.document_type) {
-                            summary += `Document Type: ${analysis.document_type}\n`;
-                        }
-                        
-                        if (analysis.confidence) {
-                            summary += `AI Confidence: ${analysis.confidence}%\n`;
-                        }
-                        
-                        if (analysis.reasoning) {
-                            summary += `\nAI Analysis: ${analysis.reasoning}\n`;
-                        }
-                        
-                        summary += `\nAre you sure you want to delete this file? This action cannot be undone.`;
+                        summary += `Are you sure you want to delete this file?\nThis action cannot be undone.`;
                     }
                 } catch (e) {
                     // Fallback to simple message if parsing fails

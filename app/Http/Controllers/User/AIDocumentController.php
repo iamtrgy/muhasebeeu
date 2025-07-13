@@ -155,6 +155,7 @@ class AIDocumentController extends Controller
         }
     }
     
+    
     /**
      * Batch analyze documents
      */

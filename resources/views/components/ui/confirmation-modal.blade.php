@@ -24,16 +24,18 @@
             
             <!-- Content -->
             <div class="p-6">
-                <p id="confirmation-message" class="text-sm text-gray-700 dark:text-gray-300">
-                    Are you sure you want to proceed with this action?
-                </p>
+                <pre id="confirmation-message" class="text-sm text-gray-700 dark:text-gray-300 font-sans whitespace-pre-wrap">Are you sure you want to proceed with this action?</pre>
             </div>
             
             <!-- Actions -->
-            <div class="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex justify-end space-x-3">
+            <div id="confirmation-actions" class="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex justify-end space-x-3">
                 <button id="confirmation-cancel" onclick="closeConfirmationModal()" 
                         class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 transition-colors">
                     Cancel
+                </button>
+                <button id="confirmation-reject" onclick="executeRejectAction()" style="display: none;"
+                        class="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-100 border border-orange-300 hover:bg-orange-200 rounded-lg dark:bg-orange-900 dark:text-orange-300 dark:border-orange-700 dark:hover:bg-orange-800 transition-colors">
+                    Reject & Re-analyze
                 </button>
                 <button id="confirmation-confirm" onclick="executeConfirmationAction()" 
                         class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
@@ -46,6 +48,7 @@
 
 <script>
 let confirmationCallback = null;
+let confirmationRejectCallback = null;
 let confirmationData = null;
 
 /**
@@ -57,6 +60,8 @@ let confirmationData = null;
  * @param {string} options.cancelText - Cancel button text (default: "Cancel")
  * @param {string} options.type - Modal type: 'warning', 'danger', 'info' (default: 'warning')
  * @param {Function} options.onConfirm - Callback function when confirmed
+ * @param {Function} options.onReject - Optional callback function for reject action
+ * @param {string} options.rejectText - Reject button text (default: "Reject & Re-analyze")
  * @param {*} options.data - Optional data to pass to callback
  */
 function showConfirmationModal(options) {
@@ -65,8 +70,10 @@ function showConfirmationModal(options) {
         message,
         confirmText = 'Confirm',
         cancelText = 'Cancel',
+        rejectText = 'Reject & Re-analyze',
         type = 'warning',
         onConfirm,
+        onReject,
         data = null
     } = options;
 
@@ -77,6 +84,7 @@ function showConfirmationModal(options) {
 
     // Store callback and data
     confirmationCallback = onConfirm;
+    confirmationRejectCallback = onReject;
     confirmationData = data;
 
     // Update modal content
@@ -84,6 +92,15 @@ function showConfirmationModal(options) {
     document.getElementById('confirmation-message').textContent = message;
     document.getElementById('confirmation-confirm').textContent = confirmText;
     document.getElementById('confirmation-cancel').textContent = cancelText;
+    
+    // Show/hide reject button based on callback
+    const rejectButton = document.getElementById('confirmation-reject');
+    if (onReject && typeof onReject === 'function') {
+        rejectButton.style.display = 'block';
+        rejectButton.textContent = rejectText;
+    } else {
+        rejectButton.style.display = 'none';
+    }
 
     // Update icon and colors based on type
     const iconContainer = document.getElementById('confirmation-icon');
@@ -129,6 +146,7 @@ function showConfirmationModal(options) {
 function closeConfirmationModal() {
     document.getElementById('confirmation-modal').classList.add('hidden');
     confirmationCallback = null;
+    confirmationRejectCallback = null;
     confirmationData = null;
 }
 
@@ -139,10 +157,18 @@ function executeConfirmationAction() {
     closeConfirmationModal();
 }
 
+function executeRejectAction() {
+    if (confirmationRejectCallback && typeof confirmationRejectCallback === 'function') {
+        confirmationRejectCallback(confirmationData);
+    }
+    closeConfirmationModal();
+}
+
 // Make functions globally available
 window.showConfirmationModal = showConfirmationModal;
 window.closeConfirmationModal = closeConfirmationModal;
 window.executeConfirmationAction = executeConfirmationAction;
+window.executeRejectAction = executeRejectAction;
 
 // Helper function for simple confirmations (backwards compatibility)
 window.showSimpleConfirm = function(message, onConfirm, options = {}) {

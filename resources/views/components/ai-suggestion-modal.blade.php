@@ -401,6 +401,7 @@ function deleteFileFromModal() {
     });
 }
 
+
 // Global function
 window.showAISuggestionModal = showAISuggestionModal;
 </script>
