@@ -404,9 +404,12 @@
                                 
                                 <!-- Close Button (show when completed) -->
                                 <div class="mt-6" x-show="progressPercentage >= 100">
-                                    <button @click="isProcessing = false" 
-                                            class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition-colors">
-                                        Close
+                                    <button @click="checkAnalyzedFiles()" 
+                                            class="w-full inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition-colors">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Check Analyzed Files
                                     </button>
                                 </div>
                             </div>
@@ -731,6 +734,16 @@
                         
                         // Note: User will manually close modal via Close button
                     }
+                },
+                
+                checkAnalyzedFiles() {
+                    // Close the modal
+                    this.isProcessing = false;
+                    
+                    // Navigate to analyzed tab to show results
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('tab', 'analyzed');
+                    window.location.href = currentUrl.toString();
                 },
                 
                 toggleFile(fileId) {
