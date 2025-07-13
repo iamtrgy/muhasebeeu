@@ -1886,7 +1886,4 @@
         window.acceptSuggestionFromModalTable = acceptSuggestionFromModalTable;
     </script>
     @endpush
-    
-    <!-- Include AI Suggestion Modal Component -->
-    @include('components.ai-suggestion-modal')
 </x-user.layout>
