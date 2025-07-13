@@ -394,29 +394,59 @@ class AIDocumentAnalyzer
             $prompt .= "Currently in: {$currentFolder['path']}\n\n";
         }
         
-        $prompt .= "CRITICAL: Read the document and determine if it's business-related to the user companies.\n\n";
+        $prompt .= "VISION AI ANALYSIS: Carefully examine the document image and extract the following information:\n\n";
         
-        $prompt .= "Extract from document:\n";
-        $prompt .= "- Date\n";
-        $prompt .= "- Who sent it (from)\n";
-        $prompt .= "- Who received it (to)\n";
-        $prompt .= "- Document type\n";
-        $prompt .= "- Is this document business-related to user companies?\n\n";
+        $prompt .= "1. DOCUMENT TYPE:\n";
+        $prompt .= "- Invoice/Bill\n";
+        $prompt .= "- Receipt\n";
+        $prompt .= "- Bank statement\n";
+        $prompt .= "- Contract/Agreement\n";
+        $prompt .= "- Personal ticket/booking\n";
+        $prompt .= "- Other (specify)\n\n";
+        
+        $prompt .= "2. SENDER/FROM (look for):\n";
+        $prompt .= "- Company name in header/letterhead\n";
+        $prompt .= "- 'From:', 'Sender:', or business name at top\n";
+        $prompt .= "- Who issued this document\n\n";
+        
+        $prompt .= "3. RECEIVER/TO (look for):\n";
+        $prompt .= "- 'To:', 'Bill to:', 'Customer:', or recipient name\n";
+        $prompt .= "- Who is this document addressed to\n";
+        $prompt .= "- Who should pay or received this\n\n";
+        
+        $prompt .= "4. DATE INFORMATION:\n";
+        $prompt .= "- Invoice date, issue date, or transaction date\n";
+        $prompt .= "- Format as YYYY-MM-DD\n\n";
+        
+        $prompt .= "5. BUSINESS RELEVANCE CHECK:\n";
+        $prompt .= "- Is this a business transaction between companies?\n";
+        $prompt .= "- Does it involve money/services between businesses?\n";
+        $prompt .= "- Or is it personal (travel, entertainment, personal purchases)?\n\n";
         
         if (!empty($userCompanies)) {
             $prompt .= "User companies: " . implode(', ', $userCompanies) . "\n\n";
             
-            $prompt .= "DELETION CRITERIA - Suggest deletion if ANY of these apply:\n";
-            $prompt .= "1. Document is NOT a business transaction with user companies\n";
-            $prompt .= "2. Document is personal (tickets, personal purchases, etc.)\n";
-            $prompt .= "3. Document doesn't mention user companies as sender OR receiver\n";
-            $prompt .= "4. Document is unrelated to business operations\n";
-            $prompt .= "5. Document is from/to unknown third parties with no business connection\n\n";
+            $prompt .= "DECISION LOGIC:\n\n";
             
-            $prompt .= "FOLDER CRITERIA - Only suggest folder if ALL apply:\n";
-            $prompt .= "1. User company is clearly the sender OR receiver\n";
-            $prompt .= "2. Document is a legitimate business transaction\n";
-            $prompt .= "3. If user company sent = Income, if received = Expense\n\n";
+            $prompt .= "SUGGEST DELETION if ANY apply:\n";
+            $prompt .= "- SENDER and RECEIVER are both unknown/not user companies\n";
+            $prompt .= "- Document type is personal (ferry ticket, flight booking, hotel, restaurant receipt)\n";
+            $prompt .= "- No user company name appears in FROM or TO fields\n";
+            $prompt .= "- Document is between third parties only\n";
+            $prompt .= "- Personal expenses not related to business\n\n";
+            
+            $prompt .= "SUGGEST FOLDER only if ALL apply:\n";
+            $prompt .= "- User company name appears as SENDER or RECEIVER\n";
+            $prompt .= "- Document is business transaction (invoice, bill, contract, bank statement)\n";
+            $prompt .= "- Transaction type: User company SENT = Income, User company RECEIVED = Expense\n\n";
+            
+            $prompt .= "EXAMPLES:\n";
+            $prompt .= "✓ KEEP: Invoice FROM 'Payimu OÜ' TO 'Client Company' = Income\n";
+            $prompt .= "✓ KEEP: Bill FROM 'Supplier Ltd' TO 'Payimu OÜ' = Expense\n";
+            $prompt .= "✓ KEEP: Bank statement for 'Payimu OÜ' account\n";
+            $prompt .= "✗ DELETE: Ferry ticket FROM 'Tallink' TO 'John Doe'\n";
+            $prompt .= "✗ DELETE: Restaurant receipt with no company names\n";
+            $prompt .= "✗ DELETE: Invoice FROM 'Company A' TO 'Company B' (neither is user company)\n\n";
         }
         
         $prompt .= "Available folders:\n";
@@ -424,20 +454,24 @@ class AIDocumentAnalyzer
             $prompt .= "ID {$folder['id']}: {$folder['path']}\n";
         }
         
-        $prompt .= "\nIMPORTANT: Be strict - when in doubt, suggest deletion rather than filing.\n";
-        $prompt .= "Personal documents, tickets, unrelated invoices should be deleted.\n\n";
+        $prompt .= "\nFINAL INSTRUCTION:\n";
+        $prompt .= "1. Look at the image carefully\n";
+        $prompt .= "2. Identify SENDER and RECEIVER company names\n";
+        $prompt .= "3. Check if user company is involved as sender OR receiver\n";
+        $prompt .= "4. If NO user company involvement → suggest_deletion: true\n";
+        $prompt .= "5. If user company involved → find appropriate folder by year and type\n\n";
         
-        $prompt .= "Return JSON:\n";
+        $prompt .= "Return JSON with this exact format:\n";
         $prompt .= "{\n";
-        $prompt .= '  "suggested_folder_id": <id or null if suggesting deletion>,';
-        $prompt .= '  "folder_name": "<name or null if suggesting deletion>",';
-        $prompt .= '  "folder_path": "<path or null if suggesting deletion>",';
+        $prompt .= '  "suggested_folder_id": <folder_id_number or null>,';
+        $prompt .= '  "folder_name": "<folder_name or null>",';
+        $prompt .= '  "folder_path": "<full_folder_path or null>",';
         $prompt .= '  "confidence": <0-100>,';
-        $prompt .= '  "reasoning": "<explain business relevance and decision>",';
+        $prompt .= '  "reasoning": "<explain what you found: FROM company, TO company, and why decision was made>",';
         $prompt .= '  "document_date": "<YYYY-MM-DD>",';
         $prompt .= '  "transaction_type": "<income|expense|not_related>",';
-        $prompt .= '  "suggest_deletion": <true if not business related>,';
-        $prompt .= '  "deletion_reason": "<specific reason why document should be deleted>"';
+        $prompt .= '  "suggest_deletion": <true or false>,';
+        $prompt .= '  "deletion_reason": "<reason if suggesting deletion>"';
         $prompt .= "\n}";
         
         return $prompt;
