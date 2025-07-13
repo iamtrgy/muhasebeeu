@@ -1,93 +1,14 @@
 <x-user.layout title="AI Document Analysis">
     <div class="space-y-4" x-data="aiHistoryManager({{ $files->pluck('id')->toJson() }}, {{ $files->map(function($file) { return ['id' => $file->id, 'ai_suggestion_accepted' => $file->ai_suggestion_accepted]; })->toJson() }})">
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <x-ui.card.base :padding="false">
-                <div class="p-4">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <svg class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Analyses</p>
-                            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ $totalAnalyses }}</p>
-                        </div>
-                    </div>
-                </div>
-            </x-ui.card.base>
-
-            <x-ui.card.base :padding="false">
-                <div class="p-4">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <svg class="h-8 w-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Accepted</p>
-                            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ $acceptedCount }}</p>
-                        </div>
-                    </div>
-                </div>
-            </x-ui.card.base>
-
-            <x-ui.card.base :padding="false">
-                <div class="p-4">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <svg class="h-8 w-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Confidence</p>
-                            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ $avgConfidence }}%</p>
-                        </div>
-                    </div>
-                </div>
-            </x-ui.card.base>
-
-            <x-ui.card.base :padding="false">
-                <div class="p-4">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <svg class="h-8 w-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Last Analysis</p>
-                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                {{ $lastAnalysis ? $lastAnalysis->diffForHumans() : 'Never' }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </x-ui.card.base>
-        </div>
+        <x-ai-history.summary-cards 
+            :total-analyses="$totalAnalyses"
+            :accepted-count="$acceptedCount" 
+            :avg-confidence="$avgConfidence"
+            :last-analysis="$lastAnalysis" />
 
         <!-- Main Content -->
         <x-ui.card.base>
-            <!-- Tabs -->
-            <div class="border-b border-gray-200 dark:border-gray-700">
-                <nav class="-mb-px flex space-x-6 px-4 pt-3" aria-label="Tabs">
-                    <a href="{{ route('user.ai-analysis.history', ['tab' => 'analyzed'] + request()->only(['search', 'date_from', 'date_to', 'folder', 'confidence', 'status'])) }}" 
-                       class="{{ $currentTab === 'analyzed' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">
-                        Analyzed <span class="text-xs text-gray-400">({{ $tabCounts['analyzed'] }})</span>
-                    </a>
-                    <a href="{{ route('user.ai-analysis.history', ['tab' => 'not_analyzed'] + request()->only(['search', 'date_from', 'date_to', 'folder', 'confidence', 'status'])) }}"
-                       class="{{ $currentTab === 'not_analyzed' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">
-                        Not Analyzed <span class="text-xs text-gray-400">({{ $tabCounts['not_analyzed'] }})</span>
-                    </a>
-                    <a href="{{ route('user.ai-analysis.history', ['tab' => 'all'] + request()->only(['search', 'date_from', 'date_to', 'folder', 'confidence', 'status'])) }}"
-                       class="{{ $currentTab === 'all' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">
-                        All Files <span class="text-xs text-gray-400">({{ $tabCounts['all'] }})</span>
-                    </a>
-                </nav>
-            </div>
+            <x-ai-history.tabs :current-tab="$currentTab" :tab-counts="$tabCounts" />
 
             <!-- Bulk Actions Bar (Only shown when files are selected) -->
             <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600" x-show="selectedFiles.length > 0" x-transition>
@@ -371,14 +292,6 @@
                                         </button>
                                     @endif
                                     
-                                    <button onclick="window.open('/user/files/{{ $file->id }}/preview', '_blank')"
-                                            class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
-                                            title="View file">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </button>
                                 </div>
                             </div>
                         @endforeach
@@ -1228,15 +1141,6 @@
             // File actions (only if fileData is available)
             if (fileData && fileData.id) {
                 buttonsHTML += `
-                    <button type="button" onclick="previewFileFromDetails()" 
-                            class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        Preview File
-                    </button>
-                    
                     <button type="button" onclick="goToFolder()" 
                             class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1934,35 +1838,5 @@
     </script>
     @endpush
 
-    <!-- File Preview Modal -->
-    <div id="file-preview-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onclick="closeFilePreview()"></div>
-            
-            <!-- Modal Content -->
-            <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-6xl w-full overflow-hidden">
-                <!-- Header -->
-                <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white" id="file-preview-title">File Preview</h3>
-                    </div>
-                    <button onclick="closeFilePreview()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                
-                <!-- Content -->
-                <div id="file-preview-content" class="bg-gray-50 dark:bg-gray-800">
-                    <!-- File preview content will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
+    <x-ai-history.modals.file-preview />
 </x-user.layout>
