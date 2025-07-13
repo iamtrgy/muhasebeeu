@@ -351,18 +351,10 @@ function deleteFile() {
         if (response.ok) {
             // If response is OK (200-299), handle success
             console.log('File deleted successfully');
-            closeAISuggestionModal();
             
-            // Remove the file from the list if it exists
-            const fileRow = document.querySelector(`div[data-file-id="${currentFileId}"]`);
-            if (fileRow) {
-                fileRow.remove();
-            }
-            
-            // Update file counts and refresh if needed
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
+            // Close modal and refresh page
+            document.getElementById('ai-suggestion-modal').classList.add('hidden');
+            window.location.reload();
         } else {
             // If response is not OK, show error
             response.text().then(errorText => {
@@ -379,16 +371,4 @@ function deleteFile() {
 
 // Global function
 window.showAISuggestionModal = showAISuggestionModal;
-
-// Debug: Catch any navigation events
-window.addEventListener('beforeunload', function(e) {
-    console.log('Page unloading - this might be causing the DELETE request');
-});
-
-// Override fetch to log all requests
-const originalFetch = window.fetch;
-window.fetch = function(...args) {
-    console.log('FETCH REQUEST:', args[0], args[1]?.method || 'GET');
-    return originalFetch.apply(this, arguments);
-};
 </script>
