@@ -476,10 +476,10 @@ class AIDocumentAnalyzer
         $prompt .= "10. NEVER suggest folders with wrong years - use document date year only\n\n";
         
         $prompt .= "EXAMPLE SCENARIOS:\n";
-        $prompt .= "- Invoice from Company A to Company B, user owns Company C → DELETE\n";
-        $prompt .= "- Invoice from User Company to Company X → INCOME folder\n";
-        $prompt .= "- Invoice from Company Y to User Company → EXPENSE folder\n";
-        $prompt .= "- Invoice between any non-user companies → DELETE\n\n";
+        $prompt .= "- Invoice between two companies neither in user list → DELETE\n";
+        $prompt .= "- Invoice from user company to other company → INCOME folder\n";
+        $prompt .= "- Invoice from other company to user company → EXPENSE folder\n";
+        $prompt .= "- Invoice where user company not involved → DELETE\n\n";
         
         $prompt .= "Return JSON with this exact format:\n";
         $prompt .= "{\n";
