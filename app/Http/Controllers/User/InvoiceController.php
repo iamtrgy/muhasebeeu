@@ -30,6 +30,10 @@ class InvoiceController extends Controller
         $user = auth()->user();
         $tab = $request->get('tab', 'income'); // Default to income tab
         
+        // Get year and month from request
+        $selectedYear = $request->get('year', now()->year);
+        $selectedMonth = $request->get('month', now()->month);
+        
         // Get user's active company
         $company = $user->activeCompany ?? $user->companies()->first();
         
@@ -41,11 +45,13 @@ class InvoiceController extends Controller
         // Get user's company IDs for system invoices
         $userCompanyIds = $user->companies->pluck('id');
         
-        // Get system-generated invoices (these are income invoices)
+        // Get system-generated invoices for the selected month/year
         $systemInvoices = Invoice::where(function($query) use ($userCompanyIds) {
                 $query->whereIn('company_id', $userCompanyIds)
                       ->orWhere('created_by', auth()->id());
             })
+            ->whereYear('invoice_date', $selectedYear)
+            ->whereMonth('invoice_date', $selectedMonth)
             ->with(['company', 'client'])
             ->latest()
             ->get();
@@ -67,6 +73,27 @@ class InvoiceController extends Controller
             'root_folder_exists' => $rootFolder ? true : false
         ]);
         
+        // Get years and months for navigation
+        $years = collect();
+        $months = collect();
+        $selectedMonthFolder = null;
+        $monthlySystemInvoiceCounts = [];
+        
+        // Calculate system invoice counts for each month of the selected year (only for income tab)
+        for ($m = 1; $m <= 12; $m++) {
+            $monthCount = 0;
+            if ($tab === 'income') {
+                $monthCount = Invoice::where(function($query) use ($userCompanyIds) {
+                        $query->whereIn('company_id', $userCompanyIds)
+                              ->orWhere('created_by', auth()->id());
+                    })
+                    ->whereYear('invoice_date', $selectedYear)
+                    ->whereMonth('invoice_date', $m)
+                    ->count();
+            }
+            $monthlySystemInvoiceCounts[$m] = $monthCount;
+        }
+        
         if ($rootFolder) {
             $invoicesFolder = \App\Models\Folder::where('name', 'Invoices')
                 ->where('parent_id', $rootFolder->id)
@@ -74,34 +101,49 @@ class InvoiceController extends Controller
                 ->first();
                 
             if ($invoicesFolder) {
-                // Get Income folder and files
-                $incomeFolder = \App\Models\Folder::where('name', 'Income')
+                // Get the Income or Expense folder based on tab
+                $tabFolder = \App\Models\Folder::where('name', ucfirst($tab))
                     ->where('parent_id', $invoicesFolder->id)
                     ->where('company_id', $company->id)
                     ->first();
                     
-                if ($incomeFolder) {
-                    $incomeFiles = \App\Models\File::whereHas('folder', function ($query) use ($incomeFolder) {
-                        $query->where('path', 'like', $incomeFolder->path . '%');
-                    })
-                    ->with(['folder', 'uploader'])
-                    ->latest()
-                    ->get();
-                }
-                
-                // Get Expense folder and files
-                $expenseFolder = \App\Models\Folder::where('name', 'Expense')
-                    ->where('parent_id', $invoicesFolder->id)
-                    ->where('company_id', $company->id)
-                    ->first();
-                    
-                if ($expenseFolder) {
-                    $expenseFiles = \App\Models\File::whereHas('folder', function ($query) use ($expenseFolder) {
-                        $query->where('path', 'like', $expenseFolder->path . '%');
-                    })
-                    ->with(['folder', 'uploader'])
-                    ->latest()
-                    ->get();
+                if ($tabFolder) {
+                    // Get available years (SQLite compatible)
+                    $years = \App\Models\Folder::where('parent_id', $tabFolder->id)
+                        ->where('company_id', $company->id)
+                        ->where('name', 'like', '2%') // Year folders start with 2 (2020, 2021, etc.)
+                        ->whereRaw('LENGTH(name) = 4') // Exactly 4 characters
+                        ->whereRaw('name + 0 = name') // Is numeric
+                        ->orderBy('name', 'desc')
+                        ->get();
+                        
+                    // Get current year folder
+                    $yearFolder = \App\Models\Folder::where('name', $selectedYear)
+                        ->where('parent_id', $tabFolder->id)
+                        ->where('company_id', $company->id)
+                        ->first();
+                        
+                    if ($yearFolder) {
+                        // Get available months for this year
+                        $months = \App\Models\Folder::where('parent_id', $yearFolder->id)
+                            ->where('company_id', $company->id)
+                            ->with('files')
+                            ->orderBy('name')
+                            ->get();
+                            
+                        // Get selected month folder
+                        $monthName = \Carbon\Carbon::createFromDate(null, (int) $selectedMonth, 1)->format('F');
+                        $selectedMonthFolder = $months->firstWhere('name', $monthName);
+                        
+                        // Get files from the selected month folder
+                        if ($selectedMonthFolder) {
+                            if ($tab === 'income') {
+                                $incomeFiles = $selectedMonthFolder->files()->with(['uploader'])->latest()->get();
+                            } else {
+                                $expenseFiles = $selectedMonthFolder->files()->with(['uploader'])->latest()->get();
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -125,15 +167,30 @@ class InvoiceController extends Controller
         
         // Add uploaded income files
         foreach ($incomeFiles as $file) {
+            $aiAnalysis = $file->ai_analysis ?? [];
+            
+            // Determine status based on AI analysis
+            $status = 'pending'; // Default status
+            if (!empty($aiAnalysis)) {
+                if (isset($aiAnalysis['confidence']) && $aiAnalysis['confidence'] >= 80) {
+                    $status = 'analyzed';
+                } elseif (isset($aiAnalysis['confidence']) && $aiAnalysis['confidence'] >= 50) {
+                    $status = 'partial';
+                } else {
+                    $status = 'review';
+                }
+            }
+            
             $incomeInvoices->push([
                 'type' => 'uploaded',
                 'data' => $file,
                 'date' => $file->created_at,
-                'amount' => null, // Could be extracted from AI analysis
-                'currency' => null,
-                'client' => $file->ai_analysis['company_name'] ?? 'Unknown',
-                'number' => $file->ai_analysis['invoice_number'] ?? $file->original_name,
-                'status' => 'uploaded'
+                'amount' => $aiAnalysis['amount'] ?? null,
+                'currency' => $aiAnalysis['currency'] ?? null,
+                'client' => $aiAnalysis['customer_name'] ?? ($aiAnalysis['company_name'] ?? 'Unknown'), // Customer is who received the invoice
+                'number' => $aiAnalysis['invoice_number'] ?? $file->original_name,
+                'status' => $status,
+                'confidence' => $aiAnalysis['confidence'] ?? 0
             ]);
         }
         
@@ -143,15 +200,30 @@ class InvoiceController extends Controller
         // Prepare expense invoices (only uploaded files)
         $expenseInvoices = collect();
         foreach ($expenseFiles as $file) {
+            $aiAnalysis = $file->ai_analysis ?? [];
+            
+            // Determine status based on AI analysis
+            $status = 'pending'; // Default status
+            if (!empty($aiAnalysis)) {
+                if (isset($aiAnalysis['confidence']) && $aiAnalysis['confidence'] >= 80) {
+                    $status = 'analyzed';
+                } elseif (isset($aiAnalysis['confidence']) && $aiAnalysis['confidence'] >= 50) {
+                    $status = 'partial';
+                } else {
+                    $status = 'review';
+                }
+            }
+            
             $expenseInvoices->push([
                 'type' => 'uploaded',
                 'data' => $file,
                 'date' => $file->created_at,
-                'amount' => null, // Could be extracted from AI analysis
-                'currency' => null,
-                'vendor' => $file->ai_analysis['company_name'] ?? 'Unknown',
-                'number' => $file->ai_analysis['invoice_number'] ?? $file->original_name,
-                'status' => 'uploaded'
+                'amount' => $aiAnalysis['amount'] ?? null,
+                'currency' => $aiAnalysis['currency'] ?? null,
+                'vendor' => $aiAnalysis['vendor_name'] ?? ($aiAnalysis['company_name'] ?? 'Unknown'), // Vendor is who sent the invoice
+                'number' => $aiAnalysis['invoice_number'] ?? $file->original_name,
+                'status' => $status,
+                'confidence' => $aiAnalysis['confidence'] ?? 0
             ]);
         }
         
@@ -185,6 +257,12 @@ class InvoiceController extends Controller
             'systemInvoicesCount' => $systemInvoices->count(),
             'uploadedIncomeCount' => $incomeFiles->count(),
             'uploadedExpenseCount' => $expenseFiles->count(),
+            'years' => $years,
+            'months' => $months,
+            'monthlySystemInvoiceCounts' => $monthlySystemInvoiceCounts,
+            'selectedYear' => $selectedYear,
+            'selectedMonth' => $selectedMonth,
+            'selectedMonthFolder' => $selectedMonthFolder,
         ]);
     }
     

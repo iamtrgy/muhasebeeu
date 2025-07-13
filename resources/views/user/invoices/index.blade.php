@@ -1,5 +1,5 @@
 <x-user.layout 
-    title="{{ __('Invoices') }}" 
+    title="" 
     :breadcrumbs="[
         ['title' => __('Home'), 'href' => route('user.dashboard')],
         ['title' => __('Invoices'), 'active' => true]
@@ -26,12 +26,25 @@
                             {{ __('Manage all invoices for') }} {{ $company->name }}
                         </p>
                     </div>
-                    <x-ui.button.primary href="{{ route('user.invoices.create') }}">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        {{ __('Create Invoice') }}
-                    </x-ui.button.primary>
+                    <div class="flex items-center space-x-3">
+                        @if($selectedMonthFolder)
+                            <x-ui.button.secondary 
+                                href="{{ route('user.folders.show', $selectedMonthFolder) }}"
+                                target="_blank"
+                            >
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                {{ __('Upload') }}
+                            </x-ui.button.secondary>
+                        @endif
+                        <x-ui.button.primary href="{{ route('user.invoices.create') }}">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            {{ __('Create Invoice') }}
+                        </x-ui.button.primary>
+                    </div>
                 </div>
             </div>
             
@@ -59,6 +72,66 @@
                         </span>
                     </a>
                 </nav>
+            </div>
+        </div>
+
+        <!-- Year/Month Selector -->
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center space-x-4">
+                    <!-- Year Selector -->
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">{{ __('Year:') }}</label>
+                        <select 
+                            onchange="window.location.href='{{ route('user.invoices.index') }}?tab={{ $tab }}&year=' + this.value + '&month={{ $selectedMonth }}'"
+                            class="px-3 py-1 pr-8 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white appearance-none bg-white dark:bg-gray-700 bg-no-repeat bg-right bg-[length:16px_16px] bg-[position:right_8px_center]"
+                            style="background-image: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e');"
+                        >
+                            @foreach($years as $year)
+                                <option value="{{ $year->name }}" {{ $year->name == $selectedYear ? 'selected' : '' }}>
+                                    {{ $year->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Month Tabs -->
+                    <div class="flex-1 flex space-x-1 overflow-x-auto">
+                        @php
+                            $monthNames = [
+                                1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+                                5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug',
+                                9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec'
+                            ];
+                        @endphp
+                        @for($m = 1; $m <= 12; $m++)
+                            @php
+                                $monthFolder = $months->firstWhere('name', Carbon\Carbon::createFromDate(null, $m, 1)->format('F'));
+                                $uploadedFilesCount = $monthFolder ? $monthFolder->files()->count() : 0;
+                                $systemInvoicesCount = $monthlySystemInvoiceCounts[$m] ?? 0;
+                                $totalCount = $uploadedFilesCount + $systemInvoicesCount;
+                                $hasItems = $totalCount > 0;
+                            @endphp
+                            <a 
+                                href="{{ route('user.invoices.index', ['tab' => $tab, 'year' => $selectedYear, 'month' => $m]) }}"
+                                class="px-3 py-2 text-sm font-medium rounded-md transition-colors
+                                    {{ $m == $selectedMonth 
+                                        ? 'bg-indigo-600 text-white' 
+                                        : ($hasItems 
+                                            ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' 
+                                            : 'text-gray-400 dark:text-gray-500') 
+                                    }}"
+                            >
+                                {{ $monthNames[$m] }}
+                                @if($hasItems)
+                                    <span class="ml-1 inline-flex items-center justify-center w-4 h-4 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full">
+                                        {{ $totalCount }}
+                                    </span>
+                                @endif
+                            </a>
+                        @endfor
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -148,7 +221,27 @@
                                                 <x-ui.badge variant="danger">{{ __('Cancelled') }}</x-ui.badge>
                                             @endif
                                         @else
-                                            <x-ui.badge variant="secondary">{{ __('Uploaded') }}</x-ui.badge>
+                                            @if($invoice['status'] == 'analyzed')
+                                                <x-ui.badge variant="success" 
+                                                    title="{{ __('AI analyzed with') }} {{ $invoice['confidence'] }}% {{ __('confidence') }}">
+                                                    {{ __('Analyzed') }}
+                                                </x-ui.badge>
+                                            @elseif($invoice['status'] == 'partial')
+                                                <x-ui.badge variant="warning" 
+                                                    title="{{ __('AI analyzed with') }} {{ $invoice['confidence'] }}% {{ __('confidence - may need review') }}">
+                                                    {{ __('Partial') }}
+                                                </x-ui.badge>
+                                            @elseif($invoice['status'] == 'review')
+                                                <x-ui.badge variant="danger" 
+                                                    title="{{ __('AI analysis confidence:') }} {{ $invoice['confidence'] }}% {{ __('- needs manual review') }}">
+                                                    {{ __('Review') }}
+                                                </x-ui.badge>
+                                            @else
+                                                <x-ui.badge variant="secondary" 
+                                                    title="{{ __('Document uploaded but not yet analyzed by AI') }}">
+                                                    {{ __('Pending') }}
+                                                </x-ui.badge>
+                                            @endif
                                         @endif
                                     </x-ui.table.cell>
                                     <x-ui.table.cell align="right">
@@ -198,15 +291,8 @@
                     {{ $invoices->links() }}
                 @else
                     <x-ui.table.empty-state>
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                            @if($tab === 'income')
-                                {{ __('No income invoices found.') }}
-                            @else
-                                {{ __('No expense invoices found.') }}
-                            @endif
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ $tab === 'income' ? __('No income invoices found.') : __('No expense invoices found.') }}
                         </p>
                         @if($tab === 'income')
                             <x-ui.button.primary 

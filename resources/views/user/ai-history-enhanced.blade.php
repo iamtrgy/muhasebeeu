@@ -157,9 +157,18 @@
                                                     </span>
                                                 @elseif(isset($file->ai_analysis['folder_name']))
                                                     @php
-                                                        $suggestedPath = $file->ai_analysis['folder_path'] ?? $file->ai_analysis['folder_name'];
-                                                        $suggestedName = $file->ai_analysis['folder_name'];
-                                                        if ($suggestedPath && str_contains($suggestedPath, '/')) {
+                                                        // Get the actual suggested folder from database to ensure correct path
+                                                        $suggestedFolderId = $file->ai_analysis['suggested_folder_id'] ?? null;
+                                                        $actualFolder = null;
+                                                        if ($suggestedFolderId) {
+                                                            $actualFolder = auth()->user()->folders()->find($suggestedFolderId);
+                                                        }
+                                                        
+                                                        // Use actual database path if available, otherwise fallback to stored analysis
+                                                        $suggestedPath = $actualFolder ? $actualFolder->full_path : ($file->ai_analysis['folder_path'] ?? $file->ai_analysis['folder_name']);
+                                                        $suggestedName = $actualFolder ? $actualFolder->name : $file->ai_analysis['folder_name'];
+                                                        
+                                                        if (!$actualFolder && $suggestedPath && str_contains($suggestedPath, '/')) {
                                                             $suggestedName = last(explode('/', $suggestedPath));
                                                         }
                                                     @endphp

@@ -77,7 +77,7 @@ class BankController extends Controller
                 ->get();
                 
             // Find selected month folder
-            $monthName = Carbon::create()->month($selectedMonth)->format('F');
+            $monthName = Carbon::createFromDate(null, (int) $selectedMonth, 1)->format('F');
             $selectedMonthFolder = $months->firstWhere('name', $monthName);
             
             if ($selectedMonthFolder) {
@@ -102,6 +102,18 @@ class BankController extends Controller
             ->limit(10)
             ->get();
         
+        // Debug logging for bank statements
+        \Log::info('Banks page debug', [
+            'selected_year' => $selectedYear,
+            'selected_month' => $selectedMonth,
+            'month_name' => $monthName ?? 'not_set',
+            'year_folder_exists' => $yearFolder ? true : false,
+            'selected_month_folder_exists' => $selectedMonthFolder ? true : false,
+            'selected_month_folder_path' => $selectedMonthFolder ? $selectedMonthFolder->full_path : 'null',
+            'files_count' => $files->count(),
+            'files_in_folder' => $files->pluck('original_name')->toArray()
+        ]);
+
         return view('user.banks.index', [
             'company' => $company,
             'banksFolder' => $banksFolder,

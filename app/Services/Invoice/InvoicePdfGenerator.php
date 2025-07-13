@@ -423,6 +423,7 @@ class InvoicePdfGenerator
     
     /**
      * Fatura için klasör bulur veya oluşturur
+     * New folder structure: Company/Invoices/Income/[Year]/[Month]
      */
     protected function getOrCreateFolder(Invoice $invoice): Folder
     {
@@ -435,16 +436,43 @@ class InvoicePdfGenerator
         $monthNumber = $invoiceDate->format('m');
         $monthName = $invoiceDate->format('F'); // Full month name like "April"
         
-        // Find the year folder
+        // Find the company root folder
+        $companyRootFolder = Folder::where('company_id', $company->id)
+            ->whereNull('parent_id')
+            ->first();
+            
+        if (!$companyRootFolder) {
+            throw new \Exception("Company root folder not found for company {$company->name}");
+        }
+        
+        // Find the Invoices folder
+        $invoicesFolder = Folder::where('company_id', $company->id)
+            ->where('name', 'Invoices')
+            ->where('parent_id', $companyRootFolder->id)
+            ->first();
+            
+        if (!$invoicesFolder) {
+            throw new \Exception("Invoices folder not found for company {$company->name}. Please run the folder migration command.");
+        }
+        
+        // Find the Income folder (under Invoices)
+        $incomeFolder = Folder::where('company_id', $company->id)
+            ->where('name', 'Income')
+            ->where('parent_id', $invoicesFolder->id)
+            ->first();
+            
+        if (!$incomeFolder) {
+            throw new \Exception("Income folder not found under Invoices for company {$company->name}. Please run the folder migration command.");
+        }
+        
+        // Find the year folder (under Income)
         $yearFolder = Folder::where('company_id', $company->id)
             ->where('name', $year)
-            ->whereHas('parent', function($query) {
-                $query->whereNull('parent_id');
-            })
+            ->where('parent_id', $incomeFolder->id)
             ->first();
             
         if (!$yearFolder) {
-            throw new \Exception("Year folder {$year} not found for company {$company->name}");
+            throw new \Exception("Year folder {$year} not found under Invoices/Income for company {$company->name}. Please run the folder migration command.");
         }
         
         // Find the month folder - try both formats: just month name or "mm - Month"
@@ -457,22 +485,9 @@ class InvoicePdfGenerator
             ->first();
             
         if (!$monthFolder) {
-            throw new \Exception("Month folder {$monthName} not found in year {$year} for company {$company->name}");
+            throw new \Exception("Month folder {$monthName} not found in year {$year} under Invoices/Income for company {$company->name}. Please run the folder migration command.");
         }
         
-        // Find the Income folder
-        $incomeFolder = Folder::where('company_id', $company->id)
-            ->where(function($query) {
-                $query->where('name', 'Income')
-                      ->orWhere('name', 'income');
-            })
-            ->where('parent_id', $monthFolder->id)
-            ->first();
-            
-        if (!$incomeFolder) {
-            throw new \Exception("Income folder not found in {$monthName} {$year} for company {$company->name}. Please make sure the folder structure is properly set up with an Income folder in each month.");
-        }
-        
-        return $incomeFolder;
+        return $monthFolder;
     }
 } 

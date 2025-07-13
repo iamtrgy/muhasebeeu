@@ -48,7 +48,7 @@
                             <option value="">{{ __('All Months') }}</option>
                             @foreach(range(1, 12) as $month)
                                 <option value="{{ $month }}">
-                                    {{ \Carbon\Carbon::create()->month($month)->format('F') }}
+                                    {{ \Carbon\Carbon::createFromDate(null, $month, 1)->format('F') }}
                                 </option>
                             @endforeach
                         </x-ui.form.select>

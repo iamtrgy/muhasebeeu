@@ -1,5 +1,5 @@
 <x-user.layout 
-    title="{{ __('Banks') }}" 
+    title="" 
     :breadcrumbs="[
         ['title' => __('Home'), 'href' => route('user.dashboard')],
         ['title' => __('Banks'), 'active' => true]
@@ -42,7 +42,8 @@
                         <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">{{ __('Year:') }}</label>
                         <select 
                             onchange="window.location.href='{{ route('user.banks.index') }}?year=' + this.value + '&month={{ $selectedMonth }}'"
-                            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                            class="px-3 py-1 pr-8 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white appearance-none bg-white dark:bg-gray-700 bg-no-repeat bg-right bg-[length:16px_16px] bg-[position:right_8px_center]"
+                            style="background-image: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e');"
                         >
                             @foreach($years as $year)
                                 <option value="{{ $year->name }}" {{ $year->name == $selectedYear ? 'selected' : '' }}>
@@ -63,7 +64,7 @@
                         @endphp
                         @for($m = 1; $m <= 12; $m++)
                             @php
-                                $monthFolder = $months->firstWhere('name', Carbon\Carbon::create()->month($m)->format('F'));
+                                $monthFolder = $months->firstWhere('name', Carbon\Carbon::createFromDate(null, $m, 1)->format('F'));
                                 $hasFiles = $monthFolder && $monthFolder->files()->count() > 0;
                             @endphp
                             <a 
@@ -93,7 +94,7 @@
                 <x-ui.card.base>
                     <x-ui.card.header>
                         <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-                            {{ Carbon\Carbon::create()->month($selectedMonth)->format('F') }} {{ $selectedYear }} {{ __('Statements') }}
+                            {{ __('Statements') }}
                         </h3>
                     </x-ui.card.header>
                     <x-ui.card.body>

@@ -1,5 +1,5 @@
 <x-user.layout 
-    title="{{ __('Documents') }}" 
+    title="" 
     :breadcrumbs="[
         ['title' => __('Home'), 'href' => route('user.dashboard')],
         ['title' => __('Documents'), 'active' => true]

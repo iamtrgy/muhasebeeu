@@ -111,7 +111,8 @@ class Invoice extends Model
 
     /**
      * Fatura tarihine göre klasör yolu oluşturur
-     * Örn: invoices/2023/04
+     * New structure: Company/Invoices/Income/YYYY/Month
+     * Örn: Oggree OÜ/Invoices/Income/2023/April
      */
     public function getInvoiceFolderPathAttribute(): string
     {
@@ -119,6 +120,10 @@ class Invoice extends Model
             ? $this->invoice_date 
             : Carbon::parse($this->invoice_date);
             
-        return 'invoices/' . $date->format('Y/m');
+        $companyName = $this->company->name ?? 'Company';
+        $year = $date->format('Y');
+        $monthName = $date->format('F'); // Full month name like "April"
+            
+        return $companyName . '/Invoices/Income/' . $year . '/' . $monthName;
     }
 }

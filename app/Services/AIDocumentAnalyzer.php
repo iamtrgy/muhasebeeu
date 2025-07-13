@@ -39,7 +39,14 @@ class AIDocumentAnalyzer
             $fileContent = $this->prepareFileForAnalysis($filePath);
             Log::info('File prepared for analysis', ['type' => $fileContent['type']]);
             
-            // Get user's available folders
+            // Get user's available folders - DEBUG: Log all folders first
+            $allFolders = $user->folders()->with('parent.parent.parent')->get();
+            Log::info('DEBUG: All user folders before filtering', [
+                'count' => $allFolders->count(),
+                'all_paths' => $allFolders->pluck('full_path', 'id')->toArray()
+            ]);
+            
+            // TEMPORARY: Use all folders to debug, then fix filtering
             $folders = $user->folders()
                 ->with('parent.parent.parent') // Load parent relationships for path
                 ->orderBy('name')
@@ -369,6 +376,58 @@ class AIDocumentAnalyzer
             // If not suggesting deletion, we need valid folder info
             Log::error('AI response has null folder info without deletion suggestion', ['parsed' => $parsed]);
             throw new Exception('AI response missing folder information');
+        } else {
+            // CRITICAL: Find the correct folder ID that matches AI's suggested path
+            $originalAiPath = $parsed['folder_path'];
+            
+            // First, try to find folder by the AI's suggested path
+            $correctFolder = $folders->firstWhere('path', $originalAiPath);
+            
+            if ($correctFolder) {
+                // Found exact match for AI's path, use it
+                $parsed['suggested_folder_id'] = $correctFolder['id'];
+                $parsed['folder_path'] = $correctFolder['path'];
+                $parsed['folder_name'] = $correctFolder['name'];
+                
+                Log::info('Found exact folder match for AI path', [
+                    'ai_path' => $originalAiPath,
+                    'matched_folder_id' => $correctFolder['id'],
+                    'matched_path' => $correctFolder['path']
+                ]);
+            } else {
+                // Fallback: check if AI's suggested ID exists
+                $suggestedFolder = $folders->firstWhere('id', $parsed['suggested_folder_id']);
+                if ($suggestedFolder) {
+                    $databasePath = $suggestedFolder['path'];
+                    
+                    // Keep the more complete path
+                    if (substr_count($databasePath, '/') > substr_count($originalAiPath, '/')) {
+                        // Database path is deeper, use it
+                        $parsed['folder_path'] = $databasePath;
+                        $parsed['folder_name'] = $suggestedFolder['name'];
+                        
+                        Log::info('Used database path (more complete)', [
+                            'ai_path' => $originalAiPath,
+                            'database_path' => $databasePath,
+                            'folder_id' => $parsed['suggested_folder_id']
+                        ]);
+                    } else {
+                        // AI path is deeper but folder doesn't exist
+                        Log::warning('AI suggested non-existent complete path', [
+                            'ai_path' => $originalAiPath,
+                            'database_path' => $databasePath,
+                            'folder_id' => $parsed['suggested_folder_id']
+                        ]);
+                    }
+                } else {
+                    Log::error('AI suggested non-existent folder', [
+                        'suggested_folder_id' => $parsed['suggested_folder_id'],
+                        'ai_path' => $originalAiPath,
+                        'available_folders' => $folders->pluck('id')->toArray()
+                    ]);
+                    throw new Exception('AI suggested a folder that does not exist');
+                }
+            }
         }
         
         // Handle zero or very low confidence cases
@@ -455,7 +514,7 @@ class AIDocumentAnalyzer
             $prompt .= "\n1. IRRELEVANT BUSINESS DOCUMENTS:\n";
             $prompt .= "- Invoice/receipt where NEITHER sender NOR receiver is in user company list\n";
             $prompt .= "- Documents between two third-party companies (even if they exist in system)\n";
-            $prompt .= "- Example: Invoice from CompanyX to CompanyY, neither are user companies = DELETE\n";
+            $prompt .= "- Example: Invoice from ThirdPartyA to ThirdPartyB, neither are user companies = DELETE\n";
             
             $prompt .= "\n2. PERSONAL/NON-BUSINESS DOCUMENTS:\n";
             $prompt .= "- Personal receipts (restaurants, hotels, flights, entertainment)\n";
@@ -482,23 +541,38 @@ class AIDocumentAnalyzer
             
             $prompt .= "SUGGEST FOLDER based on document type and NEW FOLDER STRUCTURE:\n\n";
             
+            // Define first user company for consistent examples
+            $firstUserCompany = !empty($userCompanies) ? $userCompanies[0] : '[USER_COMPANY]';
+            
             $prompt .= "FOR BANK STATEMENTS:\n";
-            $prompt .= "- If bank statement belongs to user company account → Banks/[YEAR]/[MONTH] folder\n";
+            $prompt .= "- If bank statement belongs to user company account → [COMPANY_NAME]/Banks/[YEAR]/[MONTH] folder\n";
             $prompt .= "- Look for account holder name matching user companies\n";
             $prompt .= "- Bank statements show account activity, not individual transactions\n";
-            $prompt .= "- Extract the statement month and year from the document\n\n";
+            $prompt .= "- Extract the statement month and year from the document\n";
+            $prompt .= "- Example path: {$firstUserCompany}/Banks/2025/July\n\n";
             
             $prompt .= "FOR INVOICES/RECEIPTS:\n";
-            $prompt .= "- SENDER company is in user company list OR RECEIVER company is in user company list\n";
             $prompt .= "- EXACTLY ONE of the parties (sender/receiver) must be a user company\n";
-            $prompt .= "- Transaction type: User company SENT = Invoices/Income/[YEAR]/[MONTH], User company RECEIVED = Invoices/Expense/[YEAR]/[MONTH]\n";
+            $prompt .= "- CRITICAL INCOME vs EXPENSE LOGIC:\n";
+            $prompt .= "  * If user company is the SENDER/SELLER (issuer) → [COMPANY_NAME]/Invoices/Income/[YEAR]/[MONTH]\n";
+            $prompt .= "  * If user company is the RECEIVER/BUYER (who pays) → [COMPANY_NAME]/Invoices/Expense/[YEAR]/[MONTH]\n";
+            
+            // Use actual user company names in examples instead of hardcoded ones
+            if (!empty($userCompanies)) {
+                $prompt .= "- EXAMPLE: Invoice from ThirdPartyCompany to {$firstUserCompany} (user company) = EXPENSE for user → {$firstUserCompany}/Invoices/Expense/[YEAR]/[MONTH]\n";
+                $prompt .= "- EXAMPLE: Invoice from {$firstUserCompany} (user company) to ClientX = INCOME for user → {$firstUserCompany}/Invoices/Income/[YEAR]/[MONTH]\n";
+            } else {
+                $prompt .= "- EXAMPLE: Invoice from ThirdPartyCompany to [USER_COMPANY] = EXPENSE for user → [USER_COMPANY]/Invoices/Expense/[YEAR]/[MONTH]\n";
+                $prompt .= "- EXAMPLE: Invoice from [USER_COMPANY] to ClientX = INCOME for user → [USER_COMPANY]/Invoices/Income/[YEAR]/[MONTH]\n";
+            }
             $prompt .= "- Use INVOICE DATE (not folder year) for date-based folder selection\n\n";
             
             $prompt .= "FOR OTHER BUSINESS DOCUMENTS (Contracts, Legal, Tax documents):\n";
-            $prompt .= "- If document belongs to user company → Documents/[CATEGORY] folder\n";
+            $prompt .= "- If document belongs to user company → [COMPANY_NAME]/Documents/[CATEGORY] folder\n";
             $prompt .= "- Categories: Contracts, Tax Documents, Legal, Other\n";
             $prompt .= "- Examples: contracts, agreements, tax forms, certificates related to user company\n";
-            $prompt .= "- Must be business-related to user company\n\n";
+            $prompt .= "- Must be business-related to user company\n";
+            $prompt .= "- Example path: {$firstUserCompany}/Documents/Contracts\n\n";
             
         }
         
@@ -513,28 +587,32 @@ class AIDocumentAnalyzer
         $prompt .= "3. Identify RECEIVER company (who received/should pay)\n";
         $prompt .= "4. Read the document date and extract the ACTUAL year AND month\n";
         $prompt .= "5. CRITICAL CHECK: What type of document is this?\n";
-        $prompt .= "6. If BANK STATEMENT → Check if account holder is user company → Banks/[YEAR]/[MONTH] folder\n";
+        $prompt .= "6. If BANK STATEMENT → Check if account holder is user company → [COMPANY]/Banks/[YEAR]/[MONTH] folder\n";
         $prompt .= "7. If INVOICE/RECEIPT → Check sender/receiver involvement:\n";
         $prompt .= "   - BOTH sender and receiver NOT in user list → DELETE\n";
-        $prompt .= "   - User company SENT invoice → Invoices/Income/[YEAR]/[MONTH] folder\n";
-        $prompt .= "   - User company RECEIVED invoice → Invoices/Expense/[YEAR]/[MONTH] folder\n";
+        $prompt .= "   - User company is SENDER (issuer/seller) → [COMPANY]/Invoices/Income/[YEAR]/[MONTH] folder\n";
+        $prompt .= "   - User company is RECEIVER (buyer/who pays) → [COMPANY]/Invoices/Expense/[YEAR]/[MONTH] folder\n";
         $prompt .= "8. If OTHER BUSINESS DOCUMENT → Check if belongs to user company:\n";
-        $prompt .= "   - Contract → Documents/Contracts folder\n";
-        $prompt .= "   - Tax document → Documents/Tax Documents folder\n";
-        $prompt .= "   - Legal document → Documents/Legal folder\n";
-        $prompt .= "   - Other business document → Documents/Other folder\n";
+        $prompt .= "   - Contract → [COMPANY]/Documents/Contracts folder\n";
+        $prompt .= "   - Tax document → [COMPANY]/Documents/Tax Documents folder\n";
+        $prompt .= "   - Legal document → [COMPANY]/Documents/Legal folder\n";
+        $prompt .= "   - Other business document → [COMPANY]/Documents/Other folder\n";
         $prompt .= "   - Not related to user company → DELETE\n";
         $prompt .= "9. NEVER suggest folders for companies not in the user list\n";
         $prompt .= "10. NEVER suggest folders with wrong years/months - use document date only\n\n";
         
         $prompt .= "EXAMPLE SCENARIOS:\n";
         $prompt .= "- Invoice between two companies neither in user list → DELETE\n";
-        $prompt .= "- Invoice from user company to other company → Invoices/Income/[YEAR]/[MONTH] folder\n";
-        $prompt .= "- Invoice from other company to user company → Invoices/Expense/[YEAR]/[MONTH] folder\n";
-        $prompt .= "- Bank statement for user company account → Banks/[YEAR]/[MONTH] folder\n";
-        $prompt .= "- Contract signed by user company → Documents/Contracts folder\n";
+        
+        // Use the already defined $firstUserCompany variable for examples
+        $prompt .= "- Invoice FROM {$firstUserCompany} TO ClientX (user selling) → {$firstUserCompany}/Invoices/Income/[YEAR]/[MONTH]\n";
+        $prompt .= "- Invoice FROM ThirdPartyCompany TO {$firstUserCompany} (user buying) → {$firstUserCompany}/Invoices/Expense/[YEAR]/[MONTH]\n";
+        $prompt .= "- Bank statement for {$firstUserCompany} account → {$firstUserCompany}/Banks/[YEAR]/[MONTH] folder\n";
+        $prompt .= "- Contract signed by {$firstUserCompany} → {$firstUserCompany}/Documents/Contracts folder\n";
+        
         $prompt .= "- Bank statement of unknown company → DELETE\n";
-        $prompt .= "- Invoice where user company not involved → DELETE\n\n";
+        $prompt .= "- Invoice where user company not involved → DELETE\n";
+        $prompt .= "- Receipt from restaurant (personal) → DELETE\n\n";
         
         $prompt .= "Return JSON with this exact format:\n";
         $prompt .= "{\n";
@@ -547,7 +625,11 @@ class AIDocumentAnalyzer
         $prompt .= '  "document_type": "<' . $documentTypesText . '>",';
         $prompt .= '  "transaction_type": "<' . $transactionTypesText . '>",';
         $prompt .= '  "company_name": "<sender or most relevant company>",';
+        $prompt .= '  "vendor_name": "<FROM company - who sent/issued the document>",';
+        $prompt .= '  "customer_name": "<TO company - who received/should pay the document>",';
         $prompt .= '  "invoice_number": "<invoice/doc number if found>",';
+        $prompt .= '  "amount": "<total amount as number or null>",';
+        $prompt .= '  "currency": "<currency code like EUR, USD, etc or null>",';
         $prompt .= '  "suggest_deletion": <true or false>,';
         $prompt .= '  "deletion_reason": "<specific reason if suggesting deletion>",';
         $prompt .= '  "deletion_category": "<if deletion: personal|third_party|unreadable|duplicate|test|other>"';
@@ -656,7 +738,7 @@ class AIDocumentAnalyzer
             // Prepare file for analysis
             $fileContent = $this->prepareFileFromTempPath($tempPath, $file->original_name);
             
-            // Get user's available folders
+            // TEMPORARY: Use all folders to debug, then fix filtering
             $folders = $user->folders()
                 ->with('parent.parent.parent') // Load parent relationships for path
                 ->orderBy('name')
@@ -861,10 +943,35 @@ class AIDocumentAnalyzer
         try {
             $alternatives = [];
             
-            // Get all user folders
+            // Get only NEW structure folders (exclude old structure)
+            // Only get LEAF folders (year/month folders that can hold files)
             $folders = $user->folders()
                 ->with('parent.parent.parent')
-                ->where('folders.id', '!=', $file->folder_id) // Exclude current folder - specify table name
+                ->where('folders.id', '!=', $file->folder_id) // Exclude current folder
+                ->where(function($query) {
+                    // Only include COMPLETE paths from the new structure (leaf folders)
+                    // Pattern: [COMPANY]/Banks/[YEAR]/[MONTH]
+                    // Pattern: [COMPANY]/Invoices/Income|Expense/[YEAR]/[MONTH]  
+                    // Pattern: [COMPANY]/Documents/[CATEGORY]
+                    $query->where(function($subquery) {
+                        // Banks: must be year/month folders (4-level deep from company root)
+                        $subquery->where('path', 'like', '%/Banks/%')
+                                 ->whereRaw('(LENGTH(path) - LENGTH(REPLACE(path, "/", ""))) >= 3'); // At least 3 slashes (company/Banks/year/month)
+                    })
+                    ->orWhere(function($subquery) {
+                        // Invoices: must be year/month folders (5-level deep from company root)  
+                        $subquery->where('path', 'like', '%/Invoices/Income/%')
+                                 ->orWhere('path', 'like', '%/Invoices/Expense/%')
+                                 ->whereRaw('(LENGTH(path) - LENGTH(REPLACE(path, "/", ""))) >= 4'); // At least 4 slashes (company/Invoices/Income/year/month)
+                    })
+                    ->orWhere(function($subquery) {
+                        // Documents: category folders (3-level deep from company root)
+                        $subquery->where('path', 'like', '%/Documents/%')
+                                 ->whereRaw('(LENGTH(path) - LENGTH(REPLACE(path, "/", ""))) >= 2'); // At least 2 slashes (company/Documents/category)
+                    });
+                })
+                // Additional filter: only folders that don't have children (leaf folders)
+                ->whereDoesntHave('children')
                 ->orderBy('name')
                 ->get();
         
