@@ -142,7 +142,7 @@ class FileController extends Controller
         }
     }
 
-    public function destroy(Folder $folder, File $file)
+    public function destroy(File $file)
     {
         try {
             $this->authorize('delete', $file);
