@@ -1851,8 +1851,9 @@
             const needsMove = currentFolderId != suggestedFolderId;
             
             if (needsMove && suggestedFolderId && !fileData.ai_suggestion_accepted) {
+                const escapedFileName = (fileData.original_name || fileData.name).replace(/'/g, "\\'").replace(/"/g, '\\"');
                 actions.innerHTML = `
-                    <button onclick="acceptSuggestionFromModalTable(${fileData.id}, ${suggestedFolderId}, '${(fileData.original_name || fileData.name).replace(/'/g, "\\'")}'); closeAnalysisDetails();" 
+                    <button onclick="acceptSuggestionFromModalTable(${fileData.id}, ${suggestedFolderId}, '${escapedFileName}'); closeAnalysisDetails();" 
                             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded">
                         Accept & Move
                     </button>
