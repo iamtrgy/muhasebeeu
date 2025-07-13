@@ -333,9 +333,10 @@ function deleteFile() {
         return;
     }
     
-    const deleteUrl = `/user/files/${fileId}`;
+    // Construct the correct URL for file deletion
+    const deleteUrl = `{{ url('/user/files') }}/${fileId}`;
     console.log('DELETE URL:', deleteUrl);
-    console.log('Full URL that will be used:', new URL(deleteUrl, window.location.href).href);
+    console.log('Full URL that will be used:', deleteUrl);
     
     fetch(deleteUrl, {
         method: 'DELETE',
