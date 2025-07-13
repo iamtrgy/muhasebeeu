@@ -280,8 +280,9 @@ function acceptSuggestion(folderId = null) {
 function deleteFile() {
     console.log('deleteFile called, currentFileId:', currentFileId);
     
-    if (!currentFileId) {
-        alert('No file selected for deletion');
+    if (!currentFileId || currentFileId === 'null' || currentFileId === 'undefined') {
+        console.error('ERROR: currentFileId is invalid:', currentFileId);
+        alert('No file selected for deletion. Please try opening the modal again.');
         return;
     }
     
@@ -289,8 +290,17 @@ function deleteFile() {
         return;
     }
     
-    const deleteUrl = `/user/files/${currentFileId}`;
+    // Validate fileId is a positive number
+    const fileId = parseInt(currentFileId);
+    if (!fileId || fileId <= 0) {
+        console.error('ERROR: Invalid file ID for deletion:', currentFileId);
+        alert('Invalid file ID. Cannot delete file.');
+        return;
+    }
+    
+    const deleteUrl = `/user/files/${fileId}`;
     console.log('DELETE URL:', deleteUrl);
+    console.log('Full URL that will be used:', new URL(deleteUrl, window.location.href).href);
     
     fetch(deleteUrl, {
         method: 'DELETE',
