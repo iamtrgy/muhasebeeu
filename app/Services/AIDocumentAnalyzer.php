@@ -397,10 +397,8 @@ class AIDocumentAnalyzer
         // Define document types and transaction types as variables
         $documentTypes = ['invoice', 'bank_statement', 'contract', 'other', 'unknown'];
         $transactionTypes = ['income', 'expense', 'bank', 'other', 'not_related'];
-        $folderCategories = ['Income', 'Expense', 'Banks', 'Other'];
         $documentTypesText = implode('|', $documentTypes);
         $transactionTypesText = implode('|', $transactionTypes);
-        $folderCategoriesText = implode(', ', $folderCategories);
         
         $prompt = "File: {$fileName}\n";
         
@@ -461,24 +459,25 @@ class AIDocumentAnalyzer
             $prompt .= "- Document is personal/individual transaction (not business related)\n";
             $prompt .= "- Entertainment, travel, personal expense receipts\n\n";
             
-            $prompt .= "SUGGEST FOLDER based on document type:\n\n";
+            $prompt .= "SUGGEST FOLDER based on document type and NEW FOLDER STRUCTURE:\n\n";
             
             $prompt .= "FOR BANK STATEMENTS:\n";
-            $prompt .= "- If bank statement belongs to user company account → {$folderCategories[2]} folder\n";
+            $prompt .= "- If bank statement belongs to user company account → Banks/[YEAR]/[MONTH] folder\n";
             $prompt .= "- Look for account holder name matching user companies\n";
-            $prompt .= "- Bank statements show account activity, not individual transactions\n\n";
+            $prompt .= "- Bank statements show account activity, not individual transactions\n";
+            $prompt .= "- Extract the statement month and year from the document\n\n";
             
             $prompt .= "FOR INVOICES/RECEIPTS:\n";
             $prompt .= "- SENDER company is in user company list OR RECEIVER company is in user company list\n";
             $prompt .= "- EXACTLY ONE of the parties (sender/receiver) must be a user company\n";
-            $prompt .= "- Transaction type: User company SENT = {$folderCategories[0]}, User company RECEIVED = {$folderCategories[1]}\n";
-            $prompt .= "- Use DOCUMENT YEAR (not folder year) for date-based folder selection\n\n";
+            $prompt .= "- Transaction type: User company SENT = Invoices/Income/[YEAR]/[MONTH], User company RECEIVED = Invoices/Expense/[YEAR]/[MONTH]\n";
+            $prompt .= "- Use INVOICE DATE (not folder year) for date-based folder selection\n\n";
             
-            $prompt .= "FOR OTHER BUSINESS DOCUMENTS:\n";
-            $prompt .= "- If document belongs to user company AND has a date → {$folderCategories[3]} folder\n";
-            $prompt .= "- Examples: contracts, agreements, reports, certificates related to user company\n";
-            $prompt .= "- Must be business-related to user company\n";
-            $prompt .= "- Use DOCUMENT YEAR for folder selection\n\n";
+            $prompt .= "FOR OTHER BUSINESS DOCUMENTS (Contracts, Legal, Tax documents):\n";
+            $prompt .= "- If document belongs to user company → Documents/[CATEGORY] folder\n";
+            $prompt .= "- Categories: Contracts, Tax Documents, Legal, Other\n";
+            $prompt .= "- Examples: contracts, agreements, tax forms, certificates related to user company\n";
+            $prompt .= "- Must be business-related to user company\n\n";
             
         }
         
@@ -491,24 +490,28 @@ class AIDocumentAnalyzer
         $prompt .= "1. Look at the image carefully and identify ALL company names\n";
         $prompt .= "2. Identify SENDER company (who issued/sent the document)\n";
         $prompt .= "3. Identify RECEIVER company (who received/should pay)\n";
-        $prompt .= "4. Read the document date and extract the ACTUAL year\n";
+        $prompt .= "4. Read the document date and extract the ACTUAL year AND month\n";
         $prompt .= "5. CRITICAL CHECK: What type of document is this?\n";
-        $prompt .= "6. If BANK STATEMENT → Check if account holder is user company → {$folderCategories[2]} folder\n";
+        $prompt .= "6. If BANK STATEMENT → Check if account holder is user company → Banks/[YEAR]/[MONTH] folder\n";
         $prompt .= "7. If INVOICE/RECEIPT → Check sender/receiver involvement:\n";
         $prompt .= "   - BOTH sender and receiver NOT in user list → DELETE\n";
-        $prompt .= "   - EITHER sender OR receiver in user list → {$folderCategories[0]}/{$folderCategories[1]} folder\n";
+        $prompt .= "   - User company SENT invoice → Invoices/Income/[YEAR]/[MONTH] folder\n";
+        $prompt .= "   - User company RECEIVED invoice → Invoices/Expense/[YEAR]/[MONTH] folder\n";
         $prompt .= "8. If OTHER BUSINESS DOCUMENT → Check if belongs to user company:\n";
-        $prompt .= "   - Related to user company AND has date → {$folderCategories[3]} folder\n";
+        $prompt .= "   - Contract → Documents/Contracts folder\n";
+        $prompt .= "   - Tax document → Documents/Tax Documents folder\n";
+        $prompt .= "   - Legal document → Documents/Legal folder\n";
+        $prompt .= "   - Other business document → Documents/Other folder\n";
         $prompt .= "   - Not related to user company → DELETE\n";
         $prompt .= "9. NEVER suggest folders for companies not in the user list\n";
-        $prompt .= "10. NEVER suggest folders with wrong years - use document date year only\n\n";
+        $prompt .= "10. NEVER suggest folders with wrong years/months - use document date only\n\n";
         
         $prompt .= "EXAMPLE SCENARIOS:\n";
         $prompt .= "- Invoice between two companies neither in user list → DELETE\n";
-        $prompt .= "- Invoice from user company to other company → {$folderCategories[0]} folder\n";
-        $prompt .= "- Invoice from other company to user company → {$folderCategories[1]} folder\n";
-        $prompt .= "- Bank statement of user company account → {$folderCategories[2]} folder\n";
-        $prompt .= "- Contract/agreement for user company → {$folderCategories[3]} folder\n";
+        $prompt .= "- Invoice from user company to other company → Invoices/Income/[YEAR]/[MONTH] folder\n";
+        $prompt .= "- Invoice from other company to user company → Invoices/Expense/[YEAR]/[MONTH] folder\n";
+        $prompt .= "- Bank statement for user company account → Banks/[YEAR]/[MONTH] folder\n";
+        $prompt .= "- Contract signed by user company → Documents/Contracts folder\n";
         $prompt .= "- Bank statement of unknown company → DELETE\n";
         $prompt .= "- Invoice where user company not involved → DELETE\n\n";
         

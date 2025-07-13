@@ -25,23 +25,158 @@ class InvoiceController extends Controller
     /**
      * Display a listing of invoices
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Get user's company IDs
-        $userCompanyIds = auth()->user()->companies->pluck('id');
+        $user = auth()->user();
+        $tab = $request->get('tab', 'income'); // Default to income tab
         
-        // Get invoices in multiple ways to catch all possible scenarios:
-        // 1. Invoices from user's companies
-        // 2. Invoices created by the user (for backwards compatibility)
-        $invoices = Invoice::where(function($query) use ($userCompanyIds) {
+        // Get user's active company
+        $company = $user->activeCompany ?? $user->companies()->first();
+        
+        if (!$company) {
+            return redirect()->route('user.companies.index')
+                ->with('error', 'Please create or select a company first.');
+        }
+        
+        // Get user's company IDs for system invoices
+        $userCompanyIds = $user->companies->pluck('id');
+        
+        // Get system-generated invoices (these are income invoices)
+        $systemInvoices = Invoice::where(function($query) use ($userCompanyIds) {
                 $query->whereIn('company_id', $userCompanyIds)
                       ->orWhere('created_by', auth()->id());
             })
             ->with(['company', 'client'])
             ->latest()
-            ->paginate(10);
+            ->get();
             
-        return view('user.invoices.index', compact('invoices'));
+        // Find the Invoices folder structure
+        $rootFolder = \App\Models\Folder::where('name', $company->name)
+            ->where('company_id', $company->id)
+            ->where('parent_id', null)
+            ->first();
+            
+        $invoicesFolder = null;
+        $incomeFiles = collect();
+        $expenseFiles = collect();
+        
+        if ($rootFolder) {
+            $invoicesFolder = \App\Models\Folder::where('name', 'Invoices')
+                ->where('parent_id', $rootFolder->id)
+                ->where('company_id', $company->id)
+                ->first();
+                
+            if ($invoicesFolder) {
+                // Get Income folder and files
+                $incomeFolder = \App\Models\Folder::where('name', 'Income')
+                    ->where('parent_id', $invoicesFolder->id)
+                    ->first();
+                    
+                if ($incomeFolder) {
+                    $incomeFiles = \App\Models\File::whereHas('folder', function ($query) use ($incomeFolder) {
+                        $query->where('path', 'like', $incomeFolder->path . '%');
+                    })
+                    ->with(['folder', 'uploader'])
+                    ->latest()
+                    ->get();
+                }
+                
+                // Get Expense folder and files
+                $expenseFolder = \App\Models\Folder::where('name', 'Expense')
+                    ->where('parent_id', $invoicesFolder->id)
+                    ->first();
+                    
+                if ($expenseFolder) {
+                    $expenseFiles = \App\Models\File::whereHas('folder', function ($query) use ($expenseFolder) {
+                        $query->where('path', 'like', $expenseFolder->path . '%');
+                    })
+                    ->with(['folder', 'uploader'])
+                    ->latest()
+                    ->get();
+                }
+            }
+        }
+        
+        // Combine system invoices with income files for income tab
+        $incomeInvoices = collect();
+        
+        // Add system invoices (all system invoices are income)
+        foreach ($systemInvoices as $invoice) {
+            $incomeInvoices->push([
+                'type' => 'system',
+                'data' => $invoice,
+                'date' => $invoice->invoice_date,
+                'amount' => $invoice->total,
+                'currency' => $invoice->currency,
+                'client' => $invoice->client_name ?? ($invoice->client ? $invoice->client->name : 'Unknown'),
+                'number' => $invoice->invoice_number,
+                'status' => $invoice->status
+            ]);
+        }
+        
+        // Add uploaded income files
+        foreach ($incomeFiles as $file) {
+            $incomeInvoices->push([
+                'type' => 'uploaded',
+                'data' => $file,
+                'date' => $file->created_at,
+                'amount' => null, // Could be extracted from AI analysis
+                'currency' => null,
+                'client' => $file->ai_analysis['company_name'] ?? 'Unknown',
+                'number' => $file->ai_analysis['invoice_number'] ?? $file->original_name,
+                'status' => 'uploaded'
+            ]);
+        }
+        
+        // Sort by date
+        $incomeInvoices = $incomeInvoices->sortByDesc('date');
+        
+        // Prepare expense invoices (only uploaded files)
+        $expenseInvoices = collect();
+        foreach ($expenseFiles as $file) {
+            $expenseInvoices->push([
+                'type' => 'uploaded',
+                'data' => $file,
+                'date' => $file->created_at,
+                'amount' => null, // Could be extracted from AI analysis
+                'currency' => null,
+                'vendor' => $file->ai_analysis['company_name'] ?? 'Unknown',
+                'number' => $file->ai_analysis['invoice_number'] ?? $file->original_name,
+                'status' => 'uploaded'
+            ]);
+        }
+        
+        $expenseInvoices = $expenseInvoices->sortByDesc('date');
+        
+        // Paginate the results
+        $perPage = 20;
+        $currentPage = $request->get('page', 1);
+        
+        if ($tab === 'income') {
+            $invoices = $incomeInvoices->forPage($currentPage, $perPage);
+            $totalCount = $incomeInvoices->count();
+        } else {
+            $invoices = $expenseInvoices->forPage($currentPage, $perPage);
+            $totalCount = $expenseInvoices->count();
+        }
+        
+        // Create a paginator
+        $invoices = new \Illuminate\Pagination\LengthAwarePaginator(
+            $invoices,
+            $totalCount,
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+            
+        return view('user.invoices.index', [
+            'invoices' => $invoices,
+            'tab' => $tab,
+            'company' => $company,
+            'systemInvoicesCount' => $systemInvoices->count(),
+            'uploadedIncomeCount' => $incomeFiles->count(),
+            'uploadedExpenseCount' => $expenseFiles->count(),
+        ]);
     }
     
     public function create()

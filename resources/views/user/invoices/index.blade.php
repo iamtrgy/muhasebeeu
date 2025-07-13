@@ -1,8 +1,8 @@
 <x-user.layout 
     title="{{ __('Invoices') }}" 
     :breadcrumbs="[
-        ['title' => __('Home'), 'href' => route('user.dashboard'), 'first' => true],
-        ['title' => __('Invoices')]
+        ['title' => __('Home'), 'href' => route('user.dashboard')],
+        ['title' => __('Invoices'), 'active' => true]
     ]"
 >
     <div class="space-y-6">
@@ -14,32 +14,65 @@
             <x-ui.alert variant="danger">{{ session('error') }}</x-ui.alert>
         @endif
 
-        <x-ui.card.base>
-            <x-ui.card.header>
+        <!-- Page Header -->
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{{ __('My Invoices') }}</h3>
-                        <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-                            {{ __('Manage your invoices and track payments') }} ({{ $invoices->total() }} {{ $invoices->total() === 1 ? 'invoice' : 'invoices' }})
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                            {{ __('Invoices') }}
+                        </h2>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            {{ __('Manage all invoices for') }} {{ $company->name }}
                         </p>
                     </div>
                     <x-ui.button.primary href="{{ route('user.invoices.create') }}">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
-                        {{ __('New Invoice') }}
+                        {{ __('Create Invoice') }}
                     </x-ui.button.primary>
                 </div>
-            </x-ui.card.header>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="border-t border-gray-200 dark:border-gray-700">
+                <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+                    <a href="{{ route('user.invoices.index', ['tab' => 'income']) }}" 
+                       class="py-3 px-1 border-b-2 font-medium text-sm transition-colors
+                           {{ $tab === 'income' 
+                               ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' 
+                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
+                        {{ __('Income') }}
+                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                            {{ $systemInvoicesCount + $uploadedIncomeCount }}
+                        </span>
+                    </a>
+                    <a href="{{ route('user.invoices.index', ['tab' => 'expense']) }}" 
+                       class="py-3 px-1 border-b-2 font-medium text-sm transition-colors
+                           {{ $tab === 'expense' 
+                               ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' 
+                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
+                        {{ __('Expense') }}
+                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                            {{ $uploadedExpenseCount }}
+                        </span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Invoice List -->
+        <x-ui.card.base>
             <x-ui.card.body>
-                @if(count($invoices) > 0)
+                @if($invoices->count() > 0)
                     <x-ui.table.base>
                         <x-slot name="head">
+                            <x-ui.table.head-cell>{{ __('Type') }}</x-ui.table.head-cell>
                             <x-ui.table.head-cell>{{ __('Invoice No') }}</x-ui.table.head-cell>
                             <x-ui.table.head-cell>{{ __('Date') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell>{{ __('Customer') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell>{{ __('Total') }}</x-ui.table.head-cell>
-                            <x-ui.table.head-cell>{{ __('Language') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell>{{ $tab === 'income' ? __('Customer') : __('Vendor') }}</x-ui.table.head-cell>
+                            <x-ui.table.head-cell>{{ __('Amount') }}</x-ui.table.head-cell>
                             <x-ui.table.head-cell>{{ __('Status') }}</x-ui.table.head-cell>
                             <x-ui.table.head-cell align="right">{{ __('Actions') }}</x-ui.table.head-cell>
                         </x-slot>
@@ -47,129 +80,143 @@
                             @foreach($invoices as $invoice)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                     <x-ui.table.cell>
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0">
-                                                <svg class="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        @if($invoice['type'] === 'system')
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                                                 </svg>
-                                            </div>
-                                            <div class="ml-4">
-                                                <a href="{{ route('user.invoices.show', $invoice) }}" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400">
-                                                    {{ $invoice->invoice_number }}
-                                                </a>
-                                            </div>
-                                        </div>
+                                                {{ __('System') }}
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                </svg>
+                                                {{ __('Uploaded') }}
+                                            </span>
+                                        @endif
                                     </x-ui.table.cell>
                                     <x-ui.table.cell>
-                                        <div class="text-sm text-gray-900 dark:text-gray-100">{{ $invoice->invoice_date->format('d.m.Y') }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $invoice->invoice_date->diffForHumans() }}</div>
+                                        <div class="flex items-center">
+                                            <svg class="h-5 w-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            <div>
+                                                @if($invoice['type'] === 'system')
+                                                    <a href="{{ route('user.invoices.show', $invoice['data']) }}" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400">
+                                                        {{ $invoice['number'] }}
+                                                    </a>
+                                                @else
+                                                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                        {{ Str::limit($invoice['number'], 30) }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </x-ui.table.cell>
                                     <x-ui.table.cell>
                                         <div class="text-sm text-gray-900 dark:text-gray-100">
-                                            @if($invoice->client_id)
-                                                {{ $invoice->client->name }}
+                                            {{ $invoice['date']->format('d.m.Y') }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            {{ $invoice['date']->diffForHumans() }}
+                                        </div>
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>
+                                        <div class="text-sm text-gray-900 dark:text-gray-100">
+                                            {{ $tab === 'income' ? $invoice['client'] : $invoice['vendor'] }}
+                                        </div>
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>
+                                        @if($invoice['amount'])
+                                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                {{ number_format($invoice['amount'], 2, ',', '.') }} {{ $invoice['currency'] }}
+                                            </div>
+                                        @else
+                                            <span class="text-sm text-gray-400 dark:text-gray-500">-</span>
+                                        @endif
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell>
+                                        @if($invoice['type'] === 'system')
+                                            @if($invoice['status'] == 'draft')
+                                                <x-ui.badge variant="secondary">{{ __('Draft') }}</x-ui.badge>
+                                            @elseif($invoice['status'] == 'sent')
+                                                <x-ui.badge variant="primary">{{ __('Sent') }}</x-ui.badge>
+                                            @elseif($invoice['status'] == 'paid')
+                                                <x-ui.badge variant="success">{{ __('Paid') }}</x-ui.badge>
+                                            @elseif($invoice['status'] == 'cancelled')
+                                                <x-ui.badge variant="danger">{{ __('Cancelled') }}</x-ui.badge>
+                                            @endif
+                                        @else
+                                            <x-ui.badge variant="secondary">{{ __('Uploaded') }}</x-ui.badge>
+                                        @endif
+                                    </x-ui.table.cell>
+                                    <x-ui.table.cell align="right">
+                                        <div class="flex items-center justify-end space-x-2">
+                                            @if($invoice['type'] === 'system')
+                                                <a href="{{ route('user.invoices.show', $invoice['data']) }}" 
+                                                   class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                                   title="{{ __('View') }}">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                </a>
+                                                @if($invoice['data']->pdf_path)
+                                                    <a href="{{ route('user.invoices.download-pdf', $invoice['data']) }}" 
+                                                       class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                                                       title="{{ __('Download PDF') }}">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                                                        </svg>
+                                                    </a>
+                                                @endif
                                             @else
-                                                {{ $invoice->client_name }}
+                                                <a href="{{ route('user.files.preview', $invoice['data']) }}" 
+                                                   class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                                   title="{{ __('Preview') }}">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                </a>
+                                                <a href="{{ route('user.files.download', $invoice['data']) }}" 
+                                                   class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                                                   title="{{ __('Download') }}">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                                                    </svg>
+                                                </a>
                                             @endif
                                         </div>
                                     </x-ui.table.cell>
-                                    <x-ui.table.cell>
-                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {{ number_format($invoice->total, 2, ',', '.') }} {{ $invoice->currency }}
-                                        </div>
-                                    </x-ui.table.cell>
-                                    <x-ui.table.cell>
-                                        @if($invoice->language_code == 'tr')
-                                            <x-ui.badge variant="primary">Turkish</x-ui.badge>
-                                        @elseif($invoice->language_code == 'en')
-                                            <x-ui.badge variant="danger">English</x-ui.badge>
-                                        @elseif($invoice->language_code == 'de')
-                                            <x-ui.badge variant="warning">German</x-ui.badge>
-                                        @endif
-                                    </x-ui.table.cell>
-                                    <x-ui.table.cell>
-                                        @if($invoice->status == 'draft')
-                                            <x-ui.badge variant="secondary">{{ __('Draft') }}</x-ui.badge>
-                                        @elseif($invoice->status == 'sent')
-                                            <x-ui.badge variant="primary">{{ __('Sent') }}</x-ui.badge>
-                                        @elseif($invoice->status == 'paid')
-                                            <x-ui.badge variant="success">{{ __('Paid') }}</x-ui.badge>
-                                        @elseif($invoice->status == 'cancelled')
-                                            <x-ui.badge variant="danger">{{ __('Cancelled') }}</x-ui.badge>
-                                        @endif
-                                    </x-ui.table.cell>
-                                    <x-ui.table.action-cell>
-                                        <a href="{{ route('user.invoices.show', $invoice) }}" 
-                                           class="p-1 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                           title="{{ __('View') }}">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </a>
-                                        <a href="{{ route('user.invoices.download-pdf', $invoice) }}" 
-                                           class="p-1 rounded-lg text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                           title="{{ __('Download PDF') }}">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                            </svg>
-                                        </a>
-                                        <a href="{{ route('payment.show', $invoice) }}" 
-                                           target="_blank"
-                                           class="p-1 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                           title="{{ __('View Payment Page') }}">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                            </svg>
-                                        </a>
-                                        <a href="{{ route('user.invoices.edit', $invoice) }}" 
-                                           class="p-1 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                           title="{{ __('Edit') }}">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </a>
-                                        <form action="{{ route('user.invoices.destroy', $invoice) }}" method="POST" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" 
-                                                    class="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" 
-                                                    onclick="return confirm('{{ __('Are you sure you want to delete this invoice?') }}')"
-                                                    title="{{ __('Delete') }}">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </form>
-                                    </x-ui.table.action-cell>
                                 </tr>
                             @endforeach
                         </x-slot>
                     </x-ui.table.base>
                     
-                    <!-- Pagination -->
-                    <div class="mt-4">
-                        {{ $invoices->links() }}
-                    </div>
+                    {{ $invoices->links() }}
                 @else
                     <x-ui.table.empty-state>
-                        <x-slot name="icon">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </x-slot>
-                        <x-slot name="title">{{ __('No Invoices') }}</x-slot>
-                        <x-slot name="description">
-                            {{ __('Get started by creating your first invoice to track your business transactions.') }}
-                        </x-slot>
-                        <x-slot name="action">
-                            <x-ui.button.primary href="{{ route('user.invoices.create') }}">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                </svg>
-                                {{ __('Create Invoice') }}
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            @if($tab === 'income')
+                                {{ __('No income invoices found.') }}
+                            @else
+                                {{ __('No expense invoices found.') }}
+                            @endif
+                        </p>
+                        @if($tab === 'income')
+                            <x-ui.button.primary 
+                                href="{{ route('user.invoices.create') }}"
+                                size="sm"
+                                class="mt-4"
+                            >
+                                {{ __('Create First Invoice') }}
                             </x-ui.button.primary>
-                        </x-slot>
+                        @endif
                     </x-ui.table.empty-state>
                 @endif
             </x-ui.card.body>
