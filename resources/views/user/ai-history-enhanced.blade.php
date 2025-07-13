@@ -221,7 +221,7 @@
                                         @if(!$file->ai_suggestion_accepted && $file->ai_analysis)
                                             @if(isset($file->ai_analysis['suggest_deletion']) && $file->ai_analysis['suggest_deletion'])
                                                 {{-- Show Delete button for files marked for deletion --}}
-                                                <button onclick="showFileAction({{ $file->id }}, 'delete')"
+                                                <button onclick="showAISuggestionModal({{ $file->id }})"
                                                         class="inline-flex items-center text-xs text-red-600 dark:text-red-400 font-medium hover:text-red-700 dark:hover:text-red-300 transition-colors cursor-pointer"
                                                         title="Delete recommended">
                                                     <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,7 +237,7 @@
                                                     $needsMove = $currentFolderId != $suggestedFolderId;
                                                 @endphp
                                                 @if($needsMove)
-                                                    <button onclick="showFileAction({{ $file->id }}, 'accept')"
+                                                    <button onclick="acceptSuggestionQuick({{ $file->id }}, {{ $file->ai_analysis['suggested_folder_id'] ?? 'null' }}, '{{ addslashes($file->original_name ?? $file->name) }}')"
                                                             class="inline-flex items-center px-3 py-1 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
                                                             title="Accept AI suggestion">
                                                         ✓ Accept
@@ -246,7 +246,7 @@
                                             @endif
                                         @endif
                                         
-                                        <button onclick="showFileAction({{ $file->id }}, 'details')"
+                                        <button onclick="showAISuggestionModal({{ $file->id }})"
                                                 class="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none"
                                                 title="View details">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,7 +254,7 @@
                                             </svg>
                                         </button>
                                         
-                                        <button onclick="reanalyzeFile({{ $file->id }})"
+                                        <button onclick="showAISuggestionModal({{ $file->id }}, true)"
                                                 class="p-1.5 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 focus:outline-none"
                                                 title="Re-analyze">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1805,260 +1805,6 @@
             modal.classList.add('hidden');
         }
 
-        // Unified File Action Modal Functions
-        function showFileAction(fileId, actionType = 'details') {
-            const fileData = @json($files->keyBy('id'));
-            const file = fileData[fileId];
-            
-            if (!file) {
-                console.error('File not found:', fileId);
-                return;
-            }
-
-            const modal = document.getElementById('file-action-modal');
-            const title = document.getElementById('file-action-title');
-            const icon = document.getElementById('file-action-icon');
-            const fileName = document.getElementById('file-action-name');
-            const location = document.getElementById('file-action-location');
-            const content = document.getElementById('file-action-content');
-            const buttons = document.getElementById('file-action-buttons');
-
-            // Set basic file info
-            fileName.textContent = file.original_name || file.name;
-            location.textContent = file.folder ? file.folder.full_path : 'Root';
-
-            // Configure modal based on action type
-            switch(actionType) {
-                case 'delete':
-                    title.textContent = 'Delete File';
-                    icon.className = 'w-8 h-8 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center';
-                    icon.innerHTML = `
-                        <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    `;
-                    content.innerHTML = `
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                                <strong>AI suggests deleting this file.</strong>
-                            </p>
-                            ${file.ai_analysis && file.ai_analysis.reasoning ? `
-                                <p class="text-sm text-gray-600 dark:text-gray-400">
-                                    <strong>Reason:</strong> ${file.ai_analysis.reasoning}
-                                </p>
-                            ` : ''}
-                        </div>
-                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                            <p class="text-sm text-red-800 dark:text-red-300">
-                                ⚠️ This action cannot be undone. The file will be permanently deleted.
-                            </p>
-                        </div>
-                    `;
-                    buttons.innerHTML = `
-                        <button onclick="closeFileAction()" 
-                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                            Cancel
-                        </button>
-                        <button onclick="confirmDeleteFile(${fileId})" 
-                                class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg">
-                            Delete File
-                        </button>
-                    `;
-                    break;
-
-                case 'accept':
-                    const suggestedFolderId = file.ai_analysis?.suggested_folder_id;
-                    const suggestedFolderName = file.ai_analysis?.folder_name;
-                    
-                    title.textContent = 'Accept Suggestion';
-                    icon.className = 'w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center';
-                    icon.innerHTML = `
-                        <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    `;
-                    content.innerHTML = `
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                                <strong>AI suggests moving this file to:</strong>
-                            </p>
-                            <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3">
-                                <p class="text-sm font-medium text-indigo-900 dark:text-indigo-100">
-                                    ${suggestedFolderName || 'Unknown folder'}
-                                </p>
-                            </div>
-                            ${file.ai_analysis && file.ai_analysis.reasoning ? `
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                                    <strong>Reason:</strong> ${file.ai_analysis.reasoning}
-                                </p>
-                            ` : ''}
-                            ${file.ai_analysis && file.ai_analysis.confidence ? `
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                    <strong>Confidence:</strong> ${file.ai_analysis.confidence}%
-                                </p>
-                            ` : ''}
-                        </div>
-                    `;
-                    buttons.innerHTML = `
-                        <button onclick="closeFileAction()" 
-                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                            Cancel
-                        </button>
-                        <button onclick="confirmAcceptSuggestion(${fileId}, ${suggestedFolderId}, '${suggestedFolderName}')" 
-                                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">
-                            Accept & Move
-                        </button>
-                    `;
-                    break;
-
-                case 'details':
-                default:
-                    title.textContent = 'File Details';
-                    icon.className = 'w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center';
-                    icon.innerHTML = `
-                        <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    `;
-                    
-                    let detailsContent = '<div class="space-y-3">';
-                    
-                    if (file.ai_analysis) {
-                        if (file.ai_analysis.suggest_deletion) {
-                            detailsContent += `
-                                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                                    <p class="text-sm font-medium text-red-800 dark:text-red-300">AI suggests deleting this file</p>
-                                </div>
-                            `;
-                        } else if (file.ai_analysis.folder_name) {
-                            detailsContent += `
-                                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                                        <strong>Suggested folder:</strong> ${file.ai_analysis.folder_name}
-                                    </p>
-                                </div>
-                            `;
-                        }
-                        
-                        if (file.ai_analysis.confidence) {
-                            detailsContent += `
-                                <p class="text-sm text-gray-600 dark:text-gray-400">
-                                    <strong>Confidence:</strong> ${file.ai_analysis.confidence}%
-                                </p>
-                            `;
-                        }
-                        
-                        if (file.ai_analysis.reasoning) {
-                            detailsContent += `
-                                <p class="text-sm text-gray-600 dark:text-gray-400">
-                                    <strong>Reasoning:</strong> ${file.ai_analysis.reasoning}
-                                </p>
-                            `;
-                        }
-                    } else {
-                        detailsContent += `
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                This file has not been analyzed yet.
-                            </p>
-                        `;
-                    }
-                    
-                    detailsContent += '</div>';
-                    content.innerHTML = detailsContent;
-                    
-                    let actionButtons = `
-                        <button onclick="closeFileAction()" 
-                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                            Close
-                        </button>
-                    `;
-                    
-                    if (file.ai_analysis) {
-                        actionButtons += `
-                            <button onclick="showFilePreview('${file.original_name || file.name}', '${file.mime_type || 'application/octet-stream'}', '${file.url}')" 
-                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
-                                Preview
-                            </button>
-                            <button onclick="reanalyzeFromAction(${fileId})" 
-                                    class="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg">
-                                Re-analyze
-                            </button>
-                        `;
-                    } else {
-                        actionButtons += `
-                            <button onclick="analyzeFromAction(${fileId})" 
-                                    class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">
-                                Analyze
-                            </button>
-                        `;
-                    }
-                    
-                    buttons.innerHTML = actionButtons;
-                    break;
-            }
-
-            // Show modal
-            modal.classList.remove('hidden');
-        }
-
-        function closeFileAction() {
-            const modal = document.getElementById('file-action-modal');
-            modal.classList.add('hidden');
-        }
-
-        function confirmDeleteFile(fileId) {
-            const routeTemplate = `{{ route('user.files.destroy', ['file' => ':fileId']) }}`;
-            const deleteUrl = routeTemplate.replace(':fileId', fileId);
-            
-            fetch(deleteUrl, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Remove the file row from the page
-                    const fileRow = document.querySelector(`[data-file-id="${fileId}"]`);
-                    if (fileRow) {
-                        fileRow.remove();
-                    }
-                    
-                    // Show success message
-                    alert('File deleted successfully');
-                    
-                    // Refresh the page to update counts
-                    window.location.reload();
-                } else {
-                    alert('Error deleting file: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Delete error:', error);
-                alert('Error deleting file: ' + error.message);
-            });
-            
-            closeFileAction();
-        }
-
-        function confirmAcceptSuggestion(fileId, folderId, folderName) {
-            acceptSuggestionQuick(fileId, folderId, folderName);
-            closeFileAction();
-        }
-
-        function reanalyzeFromAction(fileId) {
-            reanalyzeFile(fileId);
-            closeFileAction();
-        }
-
-        function analyzeFromAction(fileId) {
-            // Use existing analyze functionality
-            showAISuggestionModal(fileId);
-            closeFileAction();
-        }
-
         // Make functions globally accessible
         window.showReviewGuidance = showReviewGuidance;
         window.closeReviewGuidance = closeReviewGuidance;
@@ -2069,15 +1815,8 @@
         window.acceptSuggestionFromModalTable = acceptSuggestionFromModalTable;
         window.showFilePreview = showFilePreview;
         window.closeFilePreview = closeFilePreview;
-        window.showFileAction = showFileAction;
-        window.closeFileAction = closeFileAction;
-        window.confirmDeleteFile = confirmDeleteFile;
-        window.confirmAcceptSuggestion = confirmAcceptSuggestion;
-        window.reanalyzeFromAction = reanalyzeFromAction;
-        window.analyzeFromAction = analyzeFromAction;
     </script>
     @endpush
 
     <x-ai-history.modals.file-preview />
-    <x-ai-history.modals.file-action />
 </x-user.layout>
